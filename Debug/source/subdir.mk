@@ -4,13 +4,16 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../source/MySP.cpp 
+../source/MySP.cpp \
+../source/postfix.cpp 
 
 OBJS += \
-./source/MySP.o 
+./source/MySP.o \
+./source/postfix.o 
 
 CPP_DEPS += \
-./source/MySP.d 
+./source/MySP.d \
+./source/postfix.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
