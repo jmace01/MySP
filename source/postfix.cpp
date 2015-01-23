@@ -59,12 +59,15 @@ vector<Token> Postfix::getPostfix(string infix, unsigned int lineNumber) {
             }
 
             this->addTopOperand();
+            if (t.word == "?")
+                this->operators.push(t);
             result.push_back(t);
-            this->addTemporary();
+            if (t.word != "?")
+                this->addTemporary();
 
         //Normal operators
         } else if (t.type == 'o') {
-            while (t.word != "(" && t.word != "[" && operators.size() != 0 && this->getOperatorHeirchy(operators.top().word) > 0 && !this->isPreUnary(operators.top().word) && this->getOperatorHeirchy(t.word) < this->getOperatorHeirchy(operators.top().word)) {
+            while (t.word != "(" && t.word != "[" && operators.size() != 0 && operators.top().word != "?" && this->getOperatorHeirchy(operators.top().word) > 0 && !this->isPreUnary(operators.top().word) && this->getOperatorHeirchy(t.word) < this->getOperatorHeirchy(operators.top().word)) {
                 if (operands.size() < 2) {
                     cout << "ERROR not enough operands " << t.word << endl;
                     break;
@@ -74,7 +77,16 @@ vector<Token> Postfix::getPostfix(string infix, unsigned int lineNumber) {
                 this->addTopOperator();
                 this->addTemporary();
             }
-            if (t.word == ")" && operators.size() > 0 && operators.top().word == "(") {
+            if ((t.word == ")" || t.word == ",") && operators.size() > 0 && (operators.top().word == "(" || operators.top().word == ",")) {
+                if ((t.word == ")" && operators.top().word == ",") || t.word == ",") {
+                    this->addTopOperand();
+                    this->addOperator(",");
+                }
+                if ((t.word == ")" && operators.top().word == ",")) {
+                    this->addTopOperand();
+                    this->addOperator("@CALL");
+                    this->addTemporary();
+                }
                 operators.pop();
             }
             if (t.word != "(" && t.word != "[" && operators.size() > 0 && this->isPreUnary(operators.top().word)) {
@@ -93,6 +105,10 @@ vector<Token> Postfix::getPostfix(string infix, unsigned int lineNumber) {
     }
 
     while (operators.size() > 0 && operands.size() >= 2) {
+        if (operators.size() > 0 && (operators.top().word == "?" || operators.top().word == "(")) {
+            operators.pop();
+            continue;
+        }
         if (!this->isPreUnary(operators.top().word)) {
             this->addTopOperand();
         }
@@ -298,7 +314,8 @@ int Postfix::getOperatorHeirchy(std::string op) {
 
     if (    op == "&&"  ||
             op == "||"  ||
-            op == "|||"
+            op == "|||" ||
+            op == ":"
         )
         return 4;
 
@@ -324,7 +341,8 @@ int Postfix::getOperatorHeirchy(std::string op) {
 
     //Postfixed Unary Operators
     if (    op == "++" ||
-            op == "--"
+            op == "--" ||
+            op == "?"
         )
         return 9;
 
@@ -337,7 +355,8 @@ int Postfix::getOperatorHeirchy(std::string op) {
     if (    op == "(" ||
             op == ")" ||
             op == "[" ||
-            op == "]"
+            op == "]" ||
+            op == ","
         )
         return -1;
 
@@ -399,6 +418,18 @@ void Postfix::addTemporary() {
 
     //Save the temp variable
     this->tempVariableNumber = s;
+}
+
+
+/******************************************************************
+ *
+ ******************************************************************/
+void Postfix::addOperator(string op) {
+    Token p;
+    p.line = -1;
+    p.type = 'o';
+    p.word = op;
+    this->result.push_back(p);
 }
 
 

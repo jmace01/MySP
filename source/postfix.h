@@ -44,6 +44,7 @@ class Postfix {
         bool isPostUnary(std::string);
         bool isPreUnary(std::string);
         void addTemporary();
+        void addOperator(std::string op);
         void addTopOperand();
         void addTopOperator();
 
