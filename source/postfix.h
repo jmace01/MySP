@@ -23,9 +23,13 @@ struct Token{
 class Postfix {
 
     private:
-        int          infixPos;
-        std::string  infix;
-        unsigned int lineNumber;
+        int                infixPos;
+        std::string        infix;
+        unsigned int       lineNumber;
+        std::string        tempVariableNumber;
+        std::stack<Token>  operators;
+        std::stack<Token>  operands;
+        std::vector<Token> result;
 
     public:
         Postfix();
@@ -39,6 +43,9 @@ class Postfix {
         int getOperatorHeirchy(std::string op);
         bool isPostUnary(std::string);
         bool isPreUnary(std::string);
+        void addTemporary();
+        void addTopOperand();
+        void addTopOperator();
 
 };
 

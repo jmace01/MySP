@@ -10,9 +10,10 @@ using namespace std;
  *
  ******************************************************************/
 Postfix::Postfix() {
-    this->infix      = "";
-    this->infixPos   = 0;
-    this->lineNumber = 0;
+    this->infix              = "";
+    this->infixPos           = 0;
+    this->lineNumber         = 0;
+    this->tempVariableNumber = "";
 }
 
 
@@ -27,20 +28,19 @@ Postfix::~Postfix() {
  *
  ******************************************************************/
 vector<Token> Postfix::getPostfix(string infix, unsigned int lineNumber) {
-    this->infix            = infix;
-    this->infixPos         = 0;
-    this->lineNumber       = lineNumber;
-    stack<Token> operands  = stack<Token>();
-    stack<Token> operators = stack<Token>();
+    this->infix              = infix;
+    this->infixPos           = 0;
+    this->lineNumber         = lineNumber;
+    this->tempVariableNumber = "@0";
+    this->operands           = stack<Token>();
+    this->operators          = stack<Token>();
+    this->result             = vector<Token>();
 
     int parenths           = 0;     //Parenthesis that are still open
     bool expectingOperator = false; //Is it time for an operator?
     bool wasWord           = false; //Was the last a word? Needed for function calls
 
     queue<Token> toks = this->getTokens();
-    vector<Token> result = vector<Token>();
-
-    Token p; //Temporary for holding tokens
 
     Token t;
     while (!toks.empty()) {
@@ -58,17 +58,9 @@ vector<Token> Postfix::getPostfix(string infix, unsigned int lineNumber) {
                 continue;
             }
 
-            p = operands.top();
-            operands.pop();
-            result.push_back(p);
-
+            this->addTopOperand();
             result.push_back(t);
-
-            p = Token();
-            p.line = -1;
-            p.type = 'w';
-            p.word = "TEMP";
-            operands.push(p);
+            this->addTemporary();
 
         //Normal operators
         } else if (t.type == 'o') {
@@ -77,40 +69,18 @@ vector<Token> Postfix::getPostfix(string infix, unsigned int lineNumber) {
                     cout << "ERROR not enough operands " << t.word << endl;
                     break;
                 }
-                p = operands.top();
-                operands.pop();
-                result.push_back(p);
-                p = operands.top();
-                operands.pop();
-                result.push_back(p);
-
-                p = operators.top();
-                operators.pop();
-                result.push_back(p);
-
-                p = Token();
-                p.line = -1;
-                p.type = 'w';
-                p.word = "TEMP";
-                operands.push(p);
+                this->addTopOperand();
+                this->addTopOperand();
+                this->addTopOperator();
+                this->addTemporary();
             }
             if (t.word == ")" && operators.size() > 0 && operators.top().word == "(") {
                 operators.pop();
             }
             if (t.word != "(" && t.word != "[" && operators.size() > 0 && this->isPreUnary(operators.top().word)) {
-                p = operands.top();
-                operands.pop();
-                result.push_back(p);
-
-                p = operators.top();
-                operators.pop();
-                result.push_back(p);
-
-                p = Token();
-                p.line = -1;
-                p.type = 'w';
-                p.word = "TEMP";
-                operands.push(p);
+                this->addTopOperand();
+                this->addTopOperator();
+                this->addTemporary();
             }
             if (t.word != ")" && t.word != "]") {
                 operators.push(t);
@@ -124,29 +94,15 @@ vector<Token> Postfix::getPostfix(string infix, unsigned int lineNumber) {
 
     while (operators.size() > 0 && operands.size() >= 2) {
         if (!this->isPreUnary(operators.top().word)) {
-            p = operands.top();
-            operands.pop();
-            result.push_back(p);
+            this->addTopOperand();
         }
-        p = operands.top();
-        operands.pop();
-        result.push_back(p);
-
-        p = operators.top();
-        operators.pop();
-        result.push_back(p);
-
-        p = Token();
-        p.line = -1;
-        p.type = 'w';
-        p.word = "TEMP";
-        operands.push(p);
+        this->addTopOperand();
+        this->addTopOperator();
+        this->addTemporary();
     }
 
     while (operands.size() > 0) {
-        p = operands.top();
-        operands.pop();
-        result.push_back(p);
+        this->addTopOperand();
     }
 
     return result;
@@ -404,4 +360,63 @@ bool Postfix::isPostUnary(string op) {
 bool Postfix::isPreUnary(string op) {
     int h = this->getOperatorHeirchy(op);
     return (h == 10);
+}
+
+
+/******************************************************************
+ *
+ ******************************************************************/
+void Postfix::addTemporary() {
+    //Create an alias
+    string s = this->tempVariableNumber;
+
+    //Add the temp variable
+    Token p = Token();
+    p.line = -1;
+    p.type = 'w';
+    p.word = this->tempVariableNumber;
+    this->operands.push(p);
+
+    //Increment the tempVariableNumber
+    if (s[s.size() - 1] == '9') { //last digit is 9, increment previous
+        bool found = false;       //Keep track of whether we incremented
+        s[s.size() - 1] = '0';    //Set previous digit back to 0
+        for (int i = s.size() - 2; i > 0 && s[i] != '@'; i--) {
+            if (s[i] < '9') {     //Found digit small enough
+                found = true;     //Increment and finish
+                s[i]++;
+                break;
+            } else {              //Digit too big, reset and continue
+                s[i] = '0';
+            }
+        }
+        if (!found) {             //Couldn't increment, add new digit
+            s += "0";
+        }
+    } else {
+        s[s.size() - 1] += 1;
+    }
+
+    //Save the temp variable
+    this->tempVariableNumber = s;
+}
+
+
+/******************************************************************
+ *
+ ******************************************************************/
+void Postfix::addTopOperand() {
+    Token p = this->operands.top();
+    this->operands.pop();
+    this->result.push_back(p);
+}
+
+
+/******************************************************************
+ *
+ ******************************************************************/
+void Postfix::addTopOperator() {
+    Token p = this->operators.top();
+    this->operators.pop();
+    this->result.push_back(p);
 }

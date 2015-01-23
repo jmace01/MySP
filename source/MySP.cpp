@@ -17,7 +17,7 @@ int main() {
 
     vector<Token>::iterator it;
     for (it = t.begin(); it != t.end(); it++) {
-        cout << (*it).word << " ";
+        cout << it->word << " ";
     }
 
     cout << endl;
