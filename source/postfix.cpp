@@ -59,10 +59,10 @@ vector<Token> Postfix::getPostfix(string infix, unsigned int lineNumber) {
             }
 
             this->addTopOperand();
+            result.push_back(t);
             if (t.word == "?")
                 this->operators.push(t);
-            result.push_back(t);
-            if (t.word != "?")
+            else
                 this->addTemporary();
 
         //Normal operators
