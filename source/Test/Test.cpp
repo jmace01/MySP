@@ -38,8 +38,8 @@ void Test::testPostfix() {
                     "false true == @0 ? 1 1 + 2 2 * @2 @1 : B @3 + @4 A + @5 x = @6 "
               )
             , TestIO(
-                    "v = 1 + function(2+7*12, \"string\".\"string2\"",
-                    "12 7 * @0 2 + @1 , \"string2\" \"string\" . @2 function , @3 1 + @4 v = @5 "
+                    "v = 1 + function(2+7*12, \"string\".\"string2\")",
+                    "12 7 * @0 2 + @1 , \"string2\" \"string\" . @2 , function @CALL @3 1 + @4 v = @5 "
               )
             , TestIO("","")
     };

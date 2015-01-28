@@ -7,6 +7,18 @@
 #include <queue>
 
 
+//enum class TOKEN_TYPES {STRING, NUMBER, WORD, OPERATOR};
+
+
+/******************************************************************
+ *
+ ******************************************************************/
+struct PostfixError {
+	PostfixError(std::string imsg) { msg = imsg; };
+	std::string msg;
+};
+
+
 /******************************************************************
  *
  ******************************************************************/
@@ -35,7 +47,7 @@ class Postfix {
         Postfix();
         ~Postfix();
 
-        std::vector<Token> getPostfix(std::string infix, unsigned int lineNumber);
+        std::vector<Token> getPostfix(std::string infix, unsigned int lineNumber) throw(PostfixError);
 
     private:
         std::queue<Token> getTokens();
@@ -43,10 +55,12 @@ class Postfix {
         int getOperatorHeirchy(std::string op);
         bool isPostUnary(std::string);
         bool isPreUnary(std::string);
+        bool isControlWord(std::string op);
         void addTemporary();
         void addOperator(std::string op);
         void addTopOperand();
         void addTopOperator();
+        void validateStatement(std::queue<Token> toks) throw (PostfixError);
 
 };
 

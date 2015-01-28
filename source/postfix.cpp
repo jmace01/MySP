@@ -27,7 +27,7 @@ Postfix::~Postfix() {
 /******************************************************************
  *
  ******************************************************************/
-vector<Token> Postfix::getPostfix(string infix, unsigned int lineNumber) {
+vector<Token> Postfix::getPostfix(string infix, unsigned int lineNumber) throw (PostfixError) {
     this->infix              = infix;
     this->infixPos           = 0;
     this->lineNumber         = lineNumber;
@@ -36,11 +36,9 @@ vector<Token> Postfix::getPostfix(string infix, unsigned int lineNumber) {
     this->operators          = stack<Token>();
     this->result             = vector<Token>();
 
-    int parenths           = 0;     //Parenthesis that are still open
-    bool expectingOperator = false; //Is it time for an operator?
-    bool wasWord           = false; //Was the last a word? Needed for function calls
-
     queue<Token> toks = this->getTokens();
+
+    this->validateStatement(toks);
 
     Token t;
     while (!toks.empty()) {
@@ -122,6 +120,54 @@ vector<Token> Postfix::getPostfix(string infix, unsigned int lineNumber) {
     }
 
     return result;
+}
+
+
+/******************************************************************
+ *
+ ******************************************************************/
+void Postfix::validateStatement(queue<Token> toks) throw (PostfixError) {
+	int parenths           = 0;     //Parenthesis that are still open
+	bool expectingOperator = false; //Is it time for an operator?
+	bool wasWord           = false; //Was the last a word? Needed for function calls
+
+	Token t;
+	while (!toks.empty()) {
+		t = toks.front();
+		toks.pop();
+
+		//Parenthesis
+		if (t.word == "(") {
+			parenths++;
+			expectingOperator = false;
+		} else if (t.word == ")") {
+			parenths--;
+			expectingOperator = true;
+			if (parenths < 0) {
+				throw PostfixError("Unexpected closing parenthesis " + this->infix);
+			}
+		} else if (expectingOperator && t.type != 'o') {
+			throw PostfixError("Unexpected Value " + t.word);
+		} else if (!expectingOperator && t.type == 'o') {
+			throw PostfixError("Unexpected Operator " + t.word);
+		} else {
+			expectingOperator = (
+				(
+					   t.type != 'o'
+					|| this->isPostUnary(t.word)
+					|| this->isPreUnary(t.word)
+				)
+				&& t.word != "?"
+				&& t.word != ":"
+				&& !isControlWord(t.word)
+			);
+		}
+		//cout << t.word << endl;
+	}
+
+	if (parenths > 0) {
+		throw PostfixError("Unclosed parenthesis in statement " + this->infix);
+	}
 }
 
 
@@ -379,6 +425,15 @@ bool Postfix::isPostUnary(string op) {
 bool Postfix::isPreUnary(string op) {
     int h = this->getOperatorHeirchy(op);
     return (h == 10);
+}
+
+
+/******************************************************************
+ *
+ ******************************************************************/
+bool Postfix::isControlWord(string op) {
+    int h = this->getOperatorHeirchy(op);
+    return (h == 1);
 }
 
 

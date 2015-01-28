@@ -1,7 +1,7 @@
 #ifndef SOURCE_TEST_TEST_H_
 #define SOURCE_TEST_TEST_H_
 
-#include "../postfix.h";
+#include "../postfix.h"
 #include <string>
 
 
