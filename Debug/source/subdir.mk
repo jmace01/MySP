@@ -5,14 +5,17 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
 ../source/MySP.cpp \
+../source/OperationNode.cpp \
 ../source/postfix.cpp 
 
 OBJS += \
 ./source/MySP.o \
+./source/OperationNode.o \
 ./source/postfix.o 
 
 CPP_DEPS += \
 ./source/MySP.d \
+./source/OperationNode.d \
 ./source/postfix.d 
 
 

@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 #include <queue>
+#include "OperationNode.h"
+#include "token.h"
 
 
 //enum class TOKEN_TYPES {STRING, NUMBER, WORD, OPERATOR};
@@ -22,16 +24,6 @@ struct PostfixError {
 /******************************************************************
  *
  ******************************************************************/
-struct Token{
-    std::string word;
-    char type;
-    int line;
-};
-
-
-/******************************************************************
- *
- ******************************************************************/
 class Postfix {
 
     private:
@@ -40,14 +32,14 @@ class Postfix {
         unsigned int       lineNumber;
         std::string        tempVariableNumber;
         std::stack<Token>  operators;
-        std::stack<Token>  operands;
-        std::vector<Token> result;
+        std::stack<OperationNode*> operands;
+        OperationNode* result;
 
     public:
         Postfix();
         ~Postfix();
 
-        std::vector<Token> getPostfix(std::string infix, unsigned int lineNumber) throw(PostfixError);
+        OperationNode* getPostfix(std::string infix, unsigned int lineNumber) throw(PostfixError);
 
     private:
         std::queue<Token> getTokens();
@@ -56,10 +48,7 @@ class Postfix {
         bool isPostUnary(std::string);
         bool isPreUnary(std::string);
         bool isControlWord(std::string op);
-        void addTemporary();
-        void addOperator(std::string op);
-        void addTopOperand();
-        void addTopOperator();
+        void addOperation(bool isUnary);
         void validateStatement(std::queue<Token> toks) throw (PostfixError);
 
 };
