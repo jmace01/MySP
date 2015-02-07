@@ -4,19 +4,19 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
+../source/ExpressionTreeBuilder.cpp \
 ../source/MySP.cpp \
-../source/OperationNode.cpp \
-../source/postfix.cpp 
+../source/OperationNode.cpp 
 
 OBJS += \
+./source/ExpressionTreeBuilder.o \
 ./source/MySP.o \
-./source/OperationNode.o \
-./source/postfix.o 
+./source/OperationNode.o 
 
 CPP_DEPS += \
+./source/ExpressionTreeBuilder.d \
 ./source/MySP.d \
-./source/OperationNode.d \
-./source/postfix.d 
+./source/OperationNode.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

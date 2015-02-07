@@ -1,27 +1,28 @@
 #include <iostream>
 #include "OperationNode.h"
-#include "postfix.h"
 #include "./Test/Test.h"
 #include <vector>
+#include "ExpressionTreeBuilder.h"
 
 using namespace std;
 
 
 int main() {
 
-    string s = "var += something*5.768+(.03+7) /*What?*/.\"This is a test\" //Hello!";
-    s = "4++ + 3--";
+    string s = "2 + a[1]";
 
-    Postfix* p = new Postfix();
+    ExpressionTreeBuilder* etb = new ExpressionTreeBuilder();
+
     try {
-    	OperationNode* t = p->getPostfix(s, 1);
-    	cout << t->getPostfix() << endl;
+    	OperationNode* t = etb->getExpressionTree(s, 1);
+    	cout << t->getTreePlot(0) << endl;
+    	delete t;
     } catch (PostfixError &e) {
     	cout << e.msg << endl;
     }
 
     cout << endl << endl;
-    delete p;
+    delete etb;
 
     //Unit test
 	Test();

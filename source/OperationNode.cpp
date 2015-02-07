@@ -31,6 +31,32 @@ OperationNode::~OperationNode() {
 /******************************************************************
  *
  ******************************************************************/
+string OperationNode::getTreePlot(int level) {
+    string result = "";
+
+    int spacing = level * 4;
+    for (int i = 0; i < spacing; i++) {
+        result += ' ';
+    }
+
+    result += this->operation.word + '\n';
+
+    //if (level == 3) return result;
+
+    level += 1;
+
+    if (this->left != NULL)
+        result += this->left->getTreePlot(level);
+    if (this->right != NULL)
+        result += this->right->getTreePlot(level);
+
+    return result;
+}
+
+
+/******************************************************************
+ *
+ ******************************************************************/
 string OperationNode::getPostfix() {
     string result;
     if (this->left != NULL)

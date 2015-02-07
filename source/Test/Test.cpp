@@ -11,41 +11,41 @@ using namespace std;
 void Test::testPostfix() {
 
     bool error = false;
-    cout << "Starting Postfix Unit Test" << endl;
+    cout << "Starting ExpressionTreeBuilder Unit Test" << endl;
     clock_t timer = clock();
 
     TestIO tests[] = {
             TestIO( //Generic complex statement
                     "var += something*5.768+(.03+7) /*What?*/.\"This is a test\" //Hello!",
-                    "5.768 something * 7 .03 + @1 @0 + \"This is a test\" @2 . @3 var += @4 "
+                    "\"This is a test\" 7 .03 + 5.768 something * + . var +="
             )
             , TestIO( //Unary / Binary mix
                     "4++ + 3--",
-                    "4 ++ 3 -- @1 @0 + @2 "
+                    "3 -- 4 ++ +"
             )
             , TestIO( //Keyword statement
                     "print \"Hello \" . \"world!\"",
-                    "\"world!\" \"Hello \" . @0 print "
+                    "\"world!\" \"Hello \" . print"
             )
             , TestIO( //Single Operand
                     "1",
-                    "1 "
+                    "1"
             )
             , TestIO( //Array indexing
                     "v = var[x++]",
-                    "x ++ @0 var [ @1 v = @2 "
+                    "x ++ var [ v ="
             )
             , TestIO( //Array indexing
                     "var[0][x++]",
-                    "0 var [ x ++ @1 @0 [ @2 "
+                    "x ++ 0 var [ ["
             )
             , TestIO( //Array Indexing
                     "o[5] + 4",
-                    "5 o [ 4 @0 + @1 "
+                    "4 5 o [ +"
             )
             , TestIO( //Ternary statement
                     "x = A + ((true == false) ? 1 + 1 : 2 * 2) + B",
-                    "false true == @0 ? 1 1 + 2 2 * @2 @1 : B @3 + @4 A + @5 x = @6 "
+                    "B 2 2 * 1 1 + : + false true == ? A + x ="
             )
             , TestIO( //Ternary Error
                     "4 ? 4",
@@ -79,10 +79,14 @@ void Test::testPostfix() {
                     "[1] = 2",
                     "Illegal use of '[' without an array"
             )
+            , TestIO( //Parenthesis error
+                    "1 ` 2",
+                    "Unknown operator '`'"
+            )
             , TestIO("","")
     };
 
-    Postfix* p = new Postfix();
+    ExpressionTreeBuilder* etb = new ExpressionTreeBuilder();
     OperationNode* t;
 
     string output;
@@ -92,7 +96,7 @@ void Test::testPostfix() {
     while (tests[i].input != "") {
 
     	try {
-    		t = p->getPostfix(tests[i].input, 1);
+    		t = etb->getExpressionTree(tests[i].input, 1);
     	} catch (PostfixError &e) {
     		if (e.msg != tests[i].output) {
     			error = true;
@@ -109,6 +113,7 @@ void Test::testPostfix() {
     	}
 
         output = t->getPostfix();
+        delete t;
 
         if (output != tests[i].output) {
             error = true;
@@ -124,7 +129,7 @@ void Test::testPostfix() {
     }
 
     if (!error) {
-        cout << "    No errors in Postfix unit test" << endl;
+        cout << "    No errors in ExpressionTreeBuilder unit test" << endl;
     }
 
     float targetSpeed = 0.000079 * i;
@@ -132,6 +137,6 @@ void Test::testPostfix() {
     cout << "    Passed " << passed << "/" << i << " tests in " << time << " seconds" << endl;
     if (time > targetSpeed) cout << "    -- Processed too slow [should be " << targetSpeed << "]" << endl;
 
-    delete p;
+    delete etb;
 
 }

@@ -1,8 +1,9 @@
-#include "postfix.h"
 #include "OperationNode.h"
 #include <iostream>
 #include <ctype.h>
 #include <queue>
+#include <map>
+#include "ExpressionTreeBuilder.h"
 
 using namespace std;
 
@@ -10,32 +11,34 @@ using namespace std;
 /******************************************************************
  *
  ******************************************************************/
-Postfix::Postfix() {
+ExpressionTreeBuilder::ExpressionTreeBuilder() {
     this->infix              = "";
     this->infixPos           = 0;
     this->lineNumber         = 0;
     this->tempVariableNumber = "";
+
+    this->initializeHierarchy();
 }
 
 
 /******************************************************************
  *
  ******************************************************************/
-Postfix::~Postfix() {
+ExpressionTreeBuilder::~ExpressionTreeBuilder() {
 }
 
 
 /******************************************************************
  *
  ******************************************************************/
-OperationNode* Postfix::getPostfix(string infix, unsigned int lineNumber) throw (PostfixError) {
+OperationNode* ExpressionTreeBuilder::getExpressionTree(string infix, unsigned int lineNumber) throw (PostfixError) {
     this->infix              = infix;
     this->infixPos           = 0;
     this->lineNumber         = lineNumber;
     this->operands           = stack<OperationNode*>();
     this->operators          = stack<Token>();
-    this->result             = NULL;
 
+    OperationNode* result;
     OperationNode* temp;
 
     queue<Token> toks = this->getTokens();
@@ -47,7 +50,7 @@ OperationNode* Postfix::getPostfix(string infix, unsigned int lineNumber) throw 
         t = toks.front();
         toks.pop();
 
-        //Pre Unary operators, such as ! or ~
+        //Pre Unary operators, such as !, ~ or print
         if (t.type == 'o' && this->isPreUnary(t.word)) {
             operators.push(t);
 
@@ -95,31 +98,33 @@ OperationNode* Postfix::getPostfix(string infix, unsigned int lineNumber) throw 
     }
 
     //Deal with operators still in stack
-    while (operators.size() > 0 && operands.size() >= 2) {
+    while (operators.size() > 0 && (operands.size() >= 2 || (operands.size() == 1 && this->isControlWord(operators.top().word)))) {
         if (operators.size() > 0 && operators.top().word == "(") {
             operators.pop();
             continue;
         }
 
-        bool preUnary = this->isPreUnary(operators.top().word);
+        t = operators.top();
+        bool preUnary = this->isPreUnary(t.word) || this->isControlWord(t.word);
         this->addOperation(preUnary);
     }
 
     //The last operand is the root of operation the tree
-    this->result = this->operands.top();
+    result = this->operands.top();
     this->operands.pop();
-    return this->result;
+    return result;
 }
 
 
 /******************************************************************
  *
  ******************************************************************/
-void Postfix::validateStatement(queue<Token> toks) throw (PostfixError) {
+void ExpressionTreeBuilder::validateStatement(queue<Token> toks) throw (PostfixError) {
 	stack<char> parenths      = stack<char>(); //Parenthesis that are still open
 	bool expectingOperator    = false;         //Is it time for an operator?
 	bool wasWord              = false;         //Was the last a word? Needed for function calls
 	bool wasClosingBacket     = false;
+	bool wasClosingParenth    = false;
 	stack<int> functParenth   = stack<int>();
 	stack<int> ternaryParenth = stack<int>();  //Track ? and :
 
@@ -132,6 +137,9 @@ void Postfix::validateStatement(queue<Token> toks) throw (PostfixError) {
 		if (t.word == "(" || t.word == "[") {
 		    if (t.word == "[" && !wasWord && !wasClosingBacket) {
 		        throw PostfixError("Illegal use of '[' without an array");
+		    }
+		    else if (t.word == "(" && wasClosingParenth) {
+		        throw PostfixError("Illegal use of '('");
 		    }
 			parenths.push(t.word[0]);
 			expectingOperator = false;
@@ -149,7 +157,7 @@ void Postfix::validateStatement(queue<Token> toks) throw (PostfixError) {
 		//Unexpected Operators
 		else if (expectingOperator && t.type != 'o') {
 			throw PostfixError("Unexpected Value " + t.word);
-		} else if (!expectingOperator && t.type == 'o') {
+		} else if (!expectingOperator && t.type == 'o' && !this->isPreUnary(t.word) && !this->isControlWord(t.word)) {
 			throw PostfixError("Unexpected Operator " + t.word);
 		}
 
@@ -177,6 +185,7 @@ void Postfix::validateStatement(queue<Token> toks) throw (PostfixError) {
 			);
 		}
 
+		wasClosingParenth = (t.word == ")");
 		wasClosingBacket = (t.word == "]");
 		wasWord = (t.type == 'w');
 	}
@@ -192,7 +201,7 @@ void Postfix::validateStatement(queue<Token> toks) throw (PostfixError) {
 /******************************************************************
  *
  ******************************************************************/
-queue<Token> Postfix::getTokens() {
+queue<Token> ExpressionTreeBuilder::getTokens() {
     queue<Token> result = queue<Token>();
 
     string s;
@@ -211,7 +220,7 @@ queue<Token> Postfix::getTokens() {
 /******************************************************************
  *
  ******************************************************************/
-Token Postfix::getNext() {
+Token ExpressionTreeBuilder::getNext() {
     //Initialize variable
     string word = "";
     char type;
@@ -292,7 +301,7 @@ Token Postfix::getNext() {
         bool dec = false; //Was a decimal used yet?
         while (isnumber(this->infix[i])
               || (
-                      !dec && this->infix[i] >= '.' &&
+                      !dec && this->infix[i] == '.' &&
                       i < this->infix.size() - 1    &&
                       isnumber(this->infix[i + 1])
                   )
@@ -310,6 +319,9 @@ Token Postfix::getNext() {
         type = 'w';
         while (isalnum(this->infix[i]) &&  i <  this->infix.size())
             word += this->infix[i++];
+        if (getOperatorHeirchy(word) == 1) {
+            type = 'o';
+        }
     }
 
 
@@ -323,7 +335,7 @@ Token Postfix::getNext() {
             }
         }
         if (word != "" && this->getOperatorHeirchy(word) == 0) {
-            cout << "ERROR Unknown operator " << word << endl;
+            throw PostfixError("Unknown operator '"+word+"'");
         }
     }
 
@@ -345,104 +357,64 @@ Token Postfix::getNext() {
 /******************************************************************
  *
  ******************************************************************/
-int Postfix::getOperatorHeirchy(std::string op) {
-    if (    op == "print"  ||
-            op == "echo"   ||
-            op == "return" ||
-            op == "break"  ||
-            op == "continue"
-        )
-        return 1;
+void ExpressionTreeBuilder::initializeHierarchy() {
+    this->opHierarchy = map<string, int>();
+    opHierarchy["print"]    = 1;
+    opHierarchy["echo"]     = 1;
+    opHierarchy["return"]   = 1;
+    opHierarchy["break"]    = 1;
+    opHierarchy["continue"] = 1;
+    opHierarchy["="]  = 2;
+    opHierarchy["+="] = 2;
+    opHierarchy["-="] = 2;
+    opHierarchy["*="] = 2;
+    opHierarchy["/="] = 2;
+    opHierarchy["%="] = 2;
+    opHierarchy["^="] = 2;
+    opHierarchy["===="] = 3;
+    opHierarchy["==="]  = 3;
+    opHierarchy["=="]   = 3;
+    opHierarchy["!==="] = 3;
+    opHierarchy["!=="]  = 3;
+    opHierarchy["!="]   = 3;
+    opHierarchy["<"]    = 3;
+    opHierarchy["<="]   = 3;
+    opHierarchy[">"]    = 3;
+    opHierarchy[">="]   = 3;
+    opHierarchy["&&"] = 4;
+    opHierarchy["||"] = 5;
+    opHierarchy["?"]  = 6;
+    opHierarchy[":"]  = 7;
+    opHierarchy["."]  = 8;
+    opHierarchy["-"] = 9;
+    opHierarchy["+"] = 9;
+    opHierarchy["*"] = 10;
+    opHierarchy["/"] = 10;
+    opHierarchy["%"] = 10;
+    opHierarchy["^"] = 11;
+    opHierarchy["++"] = 12;
+    opHierarchy["--"] = 12;
+    opHierarchy["!"] = 13;
+    opHierarchy["~"] = 13;
+    opHierarchy["("] = -1;
+    opHierarchy[")"] = -1;
+    opHierarchy["["] = -1;
+    opHierarchy["]"] = -1;
+    opHierarchy[","] = -1;
+}
 
-    if (    op == "="  ||
-            op == "+=" ||
-            op == "-=" ||
-            op == "*=" ||
-            op == "/=" ||
-            op == "%=" ||
-            op == "^=" ||
-            op == "as"
-        )
-        return 2;
-
-    if (    op == "====" ||
-            op == "==="  ||
-            op == "=="   ||
-            op == "!===" ||
-            op == "!=="  ||
-            op == "!="   ||
-            op == "<"    ||
-            op == "<="   ||
-            op == ">"    ||
-            op == ">="   ||
-            op == "=>"
-        )
-        return 3;
-
-    if (    op == "&&"
-        )
-        return 4;
-
-    if (    op == "||"
-        )
-        return 5;
-
-    if (    op == "?"
-        )
-        return 6;
-
-    if (    op == ":"
-        )
-        return 7;
-
-    if (    op == "."
-        )
-        return 8;
-
-    if (    op == "-" ||
-            op == "+"
-        )
-        return 9;
-
-    if (    op == "*" ||
-            op == "/" ||
-            op == "%"
-        )
-        return 10;
-
-    if (
-            op == "^"
-        )
-        return 11;
-
-    //Postfixed Unary Operators
-    if (    op == "++" ||
-            op == "--"
-        )
-        return 12;
-
-    //Prefixed Unary Operators
-    if (    op == "~" ||
-            op == "!"
-        )
-        return 13;
-
-    if (    op == "(" ||
-            op == ")" ||
-            op == "[" ||
-            op == "]" ||
-            op == ","
-        )
-        return -1;
-
-    return 0;
+/******************************************************************
+ *
+ ******************************************************************/
+int ExpressionTreeBuilder::getOperatorHeirchy(std::string op) {
+    return this->opHierarchy[op];
 }
 
 
 /******************************************************************
  *
  ******************************************************************/
-bool Postfix::isPostUnary(string op) {
+bool ExpressionTreeBuilder::isPostUnary(string op) {
     int h = this->getOperatorHeirchy(op);
     return (h == 12);
 }
@@ -451,7 +423,7 @@ bool Postfix::isPostUnary(string op) {
 /******************************************************************
  *
  ******************************************************************/
-bool Postfix::isPreUnary(string op) {
+bool ExpressionTreeBuilder::isPreUnary(string op) {
     int h = this->getOperatorHeirchy(op);
     return (h == 13);
 }
@@ -460,7 +432,7 @@ bool Postfix::isPreUnary(string op) {
 /******************************************************************
  *
  ******************************************************************/
-bool Postfix::isControlWord(string op) {
+bool ExpressionTreeBuilder::isControlWord(string op) {
     int h = this->getOperatorHeirchy(op);
     return (h == 1);
 }
@@ -469,7 +441,7 @@ bool Postfix::isControlWord(string op) {
 /******************************************************************
  *
  ******************************************************************/
-void Postfix::addOperation(bool isUnary) {
+void ExpressionTreeBuilder::addOperation(bool isUnary) {
     OperationNode* temp = new OperationNode();
 
     temp->operation = operators.top();
