@@ -38,6 +38,9 @@ OperationNode* ExpressionTreeBuilder::getExpressionTree(string infix, unsigned i
     this->operands           = stack<OperationNode*>();
     this->operators          = stack<Token>();
 
+    Token tmpTok;
+    bool wasWord = false;
+    stack<int> functionParenth = stack<int>();
     OperationNode* result;
     OperationNode* temp;
 
@@ -78,8 +81,26 @@ OperationNode* ExpressionTreeBuilder::getExpressionTree(string infix, unsigned i
                 }
                 this->addOperation(false);
             }
+            //Function calls
+            if (wasWord && t.word == "(") {
+                tmpTok = Token();
+                tmpTok.word = "CALL";
+                tmpTok.type = 'f';
+                operators.push(tmpTok);
+                functionParenth.push(1);
+            }
             if ((t.word == ")" || t.word == ",") && operators.size() > 0 && (operators.top().word == "(" || operators.top().word == ",")) {
                 operators.pop();
+                //track function parameters
+                if (functionParenth.size() > 0) {
+                    if (functionParenth.top() == 1) {
+                        functionParenth.pop();
+                    } else {
+                        int i = functionParenth.top();
+                        functionParenth.pop();
+                        functionParenth.push(--i);
+                    }
+                }
             }
             if (t.word != "(" && operators.size() > 0 && (this->isPreUnary(operators.top().word) || t.word == "]")) {
                 bool isNotBracket = (t.word != "]");
@@ -95,6 +116,8 @@ OperationNode* ExpressionTreeBuilder::getExpressionTree(string infix, unsigned i
             temp->operation = t;
             operands.push(temp);
         }
+
+        wasWord = (t.type == 'w');
     }
 
     //Deal with operators still in stack
@@ -123,6 +146,7 @@ void ExpressionTreeBuilder::validateStatement(queue<Token> toks) throw (PostfixE
 	stack<char> parenths      = stack<char>(); //Parenthesis that are still open
 	bool expectingOperator    = false;         //Is it time for an operator?
 	bool wasWord              = false;         //Was the last a word? Needed for function calls
+	bool wasFunctionOpenning  = false;
 	bool wasClosingBacket     = false;
 	bool wasClosingParenth    = false;
 	stack<int> functParenth   = stack<int>();
@@ -144,7 +168,7 @@ void ExpressionTreeBuilder::validateStatement(queue<Token> toks) throw (PostfixE
 			parenths.push(t.word[0]);
 			expectingOperator = false;
 		} else if (t.word == ")" || t.word == "]") {
-			if (parenths.size() < 1 || !expectingOperator || (t.word == ")" && parenths.top() != '(') || (t.word == "]" && parenths.top() != '[')) {
+			if ((t.word == ")" && !wasFunctionOpenning) && (parenths.size() < 1 || !expectingOperator || (t.word == ")" && parenths.top() != '(') || (t.word == "]" && parenths.top() != '['))) {
 			    if (t.word == ")")
 			        throw PostfixError("Unexpected closing parenthesis");
 			    else
@@ -187,6 +211,7 @@ void ExpressionTreeBuilder::validateStatement(queue<Token> toks) throw (PostfixE
 
 		wasClosingParenth = (t.word == ")");
 		wasClosingBacket = (t.word == "]");
+		wasFunctionOpenning = (wasWord && t.word == "(");
 		wasWord = (t.type == 'w');
 	}
 
@@ -394,8 +419,9 @@ void ExpressionTreeBuilder::initializeHierarchy() {
     opHierarchy["^"] = 11;
     opHierarchy["++"] = 12;
     opHierarchy["--"] = 12;
-    opHierarchy["!"] = 13;
-    opHierarchy["~"] = 13;
+    opHierarchy["CALL"] = 13;
+    opHierarchy["!"]    = 13;
+    opHierarchy["~"]    = 13;
     opHierarchy["("] = -1;
     opHierarchy[")"] = -1;
     opHierarchy["["] = -1;
