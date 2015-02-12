@@ -9,14 +9,16 @@ using namespace std;
 
 int main() {
 
-    string s = "f(b())";
+    string s = "foo((1+2)*3)";
 
     ExpressionTreeBuilder* etb = new ExpressionTreeBuilder();
 
     try {
     	OperationNode* t = etb->getExpressionTree(s, 1);
-    	cout << t->getTreePlot(0) << endl;
-    	delete t;
+    	if (t != NULL) {
+            cout << t->getTreePlot(0) << endl;
+            delete t;
+    	}
     } catch (PostfixError &e) {
     	cout << e.msg << endl;
     }

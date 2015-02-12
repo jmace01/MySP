@@ -38,13 +38,14 @@ OperationNode* ExpressionTreeBuilder::getExpressionTree(string infix, unsigned i
     this->operands           = stack<OperationNode*>();
     this->operators          = stack<Token>();
 
-    Token tmpTok;
     bool wasWord = false;
+    bool wasFunctionCall = false;
     stack<int> functionParenth = stack<int>();
     OperationNode* result;
     OperationNode* temp;
 
     queue<Token> toks = this->getTokens();
+    if (toks.empty()) return NULL;
 
     this->validateStatement(toks);
 
@@ -83,23 +84,42 @@ OperationNode* ExpressionTreeBuilder::getExpressionTree(string infix, unsigned i
             }
             //Function calls
             if (wasWord && t.word == "(") {
-                tmpTok = Token();
-                tmpTok.word = "CALL";
-                tmpTok.type = 'f';
-                operators.push(tmpTok);
                 functionParenth.push(1);
+            } else if (t.word == "(" && functionParenth.size() > 0) {
+                int i = functionParenth.top();
+                functionParenth.pop();
+                functionParenth.push(++i);
             }
             if ((t.word == ")" || t.word == ",") && operators.size() > 0 && (operators.top().word == "(" || operators.top().word == ",")) {
-                operators.pop();
                 //track function parameters
                 if (functionParenth.size() > 0) {
-                    if (functionParenth.top() == 1) {
+                    if (t.word == ")" && functionParenth.top() == 1) {
                         functionParenth.pop();
-                    } else {
+                        //Add a last parameter?
+                        if (!wasFunctionCall) {
+                            this->makeParameter();
+                            this->operators.pop();
+                        }
+                        //Chain parameters
+                        while(operators.top().word != "(") {
+                            if (operators.top().word == ",") {
+                                operators.pop();
+                                continue;
+                            }
+                            this->chainParameter();
+                        }
+                        //Add the function call
+                        this->addFunctionCall();
+                        operators.pop();
+                    } else if (t.word == ")") {
                         int i = functionParenth.top();
                         functionParenth.pop();
                         functionParenth.push(--i);
+                    } else if (t.word == ",") {
+                        this->makeParameter();
                     }
+                } else {
+                    operators.pop();
                 }
             }
             if (t.word != "(" && operators.size() > 0 && (this->isPreUnary(operators.top().word) || t.word == "]")) {
@@ -117,12 +137,13 @@ OperationNode* ExpressionTreeBuilder::getExpressionTree(string infix, unsigned i
             operands.push(temp);
         }
 
+        wasFunctionCall = (wasWord && t.word == "(");
         wasWord = (t.type == 'w');
     }
 
     //Deal with operators still in stack
     while (operators.size() > 0 && (operands.size() >= 2 || (operands.size() == 1 && this->isControlWord(operators.top().word)))) {
-        if (operators.size() > 0 && operators.top().word == "(") {
+        if (operators.size() > 0 && (operators.top().word == "(")) {
             operators.pop();
             continue;
         }
@@ -315,16 +336,29 @@ Token ExpressionTreeBuilder::getNext() {
 
     //Get number
     else if (isnumber(this->infix[i]) //its a number
-            || (    //its a decimal followed by a number
+            || (    //it's a decimal followed by a number
                     this->infix[i] == '.' &&
                     i < this->infix.size() - 1 && //don't walk off the array
                     isnumber(this->infix[i + 1])
+                )
+            || ( //It's a negative number
+                    this->infix[i] == '-'
+                    && (
+                            (i < this->infix.size()-1 && isnumber(this->infix[i + 1]))
+                            ||
+                            (i < this->infix.size()-2 && this->infix[i+1] == '.' && isnumber(this->infix[i+2]))
+                        )
                 )
             )
     {
         type = 'n';
         bool dec = false; //Was a decimal used yet?
+        bool first = true; //Is this the first iteration? (Only allow '-' as first char)
         while (isnumber(this->infix[i])
+              || (
+                      this->infix[i] == '-' &&
+                      first
+                  )
               || (
                       !dec && this->infix[i] == '.' &&
                       i < this->infix.size() - 1    &&
@@ -335,6 +369,7 @@ Token ExpressionTreeBuilder::getNext() {
                 dec = true;
             }
             word += this->infix[i++];
+            first = false;
         }
     }
 
@@ -342,7 +377,7 @@ Token ExpressionTreeBuilder::getNext() {
     //Get Word
     else if (isalpha(this->infix[i])) {
         type = 'w';
-        while (isalnum(this->infix[i]) &&  i <  this->infix.size())
+        while ((isalnum(this->infix[i]) || this->infix[i] == '_') &&  i <  this->infix.size())
             word += this->infix[i++];
         if (getOperatorHeirchy(word) == 1) {
             type = 'o';
@@ -382,7 +417,7 @@ Token ExpressionTreeBuilder::getNext() {
 /******************************************************************
  *
  ******************************************************************/
-void ExpressionTreeBuilder::initializeHierarchy() {
+void inline ExpressionTreeBuilder::initializeHierarchy() {
     this->opHierarchy = map<string, int>();
     opHierarchy["print"]    = 1;
     opHierarchy["echo"]     = 1;
@@ -482,4 +517,105 @@ void ExpressionTreeBuilder::addOperation(bool isUnary) {
     }
 
     operands.push(temp);
+}
+
+
+/******************************************************************
+ *
+ * P
+ *   \
+ *     bar
+ ******************************************************************/
+void inline ExpressionTreeBuilder::makeParameter() {
+    //Create new node
+    OperationNode* temp = new OperationNode();
+
+    //Create operation token
+    temp->operation = Token();
+    temp->operation.type = 'o';
+    temp->operation.word = "P";
+
+    //Add parameter value to right
+    //Right side is important for execution order!
+    temp->right = this->operands.top();
+    this->operands.pop();
+
+    //Push on operand stack
+    this->operands.push(temp);
+
+    //Put marker on operator stack
+    Token t = Token();
+    t.type = 'P';
+    this->operators.push(t);
+}
+
+
+/******************************************************************
+ * Chains multiple function parameters together
+ *
+ * Example: (a, b, c)
+ *
+ *         P
+ *       /   \
+ *     P      c
+ *   /   \
+ * P       b
+ *   \
+ *     a
+ ******************************************************************/
+void inline ExpressionTreeBuilder::chainParameter() {
+    //Get the first operand
+    OperationNode* temp = this->operands.top();
+    this->operands.pop();
+
+    //Get leftmost node to add parameter to
+    OperationNode* t = temp;
+    while (t->left != NULL) {
+        t = t->left;
+    }
+
+    //Add the next operand
+    t->left = this->operands.top();
+    this->operands.pop();
+
+    //Push the operand back on the stack
+    this->operands.push(temp);
+
+    //Remove marker from operator stack
+    this->operators.pop();
+}
+
+
+/******************************************************************
+ *
+ * foo(bar)
+ *
+ *     C
+ *   /   \
+ * P       foo
+ *   \
+ *    bar
+ ******************************************************************/
+void inline ExpressionTreeBuilder::addFunctionCall() {
+    //Create the call node
+    OperationNode* temp = new OperationNode();
+
+    //Add the operation to the call node
+    temp->operation = Token();
+    temp->operation.type = 'o';
+    temp->operation.word = "C";
+
+    //If there are parameters, add them to the left
+    //It is important they be on the left!
+    if (this->operands.top()->operation.word == "P") {
+        temp->left = this->operands.top();
+        this->operands.pop();
+    }
+
+    //Add the function name to the right
+    temp->right = this->operands.top();
+    this->operands.pop();
+
+    //Add the call node
+    this->operands.push(temp);
 }

@@ -28,12 +28,12 @@ struct PostfixError {
 class ExpressionTreeBuilder {
 
     private:
-        std::map<std::string, int>   opHierarchy;
-        int                infixPos;
-        std::string        infix;
-        unsigned int       lineNumber;
-        std::string        tempVariableNumber;
-        std::stack<Token>  operators;
+        std::map<std::string, int> opHierarchy;
+        int                        infixPos;
+        std::string                infix;
+        unsigned int               lineNumber;
+        std::string                tempVariableNumber;
+        std::stack<Token>          operators;
         std::stack<OperationNode*> operands;
 
     public:
@@ -50,6 +50,9 @@ class ExpressionTreeBuilder {
         bool isPreUnary(std::string);
         bool isControlWord(std::string op);
         void addOperation(bool isUnary);
+        void makeParameter();
+        void chainParameter();
+        void addFunctionCall();
         void validateStatement(std::queue<Token> toks) throw (PostfixError);
         void initializeHierarchy();
 

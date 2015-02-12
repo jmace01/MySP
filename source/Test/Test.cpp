@@ -10,10 +10,6 @@ using namespace std;
  ******************************************************************/
 void Test::testPostfix() {
 
-    bool error = false;
-    cout << "Starting ExpressionTreeBuilder Unit Test" << endl;
-    clock_t timer = clock();
-
     TestIO tests[] = {
             TestIO( //Generic complex statement
                     "var += something*5.768+(.03+7) /*What?*/.\"This is a test\" //Hello!",
@@ -22,6 +18,10 @@ void Test::testPostfix() {
             , TestIO( //Unary / Binary mix
                     "4++ + 3--",
                     "3 -- 4 ++ +"
+            )
+            , TestIO( //Negative numbers
+                    "-10.5 - -.675 - -1",
+                    "-1 -.675 - -10.5 -"
             )
             , TestIO( //Keyword statement
                     "print \"Hello \" . \"world!\"",
@@ -67,7 +67,7 @@ void Test::testPostfix() {
 			        "v = 1 + - 1",
 			        "Unexpected Operator -"
 			)
-			, TestIO( //Operator error
+			, TestIO( //String error
                     "v = 'Hello",
                     "Unterminated String"
             )
@@ -75,13 +75,33 @@ void Test::testPostfix() {
                     "a[a + 2) = 3",
                     "Unexpected closing parenthesis"
             )
-            , TestIO( //Parenthesis error
+            , TestIO( //Bracket error
                     "[1] = 2",
                     "Illegal use of '[' without an array"
             )
-            , TestIO( //Parenthesis error
+            , TestIO( //Unknown Operator error
                     "1 ` 2",
                     "Unknown operator '`'"
+            )
+            , TestIO( //Line comment
+                    "//Hello",
+                    ""
+            )
+            , TestIO( //Inline comment
+                    "/* Test comment */",
+                    ""
+            )
+            , TestIO( //Function call
+                    "g(x)",
+                    "x P g C"
+            )
+            , TestIO( //Nested function call
+                    "foo(a, bar(b, c, d))",
+                    "a P b P c P d P bar C P foo C"
+            )
+            , TestIO( //Empty function call
+                    "foo()",
+                    "foo C"
             )
             , TestIO("","")
     };
@@ -93,6 +113,11 @@ void Test::testPostfix() {
 
     int i = 0;
     int passed = 0;
+    bool error = false;
+
+    cout << "Starting ExpressionTreeBuilder Unit Test" << endl;
+    clock_t timer = clock();
+
     while (tests[i].input != "") {
 
     	try {
@@ -112,8 +137,12 @@ void Test::testPostfix() {
     		continue;
     	}
 
-        output = t->getPostfix();
-        delete t;
+    	if (t == NULL) {
+    	    output = "";
+    	} else {
+    	    output = t->getPostfix();
+    	    delete t;
+    	}
 
         if (output != tests[i].output) {
             error = true;
@@ -132,7 +161,7 @@ void Test::testPostfix() {
         cout << "    No errors in ExpressionTreeBuilder unit test" << endl;
     }
 
-    float targetSpeed = 0.000079 * i;
+    float targetSpeed = 0.00006 * i;
     float time = (float)(clock() - timer) / CLOCKS_PER_SEC;
     cout << "    Passed " << passed << "/" << i << " tests in " << time << " seconds" << endl;
     if (time > targetSpeed) cout << "    -- Processed too slow [should be " << targetSpeed << "]" << endl;
