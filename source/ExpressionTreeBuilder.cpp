@@ -54,6 +54,9 @@ OperationNode* ExpressionTreeBuilder::getExpressionTree(string infix, unsigned i
         t = toks.front();
         toks.pop();
 
+        //if (operators.size() > 0)
+        //    cout << t.word << "|" << operators.top().word << endl;
+
         //Pre Unary operators, such as !, ~ or print
         if (t.type == 'o' && this->isPreUnary(t.word)) {
             operators.push(t);
@@ -74,13 +77,13 @@ OperationNode* ExpressionTreeBuilder::getExpressionTree(string infix, unsigned i
             while (t.word != "(" && t.word != "["
                     && operators.size() != 0 && operators.top().word != "?"
                     && this->getOperatorHeirchy(operators.top().word) > 0
-                    && !this->isPreUnary(operators.top().word)
                     && this->getOperatorHeirchy(t.word) < this->getOperatorHeirchy(operators.top().word)) {
                 if (operands.size() < 2) {
                     cout << "ERROR not enough operands " << t.word << endl;
                     break;
                 }
-                this->addOperation(false);
+                bool isUnary = this->isPreUnary(operators.top().word);
+                this->addOperation(isUnary);
             }
             //Function calls
             if (wasWord && t.word == "(") {
@@ -124,7 +127,9 @@ OperationNode* ExpressionTreeBuilder::getExpressionTree(string infix, unsigned i
             }
             if (t.word != "(" && operators.size() > 0 && (this->isPreUnary(operators.top().word) || t.word == "]")) {
                 bool isNotBracket = (t.word != "]");
-                this->addOperation(isNotBracket);
+                if (operands.size() > 1 || isNotBracket) {
+                    this->addOperation(isNotBracket);
+                }
             }
             if (t.word != ")" && t.word != "]") {
                 operators.push(t);
@@ -142,7 +147,16 @@ OperationNode* ExpressionTreeBuilder::getExpressionTree(string infix, unsigned i
     }
 
     //Deal with operators still in stack
-    while (operators.size() > 0 && (operands.size() >= 2 || (operands.size() == 1 && this->isControlWord(operators.top().word)))) {
+    while (
+            operators.size() > 0 && (
+                operands.size() >= 2 || (
+                    operands.size() == 1 && (
+                        this->isControlWord(operators.top().word) ||
+                        this->isPreUnary(operators.top().word)
+                    )
+                )
+            )
+          ) {
         if (operators.size() > 0 && (operators.top().word == "(")) {
             operators.pop();
             continue;
@@ -217,13 +231,15 @@ void ExpressionTreeBuilder::validateStatement(queue<Token> toks) throw (PostfixE
 		            throw PostfixError("Unexpected ':', expecting ')'");
 		        }
 		        ternaryParenth.pop();
+		    } else if (t.word == "&" && (toks.empty() || toks.front().type != 'w')) {
+		        throw PostfixError("Illegal use of '&' without variable");
 		    }
 			expectingOperator = (
 				(
 					   t.type != 'o'
 					|| this->isPostUnary(t.word)
-					|| this->isPreUnary(t.word)
 				)
+				&& !this->isPreUnary(t.word)
 				&& t.word != "?"
 				&& t.word != ":"
 				&& !isControlWord(t.word)
@@ -240,6 +256,8 @@ void ExpressionTreeBuilder::validateStatement(queue<Token> toks) throw (PostfixE
 		throw PostfixError("Unclosed parenthesis");
 	} else if (ternaryParenth.size() > 0) {
 	    throw PostfixError("Unfinished ternary statement requires ':' after '?'");
+	} else if (!expectingOperator) {
+	    throw PostfixError("Expecting operand to finish statement");
 	}
 }
 
@@ -443,9 +461,9 @@ void inline ExpressionTreeBuilder::initializeHierarchy() {
     opHierarchy[">="]   = 3;
     opHierarchy["&&"] = 4;
     opHierarchy["||"] = 5;
-    opHierarchy["?"]  = 6;
-    opHierarchy[":"]  = 7;
-    opHierarchy["."]  = 8;
+    opHierarchy["?"] = 6;
+    opHierarchy[":"] = 7;
+    opHierarchy["."] = 8;
     opHierarchy["-"] = 9;
     opHierarchy["+"] = 9;
     opHierarchy["*"] = 10;
@@ -454,9 +472,9 @@ void inline ExpressionTreeBuilder::initializeHierarchy() {
     opHierarchy["^"] = 11;
     opHierarchy["++"] = 12;
     opHierarchy["--"] = 12;
-    opHierarchy["CALL"] = 13;
-    opHierarchy["!"]    = 13;
-    opHierarchy["~"]    = 13;
+    opHierarchy["!"] = 13;
+    opHierarchy["~"] = 13;
+    opHierarchy["&"] = 13;
     opHierarchy["("] = -1;
     opHierarchy[")"] = -1;
     opHierarchy["["] = -1;
@@ -500,7 +518,13 @@ bool ExpressionTreeBuilder::isControlWord(string op) {
 
 
 /******************************************************************
+ * Attaches operands to an operator and puts the result on the
+ * operand stack
  *
+ * Binary a + b      Unary c++
+ *       +               ++
+ *     /   \            /
+ *   b       a        c
  ******************************************************************/
 void ExpressionTreeBuilder::addOperation(bool isUnary) {
     OperationNode* temp = new OperationNode();
@@ -521,7 +545,9 @@ void ExpressionTreeBuilder::addOperation(bool isUnary) {
 
 
 /******************************************************************
+ * Marks an operand as a parameter
  *
+ * foo(bar)
  * P
  *   \
  *     bar
@@ -552,9 +578,9 @@ void inline ExpressionTreeBuilder::makeParameter() {
 
 /******************************************************************
  * Chains multiple function parameters together
+ * The first parameter in the list will be the lowest on the tree
  *
- * Example: (a, b, c)
- *
+ * Example: foo(a, b, c)
  *         P
  *       /   \
  *     P      c

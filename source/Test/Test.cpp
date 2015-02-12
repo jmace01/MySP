@@ -103,6 +103,22 @@ void Test::testPostfix() {
                     "foo()",
                     "foo C"
             )
+            , TestIO( //Empty function call
+                    "v = foo(!a)",
+                    "a ! P foo C v ="
+            )
+            , TestIO( //Missing operand
+                    "1 +",
+                    "Expecting operand to finish statement"
+            )
+            , TestIO( //PreUnary operation
+                    "!x",
+                    "x !"
+            )
+            , TestIO( //Reference without variable
+                    "&1",
+                    "Illegal use of '&' without variable"
+            )
             , TestIO("","")
     };
 

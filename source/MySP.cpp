@@ -9,7 +9,7 @@ using namespace std;
 
 int main() {
 
-    string s = "foo((1+2)*3)";
+    string s = "v = foo(!a)";
 
     ExpressionTreeBuilder* etb = new ExpressionTreeBuilder();
 
