@@ -5,9 +5,9 @@
 
 using namespace std;
 
-/******************************************************************
+/****************************************************************************************
  *
- ******************************************************************/
+ ****************************************************************************************/
 void Test::testPostfix() {
 
     TestIO tests[] = {
@@ -123,6 +123,26 @@ void Test::testPostfix() {
                     "&1",
                     "Illegal use of '&' without variable"
             )
+            , TestIO( //Valid use of keyword
+                    "continue",
+                    "continue"
+            )
+            , TestIO( //Valid use of keyword
+                    "break",
+                    "break"
+            )
+            , TestIO( //Invalid use of keyword
+                    "a = print x",
+                    "Unexpected keyword 'print'"
+            )
+            , TestIO( //Invalid use of keyword
+                    "continue x++",
+                    "Unexpected keyword 'continue'"
+            )
+            , TestIO( //Invalid use of keyword
+                    "print break",
+                    "Unexpected keyword 'break'"
+            )
             , TestIO("","")
     };
 
@@ -181,7 +201,7 @@ void Test::testPostfix() {
         cout << "    No errors in ExpressionTreeBuilder unit test" << endl;
     }
 
-    float targetSpeed = 0.00005 * i;
+    float targetSpeed = 0.00006 * i;
     float time = (float)(clock() - timer) / CLOCKS_PER_SEC;
     cout << "    Passed " << passed << "/" << i << " tests in " << time << " seconds" << endl;
     if (time > targetSpeed) cout << "    -- Processed too slow [should be " << targetSpeed << "]" << endl;

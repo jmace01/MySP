@@ -8,53 +8,66 @@
 using namespace std;
 
 
-/******************************************************************
+/****************************************************************************************
  *
- ******************************************************************/
+ ****************************************************************************************/
 ExpressionTreeBuilder::ExpressionTreeBuilder() {
     this->infix              = "";
     this->infixPos           = 0;
     this->lineNumber         = 0;
     this->tempVariableNumber = "";
 
-    this->initializeHierarchy();
+    if (ExpressionTreeBuilder::opHierarchy.empty()) {
+        this->initializeHierarchy();
+    }
 }
 
+//Initialize operator hierarchy map
+map<string, short> ExpressionTreeBuilder::opHierarchy = map<string, short>();
 
-/******************************************************************
+
+/****************************************************************************************
  *
- ******************************************************************/
+ ****************************************************************************************/
 ExpressionTreeBuilder::~ExpressionTreeBuilder() {
 }
 
 
-/******************************************************************
+/****************************************************************************************
  *
- ******************************************************************/
+ ****************************************************************************************/
 OperationNode* ExpressionTreeBuilder::getExpressionTree(string infix, unsigned int lineNumber) throw (PostfixError) {
+    //re-initialize class variables
     this->infix              = infix;
     this->infixPos           = 0;
     this->lineNumber         = lineNumber;
     this->operands           = stack<OperationNode*>();
     this->operators          = stack<Token>();
 
+    //Initialize local variables
     bool wasWord = false;
     bool wasFunctionCall = false;
     stack<int> functionParenth = stack<int>();
     OperationNode* result;
     OperationNode* temp;
 
-    queue<Token> toks = this->getTokens();
+    //Get the tokens
+    queue<Token> toks = queue<Token>();
+    this->getTokens(toks);
+
+    //If there are no tokens in the string, return NULL
     if (toks.empty()) return NULL;
 
+    //Ensure the statement is valid before processing
     this->validateStatement(toks);
 
+    //Convert statement to binary expression tree
     Token t;
     while (!toks.empty()) {
         t = toks.front();
         toks.pop();
 
-        //Pre Unary operators, such as !, ~ or print
+        //Pre Unary operators, such as !, ~
         if (t.type == 'o' && this->isPreUnary(t.word)) {
             operators.push(t);
 
@@ -171,9 +184,9 @@ OperationNode* ExpressionTreeBuilder::getExpressionTree(string infix, unsigned i
 }
 
 
-/******************************************************************
+/****************************************************************************************
  *
- ******************************************************************/
+ ****************************************************************************************/
 void ExpressionTreeBuilder::validateStatement(queue<Token> toks) throw (PostfixError) {
 	stack<char> parenths      = stack<char>(); //Parenthesis that are still open
 	bool expectingOperator    = false;         //Is it time for an operator?
@@ -181,6 +194,8 @@ void ExpressionTreeBuilder::validateStatement(queue<Token> toks) throw (PostfixE
 	bool wasFunctionOpenning  = false;
 	bool wasClosingBacket     = false;
 	bool wasClosingParenth    = false;
+	bool isFirst              = true;
+	bool wasKeyword           = false;
 	stack<int> functParenth   = stack<int>();
 	stack<int> ternaryParenth = stack<int>();  //Track ? and :
 
@@ -230,6 +245,10 @@ void ExpressionTreeBuilder::validateStatement(queue<Token> toks) throw (PostfixE
 		        ternaryParenth.pop();
 		    } else if (t.word == "&" && (toks.empty() || toks.front().type != 'w')) {
 		        throw PostfixError("Illegal use of '&' without variable");
+		    } else if (isControlWord(t.word)) {
+		        if (!isFirst || (!toks.empty() && t.word != "print" && t.word != "echo")) {
+		            throw PostfixError("Unexpected keyword '" + t.word + "'");
+		        }
 		    }
 			expectingOperator = (
 				(
@@ -241,30 +260,31 @@ void ExpressionTreeBuilder::validateStatement(queue<Token> toks) throw (PostfixE
 				&& t.word != ":"
 				&& !isControlWord(t.word)
 			);
+
+			wasKeyword = (this->isControlWord(t.word) && t.word != "print" && t.word != "echo");
 		}
 
 		wasClosingParenth = (t.word == ")");
 		wasClosingBacket = (t.word == "]");
 		wasFunctionOpenning = (wasWord && t.word == "(");
 		wasWord = (t.type == 'w');
+		isFirst = false;
 	}
 
 	if (parenths.size() > 0) {
 		throw PostfixError("Unclosed parenthesis");
 	} else if (ternaryParenth.size() > 0) {
 	    throw PostfixError("Unfinished ternary statement requires ':' after '?'");
-	} else if (!expectingOperator) {
+	} else if (!expectingOperator && !wasKeyword) {
 	    throw PostfixError("Expecting operand to finish statement");
 	}
 }
 
 
-/******************************************************************
+/****************************************************************************************
  *
- ******************************************************************/
-queue<Token> ExpressionTreeBuilder::getTokens() {
-    queue<Token> result = queue<Token>();
-
+ ****************************************************************************************/
+void ExpressionTreeBuilder::getTokens(queue<Token> &result) {
     string s;
     Token t;
     while (this->infixPos < this->infix.size()) {
@@ -273,14 +293,12 @@ queue<Token> ExpressionTreeBuilder::getTokens() {
             result.push(t);
         }
     }
-
-    return result;
 }
 
 
-/******************************************************************
+/****************************************************************************************
  *
- ******************************************************************/
+ ****************************************************************************************/
 Token ExpressionTreeBuilder::getNext() {
     //Initialize variable
     string word = "";
@@ -396,7 +414,7 @@ Token ExpressionTreeBuilder::getNext() {
         type = 'w';
         while ((isalnum(this->infix[i]) || this->infix[i] == '_') &&  i <  this->infix.size())
             word += this->infix[i++];
-        if (getOperatorHeirchy(word) == 1) {
+        if (this->isControlWord(word) && (word == "print" || word == "echo")) {
             type = 'o';
         }
     }
@@ -431,11 +449,10 @@ Token ExpressionTreeBuilder::getNext() {
 }
 
 
-/******************************************************************
+/****************************************************************************************
  *
- ******************************************************************/
-void inline ExpressionTreeBuilder::initializeHierarchy() {
-    this->opHierarchy = map<string, int>();
+ ****************************************************************************************/
+void ExpressionTreeBuilder::initializeHierarchy() {
     opHierarchy["print"]    = 1;
     opHierarchy["echo"]     = 1;
     opHierarchy["return"]   = 1;
@@ -481,42 +498,43 @@ void inline ExpressionTreeBuilder::initializeHierarchy() {
     opHierarchy[","] = -1;
 }
 
-/******************************************************************
+
+/****************************************************************************************
  *
- ******************************************************************/
-int ExpressionTreeBuilder::getOperatorHeirchy(std::string op) {
-    return this->opHierarchy[op];
+ ****************************************************************************************/
+short ExpressionTreeBuilder::getOperatorHeirchy(std::string op) {
+    return ExpressionTreeBuilder::opHierarchy[op];
 }
 
 
-/******************************************************************
+/****************************************************************************************
  *
- ******************************************************************/
+ ****************************************************************************************/
 bool ExpressionTreeBuilder::isPostUnary(string op) {
-    int h = this->getOperatorHeirchy(op);
+    short h = this->getOperatorHeirchy(op);
     return (h == 12);
 }
 
 
-/******************************************************************
+/****************************************************************************************
  *
- ******************************************************************/
+ ****************************************************************************************/
 bool ExpressionTreeBuilder::isPreUnary(string op) {
-    int h = this->getOperatorHeirchy(op);
+    short h = this->getOperatorHeirchy(op);
     return (h == 13);
 }
 
 
-/******************************************************************
+/****************************************************************************************
  *
- ******************************************************************/
+ ****************************************************************************************/
 bool ExpressionTreeBuilder::isControlWord(string op) {
-    int h = this->getOperatorHeirchy(op);
+    short h = this->getOperatorHeirchy(op);
     return (h == 1);
 }
 
 
-/******************************************************************
+/****************************************************************************************
  * Attaches operands to an operator and puts the result on the
  * operand stack
  *
@@ -524,7 +542,7 @@ bool ExpressionTreeBuilder::isControlWord(string op) {
  *       +               ++
  *     /   \            /
  *   b       a        c
- ******************************************************************/
+ ****************************************************************************************/
 void ExpressionTreeBuilder::addOperation(bool isUnary) {
     OperationNode* temp = new OperationNode();
 
@@ -543,14 +561,14 @@ void ExpressionTreeBuilder::addOperation(bool isUnary) {
 }
 
 
-/******************************************************************
+/****************************************************************************************
  * Marks an operand as a parameter
  *
  * foo(bar)
  * P
  *   \
  *     bar
- ******************************************************************/
+ ****************************************************************************************/
 void inline ExpressionTreeBuilder::makeParameter() {
     //Create new node
     OperationNode* temp = new OperationNode();
@@ -575,7 +593,7 @@ void inline ExpressionTreeBuilder::makeParameter() {
 }
 
 
-/******************************************************************
+/****************************************************************************************
  * Chains multiple function parameters together
  * The first parameter in the list will be the lowest on the tree
  *
@@ -587,7 +605,7 @@ void inline ExpressionTreeBuilder::makeParameter() {
  * P       b
  *   \
  *     a
- ******************************************************************/
+ ****************************************************************************************/
 void inline ExpressionTreeBuilder::chainParameter() {
     //Get the first operand
     OperationNode* temp = this->operands.top();
@@ -611,7 +629,7 @@ void inline ExpressionTreeBuilder::chainParameter() {
 }
 
 
-/******************************************************************
+/****************************************************************************************
  *
  * foo(bar)
  *
@@ -620,7 +638,7 @@ void inline ExpressionTreeBuilder::chainParameter() {
  * P       foo
  *   \
  *    bar
- ******************************************************************/
+ ****************************************************************************************/
 void inline ExpressionTreeBuilder::addFunctionCall() {
     //Create the call node
     OperationNode* temp = new OperationNode();

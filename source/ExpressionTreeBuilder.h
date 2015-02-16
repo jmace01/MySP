@@ -13,22 +13,22 @@
 //enum class TOKEN_TYPES {STRING, NUMBER, WORD, OPERATOR};
 
 
-/******************************************************************
+/****************************************************************************************
  *
- ******************************************************************/
+ ****************************************************************************************/
 struct PostfixError {
 	PostfixError(std::string imsg) { msg = imsg; };
 	std::string msg;
 };
 
 
-/******************************************************************
+/****************************************************************************************
  *
- ******************************************************************/
+ ****************************************************************************************/
 class ExpressionTreeBuilder {
 
     private:
-        std::map<std::string, int> opHierarchy;
+        static std::map<std::string, short> opHierarchy;
         int                        infixPos;
         std::string                infix;
         unsigned int               lineNumber;
@@ -43,9 +43,9 @@ class ExpressionTreeBuilder {
         OperationNode* getExpressionTree(std::string infix, unsigned int lineNumber) throw(PostfixError);
 
     private:
-        std::queue<Token> getTokens();
+        void getTokens(std::queue<Token> &result);
         Token getNext();
-        int getOperatorHeirchy(std::string op);
+        short getOperatorHeirchy(std::string op);
         bool isPostUnary(std::string);
         bool isPreUnary(std::string);
         bool isControlWord(std::string op);
@@ -54,7 +54,7 @@ class ExpressionTreeBuilder {
         void chainParameter();
         void addFunctionCall();
         void validateStatement(std::queue<Token> toks) throw (PostfixError);
-        void initializeHierarchy();
+        void static initializeHierarchy();
 
 };
 

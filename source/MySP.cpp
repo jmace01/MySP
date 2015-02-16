@@ -3,13 +3,17 @@
 #include "./Test/Test.h"
 #include <vector>
 #include "ExpressionTreeBuilder.h"
+#include "StructureParser.h"
 
 using namespace std;
 
 
 int main() {
 
-    string s = "";
+    StructureParser sp = StructureParser();
+
+    /*
+    string s = "continue";
 
     ExpressionTreeBuilder* etb = new ExpressionTreeBuilder();
 
@@ -25,6 +29,7 @@ int main() {
 
     cout << endl << endl;
     delete etb;
+    /**/
 
     //Unit test
 	Test();
