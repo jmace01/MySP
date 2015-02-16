@@ -54,9 +54,6 @@ OperationNode* ExpressionTreeBuilder::getExpressionTree(string infix, unsigned i
         t = toks.front();
         toks.pop();
 
-        //if (operators.size() > 0)
-        //    cout << t.word << "|" << operators.top().word << endl;
-
         //Pre Unary operators, such as !, ~ or print
         if (t.type == 'o' && this->isPreUnary(t.word)) {
             operators.push(t);
@@ -318,8 +315,10 @@ Token ExpressionTreeBuilder::getNext() {
             this->lineNumber++;
         } else { //for "/**/" comments
             i++;
-            while (this->infix[i] != '*' && this->infix[i+1] != '/' && i < this->infix.size()) {
-                if (this->infix[i] == '\n' || this->infix[i] == '\r') {
+            while (i < this->infix.size() - 1) {
+                if (this->infix[i] == '*' && this->infix[i+1] == '/') {
+                    break;
+                } else if (this->infix[i] == '\n' || this->infix[i] == '\r') {
                     this->lineNumber++;
                 }
                 i++;

@@ -115,6 +115,10 @@ void Test::testPostfix() {
                     "!x",
                     "x !"
             )
+            , TestIO( //Valid assignment by reference
+                    "v = &a",
+                    "a & v ="
+            )
             , TestIO( //Reference without variable
                     "&1",
                     "Illegal use of '&' without variable"
@@ -177,7 +181,7 @@ void Test::testPostfix() {
         cout << "    No errors in ExpressionTreeBuilder unit test" << endl;
     }
 
-    float targetSpeed = 0.00006 * i;
+    float targetSpeed = 0.00005 * i;
     float time = (float)(clock() - timer) / CLOCKS_PER_SEC;
     cout << "    Passed " << passed << "/" << i << " tests in " << time << " seconds" << endl;
     if (time > targetSpeed) cout << "    -- Processed too slow [should be " << targetSpeed << "]" << endl;
