@@ -3,14 +3,15 @@
 #include "./Test/Test.h"
 #include <vector>
 #include "ExpressionTreeBuilder.h"
-#include "StructureParser.h"
+#include "Parser.h"
 
 using namespace std;
 
 
 int main() {
 
-    StructureParser sp = StructureParser();
+    Parser sp = Parser();
+    sp.parseText("if (x == 1) x++; y++;");
 
     /*
     string s = "continue";
@@ -29,7 +30,7 @@ int main() {
 
     cout << endl << endl;
     delete etb;
-    /**/
+    */
 
     //Unit test
 	Test();

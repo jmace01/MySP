@@ -12,11 +12,6 @@ using namespace std;
  *
  ****************************************************************************************/
 ExpressionTreeBuilder::ExpressionTreeBuilder() {
-    this->infix              = "";
-    this->infixPos           = 0;
-    this->lineNumber         = 0;
-    this->tempVariableNumber = "";
-
     if (ExpressionTreeBuilder::opHierarchy.empty()) {
         this->initializeHierarchy();
     }
@@ -36,11 +31,8 @@ ExpressionTreeBuilder::~ExpressionTreeBuilder() {
 /****************************************************************************************
  *
  ****************************************************************************************/
-OperationNode* ExpressionTreeBuilder::getExpressionTree(string infix, unsigned int lineNumber) throw (PostfixError) {
+OperationNode* ExpressionTreeBuilder::getExpressionTree(queue<Token> &toks) throw (PostfixError) {
     //re-initialize class variables
-    this->infix              = infix;
-    this->infixPos           = 0;
-    this->lineNumber         = lineNumber;
     this->operands           = stack<OperationNode*>();
     this->operators          = stack<Token>();
 
@@ -50,10 +42,6 @@ OperationNode* ExpressionTreeBuilder::getExpressionTree(string infix, unsigned i
     stack<int> functionParenth = stack<int>();
     OperationNode* result;
     OperationNode* temp;
-
-    //Get the tokens
-    queue<Token> toks = queue<Token>();
-    this->getTokens(toks);
 
     //If there are no tokens in the string, return NULL
     if (toks.empty()) return NULL;
@@ -284,174 +272,6 @@ void ExpressionTreeBuilder::validateStatement(queue<Token> toks) throw (PostfixE
 /****************************************************************************************
  *
  ****************************************************************************************/
-void ExpressionTreeBuilder::getTokens(queue<Token> &result) {
-    string s;
-    Token t;
-    while (this->infixPos < this->infix.size()) {
-        t = this->getNext();
-        if (t.word != "") {
-            result.push(t);
-        }
-    }
-}
-
-
-/****************************************************************************************
- *
- ****************************************************************************************/
-Token ExpressionTreeBuilder::getNext() {
-    //Initialize variable
-    string word = "";
-    char type;
-
-    //Use "i" instead of "this->infixPos"
-    int i = this->infixPos;
-
-
-    //Eat whitespace
-    while (
-            this->infix[i] == ' '  ||
-            this->infix[i] == '\r' ||
-            this->infix[i] == '\n' ||
-            this->infix[i] == '\t'
-          ) {
-        if (this->infix[i] == '\n') {
-            this->lineNumber++;
-        }
-        i++;
-    }
-
-
-    //Eat comments
-    if (this->infix[i] == '/' && (this->infix[i + 1] == '/' || this->infix[i+1] == '*')) {
-        i++;
-        if (this->infix[i] == '/') { // for "//" comments
-            i++;
-            while (this->infix[i] != '\n' && this->infix[i] != '\r' && i < this->infix.size()) {
-                i++;
-            }
-            this->lineNumber++;
-        } else { //for "/**/" comments
-            i++;
-            while (i < this->infix.size() - 1) {
-                if (this->infix[i] == '*' && this->infix[i+1] == '/') {
-                    break;
-                } else if (this->infix[i] == '\n' || this->infix[i] == '\r') {
-                    this->lineNumber++;
-                }
-                i++;
-            }
-            i += 2;
-        }
-    }
-
-
-    //Save the line number for the token
-    int line = this->lineNumber;
-
-
-    //Get String
-    if (this->infix[i] == '"' || this->infix[i] == '\'')
-    {
-        type = 's';
-        char delimiter = this->infix[i];
-        bool slash = false;
-        do
-        {
-            slash = (!slash && this->infix[i] == '\\');
-            word += this->infix[i++];
-        }
-        while ((this->infix[i] != delimiter || slash) && i < this->infix.size());
-        if (i == this->infix.size()) {
-            throw PostfixError("Unterminated String");
-        }
-        word += this->infix[i++];
-    }
-
-
-    //Get number
-    else if (isnumber(this->infix[i]) //its a number
-            || (    //it's a decimal followed by a number
-                    this->infix[i] == '.' &&
-                    i < this->infix.size() - 1 && //don't walk off the array
-                    isnumber(this->infix[i + 1])
-                )
-            || ( //It's a negative number
-                    this->infix[i] == '-'
-                    && (
-                            (i < this->infix.size()-1 && isnumber(this->infix[i + 1]))
-                            ||
-                            (i < this->infix.size()-2 && this->infix[i+1] == '.' && isnumber(this->infix[i+2]))
-                        )
-                )
-            )
-    {
-        type = 'n';
-        bool dec = false; //Was a decimal used yet?
-        bool first = true; //Is this the first iteration? (Only allow '-' as first char)
-        while (isnumber(this->infix[i])
-              || (
-                      this->infix[i] == '-' &&
-                      first
-                  )
-              || (
-                      !dec && this->infix[i] == '.' &&
-                      i < this->infix.size() - 1    &&
-                      isnumber(this->infix[i + 1])
-                  )
-              ) {
-            if (this->infix[i] == '.') {
-                dec = true;
-            }
-            word += this->infix[i++];
-            first = false;
-        }
-    }
-
-
-    //Get Word
-    else if (isalpha(this->infix[i])) {
-        type = 'w';
-        while ((isalnum(this->infix[i]) || this->infix[i] == '_') &&  i <  this->infix.size())
-            word += this->infix[i++];
-        if (this->isControlWord(word) && (word == "print" || word == "echo")) {
-            type = 'o';
-        }
-    }
-
-
-    //Get Operator
-    else {
-        type = 'o';
-        while (i < this->infix.size()) {
-            word += this->infix[i++];
-            if (getOperatorHeirchy(word + this->infix[i]) == 0) {
-                break;
-            }
-        }
-        if (word != "" && this->getOperatorHeirchy(word) == 0) {
-            throw PostfixError("Unknown operator '"+word+"'");
-        }
-    }
-
-
-    //Save position
-    this->infixPos = i;
-
-    //Create the return token
-    Token t = Token();
-    t.word = word;
-    t.line = line;
-    t.type = type;
-
-    //Return the token
-    return t;
-}
-
-
-/****************************************************************************************
- *
- ****************************************************************************************/
 void ExpressionTreeBuilder::initializeHierarchy() {
     opHierarchy["print"]    = 1;
     opHierarchy["echo"]     = 1;
@@ -496,6 +316,7 @@ void ExpressionTreeBuilder::initializeHierarchy() {
     opHierarchy["["] = -1;
     opHierarchy["]"] = -1;
     opHierarchy[","] = -1;
+    opHierarchy[";"] = -2;
 }
 
 

@@ -29,26 +29,19 @@ class ExpressionTreeBuilder {
 
     private:
         static std::map<std::string, short> opHierarchy;
-        int                        infixPos;
-        std::string                infix;
-        unsigned int               lineNumber;
-        std::string                tempVariableNumber;
         std::stack<Token>          operators;
         std::stack<OperationNode*> operands;
 
     public:
         ExpressionTreeBuilder();
         ~ExpressionTreeBuilder();
-
-        OperationNode* getExpressionTree(std::string infix, unsigned int lineNumber) throw(PostfixError);
-
-    private:
-        void getTokens(std::queue<Token> &result);
-        Token getNext();
+        OperationNode* getExpressionTree(std::queue<Token> &toks) throw(PostfixError);
         short getOperatorHeirchy(std::string op);
         bool isPostUnary(std::string);
         bool isPreUnary(std::string);
         bool isControlWord(std::string op);
+
+    private:
         void addOperation(bool isUnary);
         void makeParameter();
         void chainParameter();

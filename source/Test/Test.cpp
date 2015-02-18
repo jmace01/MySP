@@ -146,9 +146,11 @@ void Test::testPostfix() {
             , TestIO("","")
     };
 
+    Parser psr = Parser();
     ExpressionTreeBuilder* etb = new ExpressionTreeBuilder();
     OperationNode* t;
 
+    queue<Token> toks;
     string output;
 
     int i = 0;
@@ -161,7 +163,9 @@ void Test::testPostfix() {
     while (tests[i].input != "") {
 
     	try {
-    		t = etb->getExpressionTree(tests[i].input, 1);
+    	    toks = queue<Token>();
+    	    psr.getTokens(tests[i].input, toks);
+    		t = etb->getExpressionTree(toks);
     	} catch (PostfixError &e) {
     		if (e.msg != tests[i].output) {
     			error = true;
@@ -201,7 +205,7 @@ void Test::testPostfix() {
         cout << "    No errors in ExpressionTreeBuilder unit test" << endl;
     }
 
-    float targetSpeed = 0.00006 * i;
+    float targetSpeed = 0.00007 * i;
     float time = (float)(clock() - timer) / CLOCKS_PER_SEC;
     cout << "    Passed " << passed << "/" << i << " tests in " << time << " seconds" << endl;
     if (time > targetSpeed) cout << "    -- Processed too slow [should be " << targetSpeed << "]" << endl;

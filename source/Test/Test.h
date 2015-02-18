@@ -2,6 +2,7 @@
 #define SOURCE_TEST_TEST_H_
 
 #include <string>
+#include "../Parser.h"
 #include "../ExpressionTreeBuilder.h"
 
 

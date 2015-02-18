@@ -1,7 +1,6 @@
 source/MySP.d: ../source/MySP.cpp ../source/OperationNode.h \
-  ../source/token.h ../source/./Test/Test.h \
-  ../source/./Test/../ExpressionTreeBuilder.h \
-  ../source/StructureParser.h
+  ../source/token.h ../source/./Test/Test.h ../source/./Test/../Parser.h \
+  ../source/ExpressionTreeBuilder.h
 
 ../source/OperationNode.h:
 
@@ -9,6 +8,6 @@ source/MySP.d: ../source/MySP.cpp ../source/OperationNode.h \
 
 ../source/./Test/Test.h:
 
-../source/./Test/../ExpressionTreeBuilder.h:
+../source/./Test/../Parser.h:
 
-../source/StructureParser.h:
+../source/ExpressionTreeBuilder.h:

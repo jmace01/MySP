@@ -7,19 +7,19 @@ CPP_SRCS += \
 ../source/ExpressionTreeBuilder.cpp \
 ../source/MySP.cpp \
 ../source/OperationNode.cpp \
-../source/StructureParser.cpp 
+../source/Parser.cpp 
 
 OBJS += \
 ./source/ExpressionTreeBuilder.o \
 ./source/MySP.o \
 ./source/OperationNode.o \
-./source/StructureParser.o 
+./source/Parser.o 
 
 CPP_DEPS += \
 ./source/ExpressionTreeBuilder.d \
 ./source/MySP.d \
 ./source/OperationNode.d \
-./source/StructureParser.d 
+./source/Parser.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
