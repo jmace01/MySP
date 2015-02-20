@@ -14,10 +14,12 @@
  ****************************************************************************************/
 class Parser {
     private:
-        std::map< std::string, std::vector<OperationNode*> > functions;
+        std::queue<Token> toks;
+        std::map< std::string, std::vector<OperationNode*> >* functions;
         std::string currentFunction;
         static std::map<std::string, short> keywords;
         ExpressionTreeBuilder expTreeBuilder;
+        std::queue<Token> statementQueue;
         unsigned int lineNumber;
         std::string infix;
         unsigned int infixPos;
@@ -29,11 +31,14 @@ class Parser {
         ~Parser();
         void initKeywords();
         short static isKeyWord(std::string word);
-        void parseText(std::string infix);
+        std::map< std::string, std::vector<OperationNode*> >* parseText(std::string infix);
         void getTokens(std::string infix, std::queue<Token> &result);
 
     private:
         Token getNext();
+        void addCondition();
+        void buildTree();
+        void addStatement();
 };
 
 #endif

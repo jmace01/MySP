@@ -12,7 +12,7 @@ using namespace std;
  ****************************************************************************************/
 Parser::Parser() {
     this->expTreeBuilder = ExpressionTreeBuilder();
-    this->functions = map< string, vector<OperationNode*> >();
+    this->functions = new map< string, vector<OperationNode*> >();
     this->errors = queue<PostfixError>();
     this->currentFunction = "~";
     if (Parser::keywords.empty()) {
@@ -35,14 +35,14 @@ Parser::~Parser() {
 /****************************************************************************************
  *
  ****************************************************************************************/
-void Parser::parseText(string infix) {
-    queue<Token> toks = queue<Token>();
+map< string, vector<OperationNode*> >* Parser::parseText(string infix) {
+    this->toks = queue<Token>();
+    this->statementQueue = queue<Token>();
     this->getTokens(infix, toks);
 
     Token t;
     string uppercaseWord;
-    OperationNode* op;
-    queue<Token> statementQueue;
+    OperationNode* op; //Generic holder for statements
 
     while (!toks.empty()) {
         //Get token off queue
@@ -55,12 +55,18 @@ void Parser::parseText(string infix) {
         //Convert to uppercase
         uppercaseWord = "";
         for (int i = 0; i < t.word.size(); i++) {
-            uppercaseWord += toupper(t.word[i]);
+            uppercaseWord += tolower(t.word[i]);
         }
 
         //Deal with constructs
         if (isKeyWord(uppercaseWord)) {
-            cout << "YES" << endl;
+            if (uppercaseWord == "IF") {
+                this->addCondition();
+                t.type = 'o';
+                op = new OperationNode();
+                op->operation = t;
+                (*this->functions)[currentFunction].push_back(op);
+            }
         }
 
         //Deal with normal statements
@@ -74,14 +80,72 @@ void Parser::parseText(string infix) {
                 statementQueue.push(t);
             }
 
-            try {
-                op = expTreeBuilder.getExpressionTree(statementQueue);
-                this->functions[currentFunction].push_back(op);
-            } catch (PostfixError &e) {
-                this->errors.push(e);
-            }
+            this->addStatement();
         }
     }
+
+    return this->functions;
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Parser::addStatement() {
+    OperationNode* op;
+
+    try {
+        op = expTreeBuilder.getExpressionTree(statementQueue);
+        (*this->functions)[currentFunction].push_back(op);
+    } catch (PostfixError &e) {
+        this->errors.push(e);
+    }
+
+    statementQueue = queue<Token>();
+}
+
+
+/****************************************************************************************
+ * Add the conditional part of a construct.
+ * while (xxxx), if (xxxx)
+ ****************************************************************************************/
+void Parser::addCondition() {
+    unsigned int parenths = 0;
+
+    //Are there no more tokens?
+    if (toks.empty()) {
+        throw PostfixError("Unexpected end of file after construct keyword");
+    }
+
+    Token t = toks.front();
+
+    //Is the next token not a parenthesis?
+    if (t.word != "(") {
+        throw PostfixError("Unexpected '" + t.word + "' after construct keyword");
+    }
+
+    toks.pop();
+
+    //Get the condition
+    while (parenths > 1 && !toks.empty()) {
+        t = toks.front();
+        toks.pop();
+        if (t.word == "(") {
+            parenths++;
+        } else if (t.word == ")") {
+            parenths--;
+        } else if (t.word == ";") {
+            throw PostfixError("Unexpected ';' in conditional statement");
+        } else {
+            statementQueue.push(t);
+        }
+    }
+
+    if (parenths > 0) {
+        throw PostfixError("Unexpected end of file");
+    }
+
+    this->addStatement();
 }
 
 
@@ -89,19 +153,19 @@ void Parser::parseText(string infix) {
  *
  ****************************************************************************************/
 void Parser::initKeywords() {
-    keywords[   "IF"   ] = 1;
-    keywords[  "ELSE"  ] = 1;
-    keywords[   "DO"   ] = 1;
-    keywords[ "WHILE" ]  = 1;
-    keywords[  "FOR"  ]  = 1;
-    keywords["FOREACH"]  = 1;
-    keywords[ "SWITCH" ] = 1;
-    keywords[  "CASE"  ] = 1;
-    keywords["FUNCTION"] = 1;
-    keywords[  "TRY"  ]  = 1;
-    keywords[ "CATCH" ]  = 1;
-    keywords["FINALLY"]  = 1;
-    keywords[ "CLASS" ]  = 1;
+    keywords[   "if"   ] = 1;
+    keywords[  "else"  ] = 1;
+    keywords[   "do"   ] = 1;
+    keywords[ "while" ]  = 1;
+    keywords[  "for"  ]  = 1;
+    keywords["foreach"]  = 1;
+    keywords[ "switch" ] = 1;
+    keywords[  "case"  ] = 1;
+    keywords["function"] = 1;
+    keywords[  "try"  ]  = 1;
+    keywords[ "catch" ]  = 1;
+    keywords["finally"]  = 1;
+    keywords[ "class" ]  = 1;
 }
 
 
