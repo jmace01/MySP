@@ -1,6 +1,7 @@
 #include "Parser.h"
 #include <iostream>
 
+
 using namespace std;
 
 // #yolo -- turn off all error messages and warnings
@@ -41,8 +42,10 @@ map< string, vector<OperationNode*> >* Parser::parseText(string infix) {
     this->getTokens(infix, toks);
 
     Token t;
-    string uppercaseWord;
+    string lowercaseWord;
     OperationNode* op; //Generic holder for statements
+    this->controlStack = stack<OperationNode*>();
+    upcomingElse = false;
 
     while (!toks.empty()) {
         //Get token off queue
@@ -52,20 +55,49 @@ map< string, vector<OperationNode*> >* Parser::parseText(string infix) {
         //Don't allow leading or repeated semicolons
         if (t.word == ";") continue;
 
-        //Convert to uppercase
-        uppercaseWord = "";
+        //Convert to lower-case
+        lowercaseWord = "";
         for (int i = 0; i < t.word.size(); i++) {
-            uppercaseWord += tolower(t.word[i]);
+            lowercaseWord += tolower(t.word[i]);
         }
 
         //Deal with constructs
-        if (isKeyWord(uppercaseWord)) {
-            if (uppercaseWord == "IF") {
+        if (isKeyWord(lowercaseWord)) {
+            if (lowercaseWord == "if") {
+                //Add condition first
                 this->addCondition();
+                //Add if statement
                 t.type = 'o';
                 op = new OperationNode();
                 op->operation = t;
                 (*this->functions)[currentFunction].push_back(op);
+                //Save the location to modify the jump later
+                controlStack.push(op);
+                this->markScoped(op);
+            } else if (lowercaseWord == "else") {
+                if (!upcomingElse) {
+                    throw PostfixError("Unexpected 'else' not following 'if'");
+                }
+                //Add else statement
+                t.type = 'o';
+                op = new OperationNode();
+                op->operation = t;
+                controlStack.push(op);
+                this->markScoped(op);
+            }
+        }
+
+        //Deal with end of scopes
+        else if (t.word == "}") {
+            if (controlStack.empty() || controlStack.top()->operation.type != 'o') {
+                throw PostfixError("Unexpected '}'");
+            } else if (!controlStack.empty() && controlStack.top()->operation.word == "if") {
+                //Set up jump on previous IF statement if branch was not taken
+                this->endScope(true);
+            } else if (!controlStack.empty() && controlStack.top()->operation.word == "else") {
+                //Set up jump on previous IF statement if branch was not taken
+                controlStack.pop();
+                this->endScope(true);
             }
         }
 
@@ -81,6 +113,7 @@ map< string, vector<OperationNode*> >* Parser::parseText(string infix) {
             }
 
             this->addStatement();
+            this->endScope(false);
         }
     }
 
@@ -98,6 +131,7 @@ void Parser::addStatement() {
         op = expTreeBuilder.getExpressionTree(statementQueue);
         (*this->functions)[currentFunction].push_back(op);
     } catch (PostfixError &e) {
+        //cout << e.msg << endl;
         this->errors.push(e);
     }
 
@@ -110,7 +144,7 @@ void Parser::addStatement() {
  * while (xxxx), if (xxxx)
  ****************************************************************************************/
 void Parser::addCondition() {
-    unsigned int parenths = 0;
+    unsigned int parenths = 1;
 
     //Are there no more tokens?
     if (toks.empty()) {
@@ -127,7 +161,7 @@ void Parser::addCondition() {
     toks.pop();
 
     //Get the condition
-    while (parenths > 1 && !toks.empty()) {
+    while (parenths > 0 && !toks.empty()) {
         t = toks.front();
         toks.pop();
         if (t.word == "(") {
@@ -146,6 +180,65 @@ void Parser::addCondition() {
     }
 
     this->addStatement();
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Parser::markScoped(OperationNode* op) {
+    //Check if there is a curly brace next
+    if (toks.front().word == "{") { //Scoped
+        toks.pop();
+    } else { //Shorthand
+        op->operation.type = 's'; //'s' to mark as shorthand
+    }
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Parser::endScope(bool setFirst) {
+    char num[30];
+    OperationNode* op;
+
+    //If ";" is at the front, pop it to get next token
+    if (toks.front().word == ";")
+        toks.pop();
+
+    //Is there an else statement coming?
+    upcomingElse = !controlStack.empty() && controlStack.top()->operation.word == "if"
+                    && !toks.empty() && toks.front().word == "else";
+
+    //Update and pop off completed control statements
+    while (!this->controlStack.empty() &&
+                (
+                    setFirst ||
+                    this->controlStack.top()->operation.type == 's'
+                ) && !(upcomingElse && this->controlStack.top()->operation.word == "jmp")
+            )
+    {
+        setFirst = false;
+        controlStack.top()->operation.type = 'o';
+        controlStack.top()->right = new OperationNode();
+        controlStack.top()->right->operation = Token();
+        controlStack.top()->right->operation.type = 'n';
+        sprintf(num, "%lu", (*this->functions)[currentFunction].size() + upcomingElse);
+        controlStack.top()->right->operation.word = num;
+        controlStack.pop();
+    }
+
+    //If there is an upcoming else, add jump statement
+    if (upcomingElse) {
+        //Prepare new jump on previous IF statement if branch was taken
+        op = new OperationNode();
+        op->operation = Token();
+        op->operation.type = 's';
+        op->operation.word = "jmp";
+        (*this->functions)[currentFunction].push_back(op);
+        controlStack.push(op);
+    }
 }
 
 
@@ -314,7 +407,7 @@ Token Parser::getNext() {
         type = 'w';
         while ((isalnum(this->infix[i]) || this->infix[i] == '_') &&  i <  this->infix.size())
             word += this->infix[i++];
-        if (this->expTreeBuilder.isControlWord(word) && (word == "print" || word == "echo")) {
+        if (this->expTreeBuilder.isControlWord(word) && (word == "print" || word == "echo" || word == "return")) {
             type = 'o';
         }
     }

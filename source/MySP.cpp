@@ -2,6 +2,8 @@
 #include "OperationNode.h"
 #include "./Test/Test.h"
 #include <vector>
+#include <string>
+#include <map>
 #include "ExpressionTreeBuilder.h"
 #include "Parser.h"
 
@@ -10,8 +12,20 @@ using namespace std;
 
 int main() {
 
+    string s = "if (true) { if (false) true; else false; }";
+
     Parser sp = Parser();
-    sp.parseText("if (x == 1) x++; y++;");
+
+    try {
+        map<string, vector<OperationNode*> >* ops = sp.parseText(s);
+        for (int i = 0; i < (*ops)["~"].size(); i++) {
+            cout << "---------- { " << i << " } ----------" << endl;
+            cout << (*ops)["~"].at(i)->getTreePlot(0);
+        }
+        cout << "---------------------------" << endl;
+    } catch (PostfixError &e) {
+        cout << e.msg << endl;
+    }
 
     /*
     string s = "continue";

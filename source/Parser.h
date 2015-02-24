@@ -20,10 +20,12 @@ class Parser {
         static std::map<std::string, short> keywords;
         ExpressionTreeBuilder expTreeBuilder;
         std::queue<Token> statementQueue;
+        std::stack<OperationNode*> controlStack;
         unsigned int lineNumber;
         std::string infix;
         unsigned int infixPos;
         std::queue<PostfixError> errors;
+        bool upcomingElse;
 
 
     public:
@@ -39,6 +41,8 @@ class Parser {
         void addCondition();
         void buildTree();
         void addStatement();
+        void markScoped(OperationNode* op);
+        void endScope(bool setFirst);
 };
 
 #endif

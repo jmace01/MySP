@@ -234,7 +234,7 @@ void ExpressionTreeBuilder::validateStatement(queue<Token> toks) throw (PostfixE
 		    } else if (t.word == "&" && (toks.empty() || toks.front().type != 'w')) {
 		        throw PostfixError("Illegal use of '&' without variable");
 		    } else if (isControlWord(t.word)) {
-		        if (!isFirst || (!toks.empty() && t.word != "print" && t.word != "echo")) {
+		        if (!isFirst || (!toks.empty() && t.word != "print" && t.word != "echo" && t.word != "return")) {
 		            throw PostfixError("Unexpected keyword '" + t.word + "'");
 		        }
 		    }
@@ -249,7 +249,7 @@ void ExpressionTreeBuilder::validateStatement(queue<Token> toks) throw (PostfixE
 				&& !isControlWord(t.word)
 			);
 
-			wasKeyword = (this->isControlWord(t.word) && t.word != "print" && t.word != "echo");
+			wasKeyword = (this->isControlWord(t.word) && t.word != "print" && t.word != "echo" && t.word != "return" );
 		}
 
 		wasClosingParenth = (t.word == ")");
@@ -315,6 +315,8 @@ void ExpressionTreeBuilder::initializeHierarchy() {
     opHierarchy[")"] = -1;
     opHierarchy["["] = -1;
     opHierarchy["]"] = -1;
+    opHierarchy["{"] = -1;
+    opHierarchy["}"] = -1;
     opHierarchy[","] = -1;
     opHierarchy[";"] = -2;
 }

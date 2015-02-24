@@ -8,7 +8,7 @@ using namespace std;
 /****************************************************************************************
  *
  ****************************************************************************************/
-void Test::testPostfix() {
+void Test::testExTreeBldr() {
 
     TestIO tests[] = {
             TestIO( //Generic complex statement
@@ -143,6 +143,10 @@ void Test::testPostfix() {
                     "print break",
                     "Unexpected keyword 'break'"
             )
+            , TestIO( //Return keyword
+                    "return true",
+                    "true return"
+            )
             , TestIO("","")
     };
 
@@ -166,27 +170,17 @@ void Test::testPostfix() {
     	    toks = queue<Token>();
     	    psr.getTokens(tests[i].input, toks);
     		t = etb->getExpressionTree(toks);
+    		if (t == NULL) {
+                output = "";
+            } else {
+                output = t->getPostfix();
+                delete t;
+            }
     	} catch (PostfixError &e) {
-    		if (e.msg != tests[i].output) {
-    			error = true;
-				cout << "__ERROR______________________" << endl;
-				cout << "  INPUT  |  " << tests[i].input << endl;
-				cout << "  OUTPUT |  " << e.msg << endl;
-				cout << "  EXPECT |  " << tests[i].output << endl;
-    		} else {
-    		    passed++;
-    		}
-
-    		i++;
-    		continue;
+    		output = e.msg;
     	}
 
-    	if (t == NULL) {
-    	    output = "";
-    	} else {
-    	    output = t->getPostfix();
-    	    delete t;
-    	}
+
 
         if (output != tests[i].output) {
             error = true;

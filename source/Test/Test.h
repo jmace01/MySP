@@ -20,10 +20,12 @@ class Test {
     public:
 
         Test() {
-            Test::testPostfix();
+            Test::testExTreeBldr();
+            Test::testParser();
         }
 
-        static void testPostfix();
+        static void testExTreeBldr();
+        static void testParser();
 };
 
 #endif
