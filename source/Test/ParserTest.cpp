@@ -38,21 +38,21 @@ void Test::testParser() {
                 "if (true) { if (false) { true; } else { false; } }",
                 "true | 7 if | false | 6 if | true | 7 jmp | false"
         ),
-        TestIO(
-                "",
-                ""
+        TestIO( //Nested if/else inside if/else
+                "if (true) { if (false) true; else false; } else { return 1; }",
+                "true | 8 if | false | 6 if | true | 7 jmp | false | 9 jmp | 1 return"
         ),
-        TestIO(
-                "",
-                ""
+        TestIO( //Invalid use of else with scope
+                "if (true) { 1; } x++; else { 7; }",
+                "Unexpected 'else' not following 'if'"
         ),
-        TestIO(
-                "",
-                ""
+        TestIO( //Invalid use of else without scope
+                "if (true) 1; x++; else 7;",
+                "Unexpected 'else' not following 'if'"
         ),
-        TestIO(
-                "",
-                ""
+        TestIO( //If without condition
+                "if",
+                "Unexpected end of file after construct keyword"
         ),
         TestIO(
                 "",
@@ -90,6 +90,7 @@ void Test::testParser() {
             while (!(*ops)["~"].empty()) {
                 (*ops)["~"].pop_back();
             }
+            delete ops;
         } catch (PostfixError &e) {
             output = e.msg;
         }

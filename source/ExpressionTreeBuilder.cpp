@@ -165,6 +165,12 @@ OperationNode* ExpressionTreeBuilder::getExpressionTree(queue<Token> &toks) thro
         this->addOperation(preUnary);
     }
 
+    if (operands.empty() && t.word == "return") {
+        OperationNode* op = new OperationNode();
+        op->operation = t;
+        this->operands.push(op);
+    }
+
     //The last operand is the root of operation the tree
     result = this->operands.top();
     this->operands.pop();
@@ -263,7 +269,7 @@ void ExpressionTreeBuilder::validateStatement(queue<Token> toks) throw (PostfixE
 		throw PostfixError("Unclosed parenthesis");
 	} else if (ternaryParenth.size() > 0) {
 	    throw PostfixError("Unfinished ternary statement requires ':' after '?'");
-	} else if (!expectingOperator && !wasKeyword) {
+	} else if (!expectingOperator && !wasKeyword && t.word != "return") {
 	    throw PostfixError("Expecting operand to finish statement");
 	}
 }

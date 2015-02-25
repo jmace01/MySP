@@ -13,7 +13,6 @@ using namespace std;
  ****************************************************************************************/
 Parser::Parser() {
     this->expTreeBuilder = ExpressionTreeBuilder();
-    this->functions = new map< string, vector<OperationNode*> >();
     this->errors = queue<PostfixError>();
     this->currentFunction = "~";
     if (Parser::keywords.empty()) {
@@ -37,6 +36,7 @@ Parser::~Parser() {
  *
  ****************************************************************************************/
 map< string, vector<OperationNode*> >* Parser::parseText(string infix) {
+    this->functions = new map< string, vector<OperationNode*> >();
     this->toks = queue<Token>();
     this->statementQueue = queue<Token>();
     this->getTokens(infix, toks);

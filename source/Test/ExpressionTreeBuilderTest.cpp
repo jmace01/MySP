@@ -143,9 +143,13 @@ void Test::testExTreeBldr() {
                     "print break",
                     "Unexpected keyword 'break'"
             )
-            , TestIO( //Return keyword
+            , TestIO( //Return keyword with value
                     "return true",
                     "true return"
+            )
+            , TestIO( //Empty return statements
+                    "return",
+                    "return"
             )
             , TestIO("","")
     };
