@@ -157,6 +157,7 @@ void Test::testExTreeBldr() {
     Parser psr = Parser();
     ExpressionTreeBuilder* etb = new ExpressionTreeBuilder();
     OperationNode* t;
+    queue<PostfixError> pe;
 
     queue<Token> toks;
     string output;
@@ -169,18 +170,34 @@ void Test::testExTreeBldr() {
     clock_t timer = clock();
 
     while (tests[i].input != "") {
+        output = "";
 
     	try {
+    	    //Tokenize statement
     	    toks = queue<Token>();
     	    psr.getTokens(tests[i].input, toks);
-    		t = etb->getExpressionTree(toks);
-    		if (t == NULL) {
-                output = "";
-            } else {
-                output = t->getPostfix();
-                delete t;
-            }
+
+    	    //Get parser errors
+    	    pe = psr.getErrors();
+    	    psr.clearErrors();
+    	    while (!pe.empty()) {
+    	        if (output != "") output += " | ";
+    	        output += pe.front().msg;
+    	        pe.pop();
+    	    }
+
+    	    //Get expression tree
+    	    if (output == "") {
+                t = etb->getExpressionTree(toks);
+                if (t == NULL) {
+                    output = "";
+                } else {
+                    output = t->getPostfix();
+                    delete t;
+                }
+    	    }
     	} catch (PostfixError &e) {
+    	    //Get expression tree errors
     		output = e.msg;
     	}
 

@@ -1,0 +1,6 @@
+/****************
+ * Main function
+ ****************/
+function main() {
+    print "Testing";
+}

@@ -42,18 +42,20 @@ map< string, vector<OperationNode*> >* Parser::parseText(string infix) {
     this->getTokens(infix, toks);
 
     Token t;
+    Token temp;
+    OperationNode* op;
     string lowercaseWord;
-    OperationNode* op; //Generic holder for statements
     this->controlStack = stack<OperationNode*>();
     upcomingElse = false;
+
+    this->inFunction = false;
+
+    int pos = 0;
 
     while (!toks.empty()) {
         //Get token off queue
         t = toks.front();
         toks.pop();
-
-        //Don't allow leading or repeated semicolons
-        if (t.word == ";") continue;
 
         //Convert to lower-case
         lowercaseWord = "";
@@ -61,36 +63,69 @@ map< string, vector<OperationNode*> >* Parser::parseText(string infix) {
             lowercaseWord += tolower(t.word[i]);
         }
 
+        //Check for functions
+        if (!inFunction && lowercaseWord != "function") {
+            this->errors.push(PostfixError("Use of global statements is forbidden"));
+        } else if (inFunction && lowercaseWord == "function") {
+            this->errors.push(PostfixError("Cannot declare function inside of a function"));
+        } else if (!inFunction && lowercaseWord == "function") {
+            this->startFunction();
+            continue;
+        }
+
+        //Don't allow leading or repeated semicolons
+        if (t.word == ";") continue;
+
         //Deal with constructs
         if (isKeyWord(lowercaseWord)) {
             if (lowercaseWord == "if") {
                 //Add condition first
-                this->addCondition();
-                //Add if statement
-                t.type = 'o';
-                op = new OperationNode();
-                op->operation = t;
-                (*this->functions)[currentFunction].push_back(op);
-                //Save the location to modify the jump later
-                controlStack.push(op);
-                this->markScoped(op);
+                this->addCondition(true);
+                //Add if statement to controlStack and add it instructions
+                this->addToken(t, true);
             } else if (lowercaseWord == "else") {
                 if (!upcomingElse) {
-                    throw PostfixError("Unexpected 'else' not following 'if'");
+                    this->errors.push(PostfixError("Unexpected 'else' not following 'if'"));
                 }
-                //Add else statement
-                t.type = 'o';
-                op = new OperationNode();
-                op->operation = t;
-                controlStack.push(op);
-                this->markScoped(op);
+                //Add else statement to controlStack but not to instructions
+                this->addToken(t, false);
+            } else if (lowercaseWord == "while") {
+                //Save current position
+                pos = (*this->functions)[currentFunction].size() + 1;
+                op = this->createJump(pos, true);
+                this->controlStack.push(op);
+                //Add condition to control stack
+                this->addCondition(false);
+                //Add empty jump
+                op = this->createJump(0, false);
+                this->controlStack.push(op);
+                (*this->functions)[currentFunction].push_back(op);
+                //Add while statement to controlStack and add it instructions
+                t.word = lowercaseWord;
+                this->addToken(t, false);
+            } else if (lowercaseWord == "do") {
+                if (this->toks.front().word != "{") {
+                    this->errors.push(PostfixError("Expecting '{' after 'do'"));
+                }
+                //Save current position
+                pos = (*this->functions)[currentFunction].size();
+                op = this->createJump(pos, true);
+                this->controlStack.push(op);
+                //Save the do
+                t.word = lowercaseWord;
+                this->addToken(t, false);
+            } else if (lowercaseWord == "for") {
+                this->beginFor(t, lowercaseWord);
             }
         }
 
         //Deal with end of scopes
         else if (t.word == "}") {
-            if (controlStack.empty() || controlStack.top()->operation.type != 'o') {
-                throw PostfixError("Unexpected '}'");
+            if (inFunction && controlStack.empty()) {
+                this->inFunction = false;
+                continue;
+            } else if (!inFunction || controlStack.empty() || controlStack.top()->operation.type != 'o') {
+                this->errors.push(PostfixError("Unexpected '}'"));
             } else if (!controlStack.empty() && controlStack.top()->operation.word == "if") {
                 //Set up jump on previous IF statement if branch was not taken
                 this->endScope(true);
@@ -98,22 +133,24 @@ map< string, vector<OperationNode*> >* Parser::parseText(string infix) {
                 //Set up jump on previous IF statement if branch was not taken
                 controlStack.pop();
                 this->endScope(true);
+            } else if (!controlStack.empty() && controlStack.top()->operation.word == "while") {
+                this->endScope(true);
+            } else if (!controlStack.empty() && controlStack.top()->operation.word == "do") {
+                this->endScope(true);
+            } else if (!controlStack.empty() && controlStack.top()->operation.word == "for") {
+                this->endScope(true);
             }
         }
 
         //Deal with normal statements
         else {
-            statementQueue = queue<Token>();
-            statementQueue.push(t);
-
-            while (!toks.empty() && toks.front().word != ";") {
-                t = toks.front();
-                toks.pop();
-                statementQueue.push(t);
+            try {
+                this->getStatement(t, false);
+                this->addStatement(true);
+                this->endScope(false);
+            } catch (PostfixError &e) {
+                this->errors.push(e);
             }
-
-            this->addStatement();
-            this->endScope(false);
         }
     }
 
@@ -124,14 +161,93 @@ map< string, vector<OperationNode*> >* Parser::parseText(string infix) {
 /****************************************************************************************
  *
  ****************************************************************************************/
-void Parser::addStatement() {
+void Parser::startFunction() {
+    if (this->toks.empty() || this->toks.front().type != 'w') {
+        this->errors.push(PostfixError("Expecting function name after function keyword"));
+    }
+
+    this->currentFunction = this->toks.front().word;
+
+    toks.pop();
+    toks.pop();
+    toks.pop();
+    toks.pop();
+
+    this->inFunction = true;
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+inline void Parser::addToken(Token &t, bool pushOnFunction) {
+    OperationNode* op = new OperationNode();
+
+    t.type = 'o';
+    op->operation = t;
+
+    if (pushOnFunction) {
+        (*this->functions)[currentFunction].push_back(op);
+    }
+
+    //Save the location to modify the jump later
+    controlStack.push(op);
+    this->markScoped(op);
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Parser::getStatement(Token &t, bool isFor) {
+    statementQueue = queue<Token>();
+    statementQueue.push(t);
+
+    int parenth = 0;
+
+    while (!toks.empty() && toks.front().word != ";") {
+        t = toks.front();
+        if (t.word == "(") {
+            parenth++;
+        } else if (t.word == ")") {
+            parenth--;
+        }
+        if (parenth < 0) {
+            break;
+        }
+        toks.pop();
+        statementQueue.push(t);
+    }
+
+    if (!isFor && parenth < 0) {
+        throw PostfixError("Expecting ';' in statement");
+    } if (!isFor && !this->toks.empty() && this->toks.front().word == ";") {
+        this->toks.pop();
+    } else if (isFor && t.word != ")") {
+        throw PostfixError("Expecting ')' in FOR loop condition");
+    } else if (isFor) {
+        this->toks.pop();
+    }
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Parser::addStatement(bool toFunction) {
     OperationNode* op;
 
     try {
         op = expTreeBuilder.getExpressionTree(statementQueue);
-        (*this->functions)[currentFunction].push_back(op);
+        if (op == NULL && !toFunction) {
+            this->errors.push(PostfixError("Expecting condition"));
+        }
+        if (toFunction) {
+            (*this->functions)[currentFunction].push_back(op);
+        } else {
+            this->controlStack.push(op);
+        }
     } catch (PostfixError &e) {
-        //cout << e.msg << endl;
         this->errors.push(e);
     }
 
@@ -143,19 +259,21 @@ void Parser::addStatement() {
  * Add the conditional part of a construct.
  * while (xxxx), if (xxxx)
  ****************************************************************************************/
-void Parser::addCondition() {
+void Parser::addCondition(bool toFunction) {
     unsigned int parenths = 1;
 
     //Are there no more tokens?
     if (toks.empty()) {
-        throw PostfixError("Unexpected end of file after construct keyword");
+        this->errors.push(PostfixError("Unexpected end of file after construct keyword"));
+        return;
     }
 
     Token t = toks.front();
 
     //Is the next token not a parenthesis?
     if (t.word != "(") {
-        throw PostfixError("Unexpected '" + t.word + "' after construct keyword");
+        this->errors.push(PostfixError("Unexpected '" + t.word + "' after construct keyword"));
+        return;
     }
 
     toks.pop();
@@ -169,17 +287,17 @@ void Parser::addCondition() {
         } else if (t.word == ")") {
             parenths--;
         } else if (t.word == ";") {
-            throw PostfixError("Unexpected ';' in conditional statement");
+            this->errors.push(PostfixError("Unexpected ';' in conditional statement"));
         } else {
             statementQueue.push(t);
         }
     }
 
     if (parenths > 0) {
-        throw PostfixError("Unexpected end of file");
+        this->errors.push(PostfixError("Unexpected end of file"));
     }
 
-    this->addStatement();
+    this->addStatement(toFunction);
 }
 
 
@@ -220,6 +338,16 @@ void Parser::endScope(bool setFirst) {
             )
     {
         setFirst = false;
+        if (this->controlStack.top()->operation.word == "while") {
+            this->endWhile();
+            continue;
+        } else if (this->controlStack.top()->operation.word == "do") {
+            this->endDoWhile();
+            continue;
+        } else if (this->controlStack.top()->operation.word == "for") {
+            this->endFor();
+            continue;
+        }
         controlStack.top()->operation.type = 'o';
         controlStack.top()->right = new OperationNode();
         controlStack.top()->right->operation = Token();
@@ -232,13 +360,295 @@ void Parser::endScope(bool setFirst) {
     //If there is an upcoming else, add jump statement
     if (upcomingElse) {
         //Prepare new jump on previous IF statement if branch was taken
-        op = new OperationNode();
-        op->operation = Token();
-        op->operation.type = 's';
-        op->operation.word = "jmp";
+        op = createJump(0, false);
         (*this->functions)[currentFunction].push_back(op);
         controlStack.push(op);
     }
+}
+
+
+/****************************************************************************************
+ *
+ *
+ * For the while loop:
+ * WHILE (A) {
+ *     B;
+ * }
+ *
+ * Currently on the controlStack would be the values
+ * jmp-1
+ * A
+ * jmp-
+ * while-
+ *
+ * Becomes:
+ *  ______________________________
+ * |   0   | 1 | 2 |   3  |  4    |
+ * |=======|===|===|======|=======|
+ * | jmp   |   |   | if   | jmp   |
+ * |    \  | B | A |   \  |    \  |
+ * |     2 |   |   |    5 |     1 |
+ *  ------------------------------
+ ****************************************************************************************/
+inline void Parser::endWhile() {
+    OperationNode* whl;
+    OperationNode* jmp;
+    OperationNode* cond;
+
+    char num[30];
+
+    //Modify while token
+    whl = this->controlStack.top();
+    this->controlStack.pop();
+
+    //Modify jump
+    jmp = this->controlStack.top();
+    this->controlStack.pop();
+    jmp->right = new OperationNode();
+    jmp->right->operation = Token();
+    jmp->right->operation.type = 'n';
+    sprintf(num, "%lu", (*this->functions)[currentFunction].size());
+    jmp->right->operation.word = num;
+
+    //Push on condition
+    cond = this->controlStack.top();
+    this->controlStack.pop();
+    (*this->functions)[currentFunction].push_back(cond);
+
+    //Push on while
+    (*this->functions)[currentFunction].push_back(whl);
+
+    //Push on last jump
+    jmp = this->controlStack.top();
+    this->controlStack.pop();
+    (*this->functions)[currentFunction].push_back(jmp);
+
+    //Update while jump
+    sprintf(num, "%lu", (*this->functions)[currentFunction].size());
+    whl->operation.word = "if";
+    whl->right = new OperationNode();
+    whl->right->operation = Token();
+    whl->right->operation.type = 'n';
+    whl->right->operation.word = num;
+}
+
+
+/****************************************************************************************
+ *
+ *
+ * For the do-while loop:
+ * DO {
+ *     B;
+ * } WHILE (A);
+ *
+ * Currently on the controlStack would be the value
+ * jump-0
+ * do
+ *
+ * Becomes:
+ *  ______________________
+ * | 0 | 1 |   2  |  3    |
+ * |===|===|======|=======|
+ * |   |   | if   | jmp   |
+ * | B | A |   \  |    \  |
+ * |   |   |    4 |     0 |
+ *  ----------------------
+ ****************************************************************************************/
+void Parser::endDoWhile() {
+    Token t;
+    string lowercaseWord;
+    OperationNode* op;
+    char num[30];
+
+    this->controlStack.pop();
+
+    //Make sure there are more tokens
+    if (this->toks.empty()) {
+        this->errors.push(PostfixError("Unexpected end before 'while' in 'do while'"));
+        return;
+    }
+
+    //Check for following "while"
+    t = this->toks.front();
+    lowercaseWord = "";
+    for (int i = 0; i < t.word.size(); i++) {
+        lowercaseWord += tolower(t.word[i]);
+    }
+
+    if (lowercaseWord != "while") {
+        this->errors.push(PostfixError("Expecting 'while' after 'do'"));
+        return;
+    }
+    this->toks.pop();
+
+    //Add the condition
+    this->addCondition(true);
+
+    if (this->toks.front().word != ";") {
+        this->errors.push(PostfixError("Expecting ';' after do while loop"));
+    }
+
+    //Add the if
+    sprintf(num, "%lu", (*this->functions)[currentFunction].size() + 2);
+    op = new OperationNode();
+    op->operation = Token();
+    op->operation.word = "if";
+    op->operation.type = 'o';
+    op->right = new OperationNode();
+    op->right->operation = Token();
+    op->right->operation.type = 'n';
+    op->right->operation.word = num;
+    (*this->functions)[currentFunction].push_back(op);
+
+    //Add the jump back
+    op = this->controlStack.top();
+    this->controlStack.pop();
+    (*this->functions)[currentFunction].push_back(op);
+}
+
+
+void Parser::beginFor(Token &t, string &lowercaseWord) {
+    OperationNode* op;
+    Token temp;
+    int pos;
+
+    if (this->toks.front().word != "(") {
+        this->errors.push(PostfixError("Expecting condition in FOR loop"));
+        return;
+    }
+    try {
+        temp = Token();
+        temp.word = "";
+        this->addToken(temp, false);
+        temp = t;
+        this->toks.pop();
+        //Get initial
+        t = this->toks.front();
+        this->toks.pop();
+        if (t.word != ";") {
+            this->getStatement(t, false);
+            this->addStatement(true);
+        }
+        //Save current position
+        pos = (*this->functions)[currentFunction].size() + 1;
+        op = this->createJump(pos, true);
+        this->controlStack.push(op);
+        //Get condition
+        t = this->toks.front();
+        this->toks.pop();
+        if (t.word != ";") {
+            this->getStatement(t, false);
+            this->addStatement(false);
+        } else {
+            this->controlStack.push(NULL);
+        }
+        //Get iteration
+        t = this->toks.front();
+        this->toks.pop();
+        if (t.word != ")") {
+            this->getStatement(t, true);
+            this->addStatement(false);
+        } else {
+            this->controlStack.push(NULL);
+        }
+        //Create jump
+        op = this->createJump(0, false);
+        this->controlStack.push(op);
+        (*this->functions)[currentFunction].push_back(op);
+        //Save the for
+        temp.word = lowercaseWord;
+        this->addToken(temp, false);
+    } catch (PostfixError &e) {
+        if (e.msg == "Expecting ';' in statement") {
+            e.msg = "Expecting ';' in FOR loop condition";
+        }
+        this->errors.push(e);
+        while (this->controlStack.top()->operation.word != "") {
+            this->controlStack.pop();
+        }
+        this->controlStack.pop();
+    }
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Parser::endFor() {
+    OperationNode* fr;
+    OperationNode* jmp;
+    OperationNode* iter;
+    OperationNode* cond;
+    char num[30];
+
+    //Get the for token
+    fr = this->controlStack.top();
+    this->controlStack.pop();
+
+    //Get the initial jmp
+    jmp = this->controlStack.top();
+    this->controlStack.pop();
+    bool iterNotNull = this->controlStack.top() != NULL;
+    sprintf(num, "%lu", (*this->functions)[currentFunction].size() + iterNotNull);
+    jmp->right = new OperationNode();
+    jmp->right->operation = Token();
+    jmp->right->operation.type = 'n';
+    jmp->right->operation.word = num;
+
+    //Add the iterator statement
+    iter = this->controlStack.top();
+    this->controlStack.pop();
+    if (iter != NULL) {
+        (*this->functions)[currentFunction].push_back(iter);
+    }
+
+    //Add the condition statement
+    cond = this->controlStack.top();
+    this->controlStack.pop();
+    if (cond == NULL) {
+        cond = new OperationNode();
+        cond->operation = Token();
+        cond->operation.type = 'n';
+        cond->operation.word = "1";
+    }
+    (*this->functions)[currentFunction].push_back(cond);
+
+    //Add the if
+    sprintf(num, "%lu", (*this->functions)[currentFunction].size() + 2);
+    fr->operation.word = "if";
+    fr->operation.type = 'o';
+    fr->right = new OperationNode();
+    fr->right->operation = Token();
+    fr->right->operation.type = 'n';
+    fr->right->operation.word = num;
+    (*this->functions)[currentFunction].push_back(fr);
+
+    //Get final jump
+    jmp = this->controlStack.top();
+    this->controlStack.pop();
+    (*this->functions)[currentFunction].push_back(jmp);
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+OperationNode* Parser::createJump(unsigned long pos, bool includePos) {
+    char num[30];
+    OperationNode* op = new OperationNode();
+    op->operation = Token();
+    op->operation.type = 's';
+    op->operation.word = "jmp";
+
+    //Is there a specific value specified?
+    if (includePos) {
+        sprintf(num, "%lu", pos);
+        op->right = new OperationNode();
+        op->right->operation.type = 'n';
+        op->right->operation.word = num;
+    }
+
+    return op;
 }
 
 
@@ -267,6 +677,24 @@ void Parser::initKeywords() {
  ****************************************************************************************/
 short Parser::isKeyWord(string word) {
     return Parser::keywords[word];
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+queue<PostfixError> Parser::getErrors() {
+    return this->errors;
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Parser::clearErrors() {
+    while(!this->errors.empty()) {
+        this->errors.pop();
+    }
 }
 
 
@@ -355,7 +783,7 @@ Token Parser::getNext() {
         }
         while ((this->infix[i] != delimiter || slash) && i < this->infix.size());
         if (i == this->infix.size()) {
-            throw PostfixError("Unterminated String");
+            this->errors.push(PostfixError("Unterminated String"));
         }
         word += this->infix[i++];
     }
@@ -423,7 +851,7 @@ Token Parser::getNext() {
             }
         }
         if (word != "" && this->expTreeBuilder.getOperatorHeirchy(word) == 0) {
-            throw PostfixError("Unknown operator '"+word+"'");
+            this->errors.push(PostfixError("Unknown operator '"+word+"'"));
         }
     }
 

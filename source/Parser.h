@@ -26,6 +26,7 @@ class Parser {
         unsigned int infixPos;
         std::queue<PostfixError> errors;
         bool upcomingElse;
+        bool inFunction;
 
 
     public:
@@ -35,14 +36,24 @@ class Parser {
         short static isKeyWord(std::string word);
         std::map< std::string, std::vector<OperationNode*> >* parseText(std::string infix);
         void getTokens(std::string infix, std::queue<Token> &result);
+        std::queue<PostfixError> getErrors();
+        void clearErrors();
 
     private:
         Token getNext();
-        void addCondition();
+        void addToken(Token &t, bool pushOnFunction);
+        void addCondition(bool toFunction);
         void buildTree();
-        void addStatement();
+        void startFunction();
+        void getStatement(Token &t, bool isFor);
+        void addStatement(bool toFunction);
         void markScoped(OperationNode* op);
         void endScope(bool setFirst);
+        void endWhile();
+        void endDoWhile();
+        void beginFor(Token &t, std::string &lowercaseWord);
+        void endFor();
+        OperationNode* createJump(unsigned long pos, bool includePos);
 };
 
 #endif
