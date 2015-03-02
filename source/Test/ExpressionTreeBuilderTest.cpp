@@ -151,6 +151,22 @@ void Test::testExTreeBldr() {
                     "return",
                     "return"
             )
+            , TestIO( //Object method call
+                    "a->b()",
+                    "b a -> C"
+            )
+            , TestIO( //Static method call
+                    "a::b()",
+                    "b a :: C"
+            )
+            , TestIO( //Member variable assignment
+                    "a->b = c",
+                    "c b a -> ="
+            )
+            , TestIO( //Static member variable assignment
+                    "a::b = c",
+                    "c b a :: ="
+            )
             , TestIO("","")
     };
 

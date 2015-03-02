@@ -317,6 +317,8 @@ void ExpressionTreeBuilder::initializeHierarchy() {
     opHierarchy["!"] = 13;
     opHierarchy["~"] = 13;
     opHierarchy["&"] = 13;
+    opHierarchy["->"] = 14;
+    opHierarchy["::"] = 14;
     opHierarchy["("] = -1;
     opHierarchy[")"] = -1;
     opHierarchy["["] = -1;
@@ -460,16 +462,18 @@ void inline ExpressionTreeBuilder::chainParameter() {
 
 /****************************************************************************************
  *
- * foo(bar)
+ * Function call        Method call
+ * foo(bar)             foo->bar(a)
  *
- *     C
- *   /   \
- * P       foo
- *   \
- *    bar
+ *     C                    C
+ *   /   \               /     \
+ * P       foo         P         ->
+ *   \                   \      /  \
+ *    bar                 a   foo   bar
  ****************************************************************************************/
 void inline ExpressionTreeBuilder::addFunctionCall() {
     //Create the call node
+    Token t;
     OperationNode* temp = new OperationNode();
 
     //Add the operation to the call node
@@ -482,6 +486,16 @@ void inline ExpressionTreeBuilder::addFunctionCall() {
     if (this->operands.top()->operation.word == "P") {
         temp->left = this->operands.top();
         this->operands.pop();
+    }
+
+    //Check if it is an object call
+    if (operators.size() > 1) {
+        t = operators.top();
+        operators.pop();
+        if (getOperatorHeirchy(operators.top().word) == 14) {
+            this->addOperation(false);
+        }
+        operators.push(t);
     }
 
     //Add the function name to the right

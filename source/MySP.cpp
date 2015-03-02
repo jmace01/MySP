@@ -12,28 +12,31 @@ using namespace std;
 
 int main() {
 
-    string s = "function main() { print \"Testing\"; }";
+    string s = "main { a++; }";
 
     Parser sp = Parser();
     queue<PostfixError> pe;
 
     try {
-        map<string, vector<OperationNode*> >* ops = sp.parseText(s);
-        map<string, vector<OperationNode*> >::iterator it;
+        map<string, ClassDefinition* >* ops = sp.parseText(s);
+        map<string, ClassDefinition* >::iterator it;
+        map<string, Method*> methods;
+        map<string, Method*>::iterator it2;
         pe = sp.getErrors();
         while (!pe.empty()) {
             cout << pe.front().msg << endl;
             pe.pop();
         }
         for (it = (*ops).begin(); it != (*ops).end(); it++) {
-            for (int i = 0; i < (*ops)[it->first].size(); i++) {
-                cout << "------------ { " << it->first << " : " << i << " } ------------" << endl;
-                cout << (*ops)[it->first].at(i)->getTreePlot(0);
+            cout << "============ {[ Class " << it->first << " ]} ============" << endl;
+            methods = it->second->getMethods();
+            for (it2 = methods.begin(); it2 != methods.end(); it2++) {
+                for (int i = 0; i < it2->second->getInstructionSize(); i++) {
+                    cout << "------------ { " << it2->first << " : " << i << " } ------------" << endl;
+                    cout << it2->second->getInstruction(i)->getTreePlot(0) << endl;
+                }
             }
-            while (!(*ops)[it->first].empty()) {
-                delete (*ops)[it->first].back();
-                (*ops)[it->first].pop_back();
-            }
+            delete it->second;
         }
         delete ops;
         cout << "--------------------------------------" << endl;

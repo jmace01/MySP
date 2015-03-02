@@ -1,6 +1,31 @@
-/****************
- * Main function
- ****************/
-function main() {
-    print "Testing";
+class demo {
+
+    private dynamic a;
+    private dynamic b;
+    private dynamic c;
+    private static  d;
+    
+    public dynamic demo() {
+        this->a = 1;
+        this->b = 2;
+        this->c = 3;
+        demo::d = 4;
+    }
+    
+    public dynamic foo() {
+        print a+b+c;
+    }
+    
+    public static bar() {
+        print d;
+    }
+
+}
+
+main {
+    
+    d = demo();
+    d->foo();
+    d::bar();
+    
 }

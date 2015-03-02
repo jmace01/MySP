@@ -1,4 +1,6 @@
 #include "Test.h"
+#include "../ClassDefinition.h"
+#include "../Method.h"
 #include <iostream>
 
 using namespace std;
@@ -7,100 +9,100 @@ void Test::testParser() {
 
     TestIO tests[] = {
         TestIO( //Lone if statement unscoped
-                "function main() { if (a == 2) print 'okay!'; }",
+                "main { if (a == 2) print 'okay!'; }",
                 "2 a == | 3 if | 'okay!' print"
         ),
         TestIO( //Lone if statement scoped
-                "function main() { if (a == 2) { print 'okay!'; } }",
+                "main { if (a == 2) { print 'okay!'; } }",
                 "2 a == | 3 if | 'okay!' print"
         ),
         TestIO( //If/else statement scoped
-                "function main() { if (x == 1) { x++; y++; } else { z++; } print x + y + z; }",
+                "main { if (x == 1) { x++; y++; } else { z++; } print x + y + z; }",
                 "1 x == | 5 if | x ++ | y ++ | 6 jmp | z ++ | z y + x + print"
         ),
         TestIO( //If/else statement unscoped
-                "function main() { if (x == 1) x++; else y++; }",
+                "main { if (x == 1) x++; else y++; }",
                 "1 x == | 4 if | x ++ | 5 jmp | y ++"
         ),
         TestIO( //If/elseif/else statement unscoped
-                "function main() { if (x == 1) true; else if (y == 2) false; else A; }",
+                "main { if (x == 1) true; else if (y == 2) false; else A; }",
                 "1 x == | 4 if | true | 9 jmp | 2 y == | 8 if | false | 9 jmp | A"
         ),
         TestIO( //If/elseif/else statement scoped
-                "function main() { if (x == 1) { true; } else if (y == 2) { false; } else { A; } }",
+                "main { if (x == 1) { true; } else if (y == 2) { false; } else { A; } }",
                 "1 x == | 4 if | true | 9 jmp | 2 y == | 8 if | false | 9 jmp | A"
         ),
         TestIO( //Nested if unscoped
-                "function main() { if (true) { if (false) true; else false; } }",
+                "main { if (true) { if (false) true; else false; } }",
                 "true | 7 if | false | 6 if | true | 7 jmp | false"
         ),
         TestIO( //Nested if scoped
-                "function main() { if (true) { if (false) { true; } else { false; } } }",
+                "main { if (true) { if (false) { true; } else { false; } } }",
                 "true | 7 if | false | 6 if | true | 7 jmp | false"
         ),
         TestIO( //Nested if/else inside if/else
-                "function main() { if (true) { if (false) true; else false; } else { return 1; } }",
+                "main { if (true) { if (false) true; else false; } else { return 1; } }",
                 "true | 8 if | false | 6 if | true | 7 jmp | false | 9 jmp | 1 return"
         ),
         TestIO( //Invalid use of else with scope
-                "function main() { if (true) { 1; } x++; else { 7; } }",
+                "main { if (true) { 1; } x++; else { 7; } }",
                 "Unexpected 'else' not following 'if'"
         ),
         TestIO( //Invalid use of else without scope
-                "function main() { if (true) 1; x++; else 7; }",
+                "main { if (true) 1; x++; else 7; }",
                 "Unexpected 'else' not following 'if'"
         ),
         TestIO( //If without condition
-                "function main() { if }",
-                "Unexpected '}' after construct keyword | Unexpected '}'"
+                "main { if }",
+                "Unexpected '}' after construct keyword"
         ),
         TestIO( //While loop with scope
-                "function main() { while (1) { print '1'; } }",
+                "main { while (1) { print '1'; } }",
                 "2 jmp | '1' print | 1 | 5 if | 1 jmp"
         ),
         TestIO( //While loop without scope
-                "function main() { while (1) print '1'; }",
+                "main { while (1) print '1'; }",
                 "2 jmp | '1' print | 1 | 5 if | 1 jmp"
         ),
         TestIO( //If inside of while loop
-                "function main() { while (1) { if (0) print '1'; } }",
+                "main { while (1) { if (0) print '1'; } }",
                 "4 jmp | 0 | 4 if | '1' print | 1 | 7 if | 1 jmp"
         ),
         TestIO( //Do while loop
-                "function main() { do { B; } while (A);",
+                "main { do { B; } while (A);",
                 "B | A | 4 if | 0 jmp"
         ),
         TestIO( //Do while loop missing while
-                "function main() { do { B; } }",
+                "main { do { B; } }",
                 "Expecting 'while' after 'do'"
         ),
         TestIO( //Do while loop missing curly brace
-                "function main() { do B; while (A); }",
+                "main { do B; while (A); }",
                 "Expecting '{' after 'do'"
         ),
         TestIO( //Do while loop missing ';'
-                "function main() { do { B; } while (A) }",
+                "main { do { B; } while (A) }",
                 "Expecting ';' after do while loop"
         ),
         TestIO(
-                "function main() { for (x; A; y) { B; } }",
+                "main { for (x; A; y) { B; } }",
                 "x | 4 jmp | B | y | A | 7 if | 2 jmp"
         ),
         TestIO(
-                "function main() { for (A) { B; }",
+                "main { for (A) { B; }",
                 "Expecting ';' in FOR loop condition | Unexpected closing parenthesis"
         ),
         TestIO(
-                "function main() { for (;;) b; }",
+                "main { for (;;) b; }",
                 "2 jmp | b | 1 | 5 if | 1 jmp"
         ),
         TestIO(
-                "function main() { for (a;;;) { B; } }",
+                "main { for (a;;;) { B; } }",
                 "Unexpected Operator ;"
         ),
         TestIO(
-                "function main() { for a { b; } }",
-                "Expecting condition in FOR loop | Use of global statements is forbidden | Unexpected '}'"
+                "main { for a { b; } }",
+                "Expecting condition in FOR loop"
         ),
         TestIO(
                 "c++",
@@ -141,8 +143,10 @@ void Test::testParser() {
     bool error = false;
     bool errorState = false;
 
-    map<string, vector<OperationNode*> >* ops;
-    map<string, vector<OperationNode*> >::iterator it;
+    map<string, ClassDefinition* >* ops;
+    map<string, ClassDefinition* >::iterator it;
+    map<string, Method*> methods;
+    map<string, Method*>::iterator it2;
 
     cout << "Starting Parser Unit Test" << endl;
     clock_t timer = clock();
@@ -161,19 +165,21 @@ void Test::testParser() {
             }
             sp.clearErrors();
             errorState = (output != "");
-            for (it = (*ops).begin(); it != (*ops).end(); it++) {
-                for (int ii = 0; ii < (*ops)[it->first].size(); ii++) {
-                    if (!errorState) {
-                        if (ii != 0) output += " | ";
-                        output += (*ops)[it->first].at(ii)->getPostfix();
+            if (ops != NULL) {
+                for (it = (*ops).begin(); it != (*ops).end(); it++) {
+                    methods = it->second->getMethods();
+                    for (it2 = methods.begin(); it2 != methods.end(); it2++) {
+                        for (int ii = 0; ii < it2->second->getInstructionSize(); ii++) {
+                            if (!errorState) {
+                                if (ii != 0) output += " | ";
+                                output += it2->second->getInstruction(ii)->getPostfix();
+                            }
+                        }
                     }
+                    delete it->second;
                 }
-                while (!(*ops)[it->first].empty()) {
-                    delete (*ops)[it->first].back();
-                    (*ops)[it->first].pop_back();
-                }
+                delete ops;
             }
-            delete ops;
         } catch (PostfixError &e) {
             output = e.msg;
         }

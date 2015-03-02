@@ -5,6 +5,7 @@
 #include <string>
 #include <queue>
 #include <vector>
+#include "ClassDefinition.h"
 #include "ExpressionTreeBuilder.h"
 #include "OperationNode.h"
 
@@ -15,8 +16,15 @@
 class Parser {
     private:
         std::queue<Token> toks;
-        std::map< std::string, std::vector<OperationNode*> >* functions;
-        std::string currentFunction;
+
+        //Classes and method
+        std::map<std::string, ClassDefinition*>* classes;
+        ClassDefinition* currentClass;
+        Method* currentMethod;
+        bool inClass;
+        bool inMethod;
+        bool inMain;
+
         static std::map<std::string, short> keywords;
         ExpressionTreeBuilder expTreeBuilder;
         std::queue<Token> statementQueue;
@@ -26,7 +34,6 @@ class Parser {
         unsigned int infixPos;
         std::queue<PostfixError> errors;
         bool upcomingElse;
-        bool inFunction;
 
 
     public:
@@ -34,7 +41,7 @@ class Parser {
         ~Parser();
         void initKeywords();
         short static isKeyWord(std::string word);
-        std::map< std::string, std::vector<OperationNode*> >* parseText(std::string infix);
+        std::map< std::string, ClassDefinition* >* parseText(std::string infix);
         void getTokens(std::string infix, std::queue<Token> &result);
         std::queue<PostfixError> getErrors();
         void clearErrors();
@@ -44,7 +51,7 @@ class Parser {
         void addToken(Token &t, bool pushOnFunction);
         void addCondition(bool toFunction);
         void buildTree();
-        void startFunction();
+        void startMain();
         void getStatement(Token &t, bool isFor);
         void addStatement(bool toFunction);
         void markScoped(OperationNode* op);

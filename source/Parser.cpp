@@ -14,7 +14,6 @@ using namespace std;
 Parser::Parser() {
     this->expTreeBuilder = ExpressionTreeBuilder();
     this->errors = queue<PostfixError>();
-    this->currentFunction = "~";
     if (Parser::keywords.empty()) {
         initKeywords();
     }
@@ -34,9 +33,16 @@ Parser::~Parser() {
 
 /****************************************************************************************
  *
+ * The starting point for the script is the method "main" inside the class "~"
+ * The reason the class is called "~" is to avoid having the user declare a class with
+ * the same name as the script entry point.
+ *
  ****************************************************************************************/
-map< string, vector<OperationNode*> >* Parser::parseText(string infix) {
-    this->functions = new map< string, vector<OperationNode*> >();
+map< string, ClassDefinition* >* Parser::parseText(string infix) {
+    this->classes = new map<string, ClassDefinition*>();
+    this->currentClass = NULL;
+    this->currentMethod = NULL;
+
     this->toks = queue<Token>();
     this->statementQueue = queue<Token>();
     this->getTokens(infix, toks);
@@ -48,7 +54,9 @@ map< string, vector<OperationNode*> >* Parser::parseText(string infix) {
     this->controlStack = stack<OperationNode*>();
     upcomingElse = false;
 
-    this->inFunction = false;
+    this->inClass  = false;
+    this->inMethod = false;
+    this->inMain   = false;
 
     int pos = 0;
 
@@ -64,12 +72,11 @@ map< string, vector<OperationNode*> >* Parser::parseText(string infix) {
         }
 
         //Check for functions
-        if (!inFunction && lowercaseWord != "function") {
+        if (!inMain && !inClass && lowercaseWord != "main") {
             this->errors.push(PostfixError("Use of global statements is forbidden"));
-        } else if (inFunction && lowercaseWord == "function") {
-            this->errors.push(PostfixError("Cannot declare function inside of a function"));
-        } else if (!inFunction && lowercaseWord == "function") {
-            this->startFunction();
+            return this->classes;
+        } else if (!inMain && !inClass && lowercaseWord == "main") {
+            this->startMain();
             continue;
         }
 
@@ -91,7 +98,7 @@ map< string, vector<OperationNode*> >* Parser::parseText(string infix) {
                 this->addToken(t, false);
             } else if (lowercaseWord == "while") {
                 //Save current position
-                pos = (*this->functions)[currentFunction].size() + 1;
+                pos = currentMethod->getInstructionSize() + 1;
                 op = this->createJump(pos, true);
                 this->controlStack.push(op);
                 //Add condition to control stack
@@ -99,7 +106,7 @@ map< string, vector<OperationNode*> >* Parser::parseText(string infix) {
                 //Add empty jump
                 op = this->createJump(0, false);
                 this->controlStack.push(op);
-                (*this->functions)[currentFunction].push_back(op);
+                currentMethod->addInstruction(op);
                 //Add while statement to controlStack and add it instructions
                 t.word = lowercaseWord;
                 this->addToken(t, false);
@@ -108,7 +115,7 @@ map< string, vector<OperationNode*> >* Parser::parseText(string infix) {
                     this->errors.push(PostfixError("Expecting '{' after 'do'"));
                 }
                 //Save current position
-                pos = (*this->functions)[currentFunction].size();
+                pos = currentMethod->getInstructionSize();
                 op = this->createJump(pos, true);
                 this->controlStack.push(op);
                 //Save the do
@@ -121,10 +128,7 @@ map< string, vector<OperationNode*> >* Parser::parseText(string infix) {
 
         //Deal with end of scopes
         else if (t.word == "}") {
-            if (inFunction && controlStack.empty()) {
-                this->inFunction = false;
-                continue;
-            } else if (!inFunction || controlStack.empty() || controlStack.top()->operation.type != 'o') {
+            if (!inMain && !inClass && !inMethod && (controlStack.empty() || controlStack.top()->operation.type != 'o')) {
                 this->errors.push(PostfixError("Unexpected '}'"));
             } else if (!controlStack.empty() && controlStack.top()->operation.word == "if") {
                 //Set up jump on previous IF statement if branch was not taken
@@ -154,26 +158,28 @@ map< string, vector<OperationNode*> >* Parser::parseText(string infix) {
         }
     }
 
-    return this->functions;
+    return this->classes;
 }
 
 
 /****************************************************************************************
  *
  ****************************************************************************************/
-void Parser::startFunction() {
-    if (this->toks.empty() || this->toks.front().type != 'w') {
-        this->errors.push(PostfixError("Expecting function name after function keyword"));
+void Parser::startMain() {
+    string name = "main";
+
+    this->currentClass = new ClassDefinition();
+    (*this->classes)["~"] = this->currentClass;
+    this->currentMethod = new Method(false, false);
+    (*this->classes)["~"]->addMethod(name, this->currentMethod);
+
+    if (this->toks.front().word != "{") {
+        this->errors.push(PostfixError("Expecting '{' after main"));
     }
 
-    this->currentFunction = this->toks.front().word;
-
-    toks.pop();
-    toks.pop();
-    toks.pop();
     toks.pop();
 
-    this->inFunction = true;
+    this->inMain = true;
 }
 
 
@@ -187,7 +193,7 @@ inline void Parser::addToken(Token &t, bool pushOnFunction) {
     op->operation = t;
 
     if (pushOnFunction) {
-        (*this->functions)[currentFunction].push_back(op);
+        currentMethod->addInstruction(op);
     }
 
     //Save the location to modify the jump later
@@ -243,7 +249,7 @@ void Parser::addStatement(bool toFunction) {
             this->errors.push(PostfixError("Expecting condition"));
         }
         if (toFunction) {
-            (*this->functions)[currentFunction].push_back(op);
+            currentMethod->addInstruction(op);
         } else {
             this->controlStack.push(op);
         }
@@ -352,7 +358,7 @@ void Parser::endScope(bool setFirst) {
         controlStack.top()->right = new OperationNode();
         controlStack.top()->right->operation = Token();
         controlStack.top()->right->operation.type = 'n';
-        sprintf(num, "%lu", (*this->functions)[currentFunction].size() + upcomingElse);
+        sprintf(num, "%lu", currentMethod->getInstructionSize() + upcomingElse);
         controlStack.top()->right->operation.word = num;
         controlStack.pop();
     }
@@ -361,7 +367,7 @@ void Parser::endScope(bool setFirst) {
     if (upcomingElse) {
         //Prepare new jump on previous IF statement if branch was taken
         op = createJump(0, false);
-        (*this->functions)[currentFunction].push_back(op);
+        currentMethod->addInstruction(op);
         controlStack.push(op);
     }
 }
@@ -407,24 +413,24 @@ inline void Parser::endWhile() {
     jmp->right = new OperationNode();
     jmp->right->operation = Token();
     jmp->right->operation.type = 'n';
-    sprintf(num, "%lu", (*this->functions)[currentFunction].size());
+    sprintf(num, "%lu", currentMethod->getInstructionSize());
     jmp->right->operation.word = num;
 
     //Push on condition
     cond = this->controlStack.top();
     this->controlStack.pop();
-    (*this->functions)[currentFunction].push_back(cond);
+    currentMethod->addInstruction(cond);
 
     //Push on while
-    (*this->functions)[currentFunction].push_back(whl);
+    currentMethod->addInstruction(whl);
 
     //Push on last jump
     jmp = this->controlStack.top();
     this->controlStack.pop();
-    (*this->functions)[currentFunction].push_back(jmp);
+    currentMethod->addInstruction(jmp);
 
     //Update while jump
-    sprintf(num, "%lu", (*this->functions)[currentFunction].size());
+    sprintf(num, "%lu", currentMethod->getInstructionSize());
     whl->operation.word = "if";
     whl->right = new OperationNode();
     whl->right->operation = Token();
@@ -489,7 +495,7 @@ void Parser::endDoWhile() {
     }
 
     //Add the if
-    sprintf(num, "%lu", (*this->functions)[currentFunction].size() + 2);
+    sprintf(num, "%lu", currentMethod->getInstructionSize() + 2);
     op = new OperationNode();
     op->operation = Token();
     op->operation.word = "if";
@@ -498,12 +504,12 @@ void Parser::endDoWhile() {
     op->right->operation = Token();
     op->right->operation.type = 'n';
     op->right->operation.word = num;
-    (*this->functions)[currentFunction].push_back(op);
+    currentMethod->addInstruction(op);
 
     //Add the jump back
     op = this->controlStack.top();
     this->controlStack.pop();
-    (*this->functions)[currentFunction].push_back(op);
+    currentMethod->addInstruction(op);
 }
 
 
@@ -530,7 +536,7 @@ void Parser::beginFor(Token &t, string &lowercaseWord) {
             this->addStatement(true);
         }
         //Save current position
-        pos = (*this->functions)[currentFunction].size() + 1;
+        pos = currentMethod->getInstructionSize() + 1;
         op = this->createJump(pos, true);
         this->controlStack.push(op);
         //Get condition
@@ -554,7 +560,7 @@ void Parser::beginFor(Token &t, string &lowercaseWord) {
         //Create jump
         op = this->createJump(0, false);
         this->controlStack.push(op);
-        (*this->functions)[currentFunction].push_back(op);
+        currentMethod->addInstruction(op);
         //Save the for
         temp.word = lowercaseWord;
         this->addToken(temp, false);
@@ -589,7 +595,7 @@ void Parser::endFor() {
     jmp = this->controlStack.top();
     this->controlStack.pop();
     bool iterNotNull = this->controlStack.top() != NULL;
-    sprintf(num, "%lu", (*this->functions)[currentFunction].size() + iterNotNull);
+    sprintf(num, "%lu", currentMethod->getInstructionSize() + iterNotNull);
     jmp->right = new OperationNode();
     jmp->right->operation = Token();
     jmp->right->operation.type = 'n';
@@ -599,7 +605,7 @@ void Parser::endFor() {
     iter = this->controlStack.top();
     this->controlStack.pop();
     if (iter != NULL) {
-        (*this->functions)[currentFunction].push_back(iter);
+        currentMethod->addInstruction(iter);
     }
 
     //Add the condition statement
@@ -611,22 +617,22 @@ void Parser::endFor() {
         cond->operation.type = 'n';
         cond->operation.word = "1";
     }
-    (*this->functions)[currentFunction].push_back(cond);
+    currentMethod->addInstruction(cond);
 
     //Add the if
-    sprintf(num, "%lu", (*this->functions)[currentFunction].size() + 2);
+    sprintf(num, "%lu", currentMethod->getInstructionSize() + 2);
     fr->operation.word = "if";
     fr->operation.type = 'o';
     fr->right = new OperationNode();
     fr->right->operation = Token();
     fr->right->operation.type = 'n';
     fr->right->operation.word = num;
-    (*this->functions)[currentFunction].push_back(fr);
+    currentMethod->addInstruction(fr);
 
     //Get final jump
     jmp = this->controlStack.top();
     this->controlStack.pop();
-    (*this->functions)[currentFunction].push_back(jmp);
+    currentMethod->addInstruction(jmp);
 }
 
 
