@@ -7,8 +7,8 @@ using namespace std;
 /****************************************************************************************
  *
  ****************************************************************************************/
-Method::Method(bool isPrivate, bool isStatic) {
-    this->isPrivate = isPrivate;
+Method::Method(Visibility visibility, bool isStatic) {
+    this->visibility = visibility;
     this->isStatic  = isStatic;
     this->instructions = vector<OperationNode*>();
 }
@@ -28,8 +28,8 @@ Method::~Method() {
 /****************************************************************************************
  *
  ****************************************************************************************/
-bool Method::getIsPivate() {
-    return this->isPrivate;
+Visibility Method::getVisibility() {
+    return this->visibility;
 }
 
 

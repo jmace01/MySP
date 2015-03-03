@@ -8,8 +8,8 @@ class Number : public Variable {
         float value;
 
     public:
-        Number();
-        virtual ~Number();
+        Number(Visibility visibility, bool isStatic, int value);
+        ~Number();
 
         char getType();
         float getNumberValue();

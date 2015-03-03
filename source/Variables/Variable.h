@@ -2,21 +2,23 @@
 #define SOURCE_VARIABLES_VARIABLE_H_
 
 #include <string>
+#include "../Method.h"
 
 class Variable {
     protected:
-        bool isPrivate;
+        Visibility visibility;
+        bool isStatic;
 
     public:
-        Variable();
+        Variable(Visibility visibility, bool isStatic);
         virtual ~Variable();
-        bool getIsPrivate();
+        Visibility getVisibility();
 
-        virtual char getType() = 0;
-        virtual float getNumberValue() = 0;
-        virtual std::string getStringValue() = 0;
-        virtual Variable* getArrayValue() = 0;
-        virtual void getObjectValue() = 0;
+        virtual char getType();
+        virtual float getNumberValue();
+        virtual std::string getStringValue();
+        virtual Variable* getArrayValue();
+        virtual void getObjectValue();
 };
 
 #endif

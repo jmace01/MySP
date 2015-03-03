@@ -8,9 +8,8 @@ using namespace std;
  ****************************************************************************************/
 ClassDefinition::ClassDefinition() {
     this->inheritedClass   = NULL;
-    this->dynamicVariables = map<string, Variable*>();
-    this->staticVariables  = map<string, Variable*>();
-    this->methods          = map<string, Method*>();
+    this->properties = map<string, Variable>();
+    this->methods    = map<string, Method*>();
 }
 
 
@@ -18,19 +17,27 @@ ClassDefinition::ClassDefinition() {
  *
  ****************************************************************************************/
 ClassDefinition::~ClassDefinition() {
-    map<string, Variable*>::iterator it;
-    map<string, Method*>::iterator it2;
-    //Remove any dynamic variable
-    for (it = dynamicVariables.begin(); it != dynamicVariables.end(); it++) {
-        delete it->second;
-    }
-    //Remove any static variables
-    for (it = staticVariables.begin(); it != staticVariables.end(); it++) {
-        delete it->second;
-    }
+    map<string, Method*>::iterator it;
     //Remove methods
-    for (it2 = methods.begin(); it2 != methods.end(); it2++) {
-        delete it2->second;
+    for (it = methods.begin(); it != methods.end(); it++) {
+        delete it->second;
+    }
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void ClassDefinition::addProperty(string &name, Variable &v) {
+    //Does the property already exist?
+    if (this->properties.find(name) != this->properties.end()) {
+        throw PostfixError("Redefinition of property '"+name+"'");
+    }
+
+    //Create the method
+    else {
+        //Don't use default constructor (properties[name] = v)
+        this->properties.insert(std::pair<string,Variable>(name,v));
     }
 }
 
@@ -78,4 +85,12 @@ Method* ClassDefinition::getMethod(string &name) {
     else {
         return this->methods[name];
     }
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void ClassDefinition::setInheritance(ClassDefinition* inherClass) {
+    this->inheritedClass = inherClass;
 }

@@ -17,13 +17,11 @@ class Parser {
     private:
         std::queue<Token> toks;
 
-        //Classes and method
+        //Classes and methods
         std::map<std::string, ClassDefinition*>* classes;
+        std::map<std::string, std::string> inheritance;
         ClassDefinition* currentClass;
         Method* currentMethod;
-        bool inClass;
-        bool inMethod;
-        bool inMain;
 
         static std::map<std::string, short> keywords;
         ExpressionTreeBuilder expTreeBuilder;
@@ -52,6 +50,11 @@ class Parser {
         void addCondition(bool toFunction);
         void buildTree();
         void startMain();
+        void startClass(std::string &name);
+        void startMethod(std::string &name, Visibility visibility, bool isStatic);
+        void startProperty(Token &t);
+        void endClass();
+        void endMethod();
         void getStatement(Token &t, bool isFor);
         void addStatement(bool toFunction);
         void markScoped(OperationNode* op);

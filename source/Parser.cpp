@@ -4,9 +4,6 @@
 
 using namespace std;
 
-// #yolo -- turn off all error messages and warnings
-// #selfie -- turn off wornings
-// #whereisthelove -- set precision
 
 /****************************************************************************************
  *
@@ -27,7 +24,7 @@ map<string, short> Parser::keywords = map<string, short>();
  *
  ****************************************************************************************/
 Parser::~Parser() {
-    //
+    //Nothing to be freed
 }
 
 
@@ -51,12 +48,9 @@ map< string, ClassDefinition* >* Parser::parseText(string infix) {
     Token temp;
     OperationNode* op;
     string lowercaseWord;
+    string className;
     this->controlStack = stack<OperationNode*>();
     upcomingElse = false;
-
-    this->inClass  = false;
-    this->inMethod = false;
-    this->inMain   = false;
 
     int pos = 0;
 
@@ -71,13 +65,40 @@ map< string, ClassDefinition* >* Parser::parseText(string infix) {
             lowercaseWord += tolower(t.word[i]);
         }
 
-        //Check for functions
-        if (!inMain && !inClass && lowercaseWord != "main") {
+        //Check for classes
+        if (this->currentClass == NULL && lowercaseWord != "main" && lowercaseWord != "class") {
             this->errors.push(PostfixError("Use of global statements is forbidden"));
             return this->classes;
-        } else if (!inMain && !inClass && lowercaseWord == "main") {
+        } else if (this->currentClass == NULL && lowercaseWord == "main") {
             this->startMain();
             continue;
+        } else if (this->currentClass == NULL && lowercaseWord == "class") {
+            if (this->toks.empty() || this->toks.front().type != 'w') {
+                this->errors.push(PostfixError("Expecting class name after 'class' keyword"));
+                continue;
+            }
+            className = toks.front().word;
+            this->toks.pop();
+            if (!this->toks.empty() && this->toks.front().word != "{" && this->toks.front().word != "inherits") {
+                this->errors.push(PostfixError("Expecting '{' after class name"));
+                continue;
+            } else if (!this->toks.empty() && this->toks.front().word == "inherits") {
+                if (this->toks.empty() || this->toks.front().type != 'w') {
+                    this->errors.push(PostfixError("Expecting class name after 'inherits'"));
+                    continue;
+                }
+                this->inheritance[this->toks.front().word] = className;
+                this->toks.pop();
+                if (!this->toks.empty() && this->toks.front().word != "{") {
+                    this->errors.push(PostfixError("Expecting '{' after class name"));
+                    continue;
+                }
+            }
+
+            this->startClass(className);
+            this->toks.pop();
+        } else if (this->currentMethod == NULL && isKeyWord(t.word) > 1) {
+            this->startProperty(t);
         }
 
         //Don't allow leading or repeated semicolons
@@ -128,8 +149,12 @@ map< string, ClassDefinition* >* Parser::parseText(string infix) {
 
         //Deal with end of scopes
         else if (t.word == "}") {
-            if (!inMain && !inClass && !inMethod && (controlStack.empty() || controlStack.top()->operation.type != 'o')) {
+            if (this->currentClass == NULL && this->currentMethod == NULL) {
                 this->errors.push(PostfixError("Unexpected '}'"));
+            } else if (controlStack.empty() && this->currentMethod != NULL) {
+                this->endMethod();
+            } else if (controlStack.empty()) {
+                this->endClass();
             } else if (!controlStack.empty() && controlStack.top()->operation.word == "if") {
                 //Set up jump on previous IF statement if branch was not taken
                 this->endScope(true);
@@ -158,6 +183,15 @@ map< string, ClassDefinition* >* Parser::parseText(string infix) {
         }
     }
 
+    //Set up inheritance on classes
+    map<string, string>::iterator it;
+    for (it = inheritance.begin(); it != inheritance.end(); it++) {
+        if (this->classes->find(it->second) == this->classes->end()) {
+            this->errors.push(PostfixError("Inherited class '"+it->second+"' not found"));
+        }
+        (*this->classes)[it->first]->setInheritance((*this->classes)[it->second]);
+    }
+
     return this->classes;
 }
 
@@ -166,20 +200,112 @@ map< string, ClassDefinition* >* Parser::parseText(string infix) {
  *
  ****************************************************************************************/
 void Parser::startMain() {
-    string name = "main";
+    string className  = "~";
+    string methodName = "main";
 
-    this->currentClass = new ClassDefinition();
-    (*this->classes)["~"] = this->currentClass;
-    this->currentMethod = new Method(false, false);
-    (*this->classes)["~"]->addMethod(name, this->currentMethod);
+    this->startClass(className);
+    this->startMethod(methodName, PUBLIC, false);
 
     if (this->toks.front().word != "{") {
         this->errors.push(PostfixError("Expecting '{' after main"));
     }
 
     toks.pop();
+}
 
-    this->inMain = true;
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Parser::startClass(string &name) {
+    if (this->classes->find(name) != this->classes->end()) {
+        this->errors.push(PostfixError("A class with the name '"+name+"' already exists."));
+    }
+    this->currentClass = new ClassDefinition();
+    (*this->classes)[name] = this->currentClass;
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Parser::startMethod(string &name, Visibility visibility, bool isStatic) {
+    this->currentMethod = new Method(visibility, isStatic);
+    this->currentClass->addMethod(name, this->currentMethod);
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void inline Parser::startProperty(Token &t) {
+    Visibility visibility;
+    bool isStatic;
+    short val = isKeyWord(t.word);
+
+    if (val < 2 || val > 4) {
+        cout << "--" << toks.front().word << "--" << endl;
+        this->errors.push(PostfixError("Expecting visibility 'public' 'private' or 'protected'"));
+        return;
+    }
+
+    switch (val) {
+        case 2:
+            visibility = PUBLIC;
+        break;
+        case 3:
+            visibility = PRIVATE;
+        break;
+        default:
+            visibility = PROTECTED;
+        break;
+    }
+
+    if (toks.empty() || isKeyWord(toks.front().word) < 5) {
+        this->errors.push(PostfixError("Expecting 'static' or 'dynamic' keyword before property"));
+        return;
+    }
+
+    t = toks.front();
+    toks.pop();
+    isStatic = isKeyWord(t.word) < 6;
+
+    if (toks.empty() || toks.front().type != 'w') {
+        this->errors.push(PostfixError("Expecting property name"));
+        return;
+    }
+
+    t = toks.front();
+    toks.pop();
+
+    if (toks.front().word == ";") {
+        Variable v(visibility, isStatic);
+        this->currentClass->addProperty(t.word, v);
+    } else {
+        //Add method
+        this->startMethod(t.word, visibility, isStatic);
+        //Get parameters
+        toks.pop();
+        toks.pop();
+        toks.pop();
+    }
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Parser::endClass() {
+    this->currentClass  = NULL;
+    this->currentMethod = NULL;
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Parser::endMethod() {
+    this->currentMethod = NULL;
 }
 
 
@@ -662,19 +788,23 @@ OperationNode* Parser::createJump(unsigned long pos, bool includePos) {
  *
  ****************************************************************************************/
 void Parser::initKeywords() {
-    keywords[   "if"   ] = 1;
-    keywords[  "else"  ] = 1;
-    keywords[   "do"   ] = 1;
-    keywords[ "while" ]  = 1;
-    keywords[  "for"  ]  = 1;
-    keywords["foreach"]  = 1;
-    keywords[ "switch" ] = 1;
-    keywords[  "case"  ] = 1;
-    keywords["function"] = 1;
-    keywords[  "try"  ]  = 1;
-    keywords[ "catch" ]  = 1;
-    keywords["finally"]  = 1;
-    keywords[ "class" ]  = 1;
+    keywords[ "if"      ] = 1;
+    keywords[ "else"    ] = 1;
+    keywords[ "do"      ] = 1;
+    keywords[ "while"   ] = 1;
+    keywords[ "for"     ] = 1;
+    keywords[ "foreach" ] = 1;
+    //keywords[ "switch"  ] = 1;
+    //keywords[ "case"    ] = 1;
+    //keywords[ "try"     ] = 1;
+    //keywords[ "catch"   ] = 1;
+    //keywords[ "finally" ] = 1;
+    keywords[ "class"   ] = 1;
+    keywords[ "public"    ] = 2;
+    keywords[ "private"   ] = 3;
+    keywords[ "protected" ] = 4;
+    keywords[ "static"    ] = 5;
+    keywords[ "dynamic"   ] = 6;
 }
 
 

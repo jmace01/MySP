@@ -12,7 +12,7 @@ using namespace std;
 
 int main() {
 
-    string s = "main { a++; }";
+    string s = "class Test { public dynamic a() { print \"hello\"; } public dynamic foo() { print bar; } } main { a++; }";
 
     Parser sp = Parser();
     queue<PostfixError> pe;

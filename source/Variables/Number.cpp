@@ -4,8 +4,10 @@
 /****************************************************************************************
  *
  ****************************************************************************************/
-Number::Number() {
-    this->value = 0;
+Number::Number(Visibility visibility, bool isStatic, int value)
+    : Variable(visibility, isStatic)
+{
+    this->value = value;
 }
 
 

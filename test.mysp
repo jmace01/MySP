@@ -1,9 +1,16 @@
-class demo {
+// #yolo -- turn off all error messages and warnings
+// #selfie -- turn off wornings
+// #whereisthelove -- set precision
 
-    private dynamic a;
-    private dynamic b;
-    private dynamic c;
-    private static  d;
+class d {}
+
+
+class demo inherits d {
+
+    protected dynamic a;
+    protected dynamic b;
+    protected dynamic c;
+    private   static  d;
     
     public dynamic demo() {
         this->a = 1;
@@ -12,15 +19,18 @@ class demo {
         demo::d = 4;
     }
     
-    public dynamic foo() {
-        print a+b+c;
+    public dynamic foo(n = 1, j = 2) {
+        for (int i = 0; i < j; i++) {
+            print n * ( a + b + c );
+        }
     }
     
-    public static bar() {
-        print d;
+    public static bar(n) {
+        print n * d;
     }
 
 }
+
 
 main {
     

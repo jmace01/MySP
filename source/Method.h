@@ -4,16 +4,20 @@
 #include <vector>
 #include "OperationNode.h"
 
+
+enum Visibility {PRIVATE, PUBLIC, PROTECTED};
+
+
 class Method {
     private:
-        bool isPrivate;
+        Visibility visibility;
         bool isStatic;
         std::vector<OperationNode*> instructions;
 
     public:
-        Method(bool isPrivate, bool isStatic);
+        Method(Visibility visibility, bool isStatic);
         ~Method();
-        bool getIsPivate();
+        Visibility getVisibility();
         bool getIsStatic();
         unsigned long getInstructionSize();
         void addInstruction(OperationNode* op);
