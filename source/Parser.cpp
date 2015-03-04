@@ -97,7 +97,7 @@ map< string, ClassDefinition* >* Parser::parseText(string infix) {
 
             this->startClass(className);
             this->toks.pop();
-        } else if (this->currentMethod == NULL && isKeyWord(t.word) > 1) {
+        } else if (this->currentMethod == NULL && isKeyWord(t.word) > 1 && isKeyWord(t.word) < 5) {
             this->startProperty(t);
         }
 
@@ -285,9 +285,7 @@ void inline Parser::startProperty(Token &t) {
         //Add method
         this->startMethod(t.word, visibility, isStatic);
         //Get parameters
-        toks.pop();
-        toks.pop();
-        toks.pop();
+        this->addMethodParameters();
     }
 }
 
@@ -430,6 +428,65 @@ void Parser::addCondition(bool toFunction) {
     }
 
     this->addStatement(toFunction);
+}
+
+
+/****************************************************************************************
+ * Add the parameters for a method definition
+ * public static foo (xxxxxxxxx) {}
+ ****************************************************************************************/
+void Parser::addMethodParameters() {
+    //Remove first parenth
+    this->toks.pop();
+
+    //Are there no more tokens?
+    if (this->toks.empty()) {
+        this->errors.push(PostfixError("Unexpected end of file after method definition"));
+        return;
+    }
+
+    Token t;
+    bool mustAssign = false;
+    short point     = 0;
+
+    //Get the condition
+    while (!toks.empty() && toks.front().word != ")") {
+        t = toks.front();
+        toks.pop();
+        point++;
+        if ((point == 1 || point == 3) && t.type == 'o') {
+            this->errors.push(PostfixError("Expecting value in method definition"));
+        } else if ((point == 2 || point == 4) && (t.word != "=" && t.word != ",")) {
+            this->errors.push(PostfixError("Unexpected value in method definition"));
+        } else if (point == 2 && mustAssign && t.word != "=") {
+            this->errors.push(PostfixError("Expecting default parameter in method definition"));
+        } else if (point == 1) {
+            this->currentMethod->addParameter(t.word);
+        } else if (point == 2) {
+            if (t.word == "=") {
+                mustAssign = true;
+            } else {
+                point = 0;
+            }
+        } else if (point == 3) {
+            this->currentMethod->addDefault(t);
+        } else if (point == 4) {
+            point = 0;
+        }
+    }
+
+    if (this->toks.front().word != ")") {
+        this->errors.push(PostfixError("Unexpected end of file"));
+        return;
+    }
+
+    this->toks.pop();
+    if (this->toks.front().word != "{") {
+        this->errors.push(PostfixError("Expecting '{' after method definition"));
+        return;
+    }
+
+    this->toks.pop();
 }
 
 
@@ -639,6 +696,9 @@ void Parser::endDoWhile() {
 }
 
 
+/****************************************************************************************
+ *
+ ****************************************************************************************/
 void Parser::beginFor(Token &t, string &lowercaseWord) {
     OperationNode* op;
     Token temp;
@@ -788,17 +848,22 @@ OperationNode* Parser::createJump(unsigned long pos, bool includePos) {
  *
  ****************************************************************************************/
 void Parser::initKeywords() {
+    //Constructs
     keywords[ "if"      ] = 1;
     keywords[ "else"    ] = 1;
     keywords[ "do"      ] = 1;
     keywords[ "while"   ] = 1;
     keywords[ "for"     ] = 1;
-    keywords[ "foreach" ] = 1;
+
+    //Unimplemented keywords
+    //keywords[ "foreach" ] = 1;
     //keywords[ "switch"  ] = 1;
     //keywords[ "case"    ] = 1;
     //keywords[ "try"     ] = 1;
     //keywords[ "catch"   ] = 1;
     //keywords[ "finally" ] = 1;
+
+    //Classes
     keywords[ "class"   ] = 1;
     keywords[ "public"    ] = 2;
     keywords[ "private"   ] = 3;

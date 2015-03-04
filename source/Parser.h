@@ -5,6 +5,7 @@
 #include <string>
 #include <queue>
 #include <vector>
+#include "Variables/Variable.h"
 #include "ClassDefinition.h"
 #include "ExpressionTreeBuilder.h"
 #include "OperationNode.h"
@@ -48,6 +49,7 @@ class Parser {
         Token getNext();
         void addToken(Token &t, bool pushOnFunction);
         void addCondition(bool toFunction);
+        void addMethodParameters();
         void buildTree();
         void startMain();
         void startClass(std::string &name);

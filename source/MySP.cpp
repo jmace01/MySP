@@ -7,12 +7,13 @@
 #include "ExpressionTreeBuilder.h"
 #include "Parser.h"
 
+
 using namespace std;
 
 
 int main() {
 
-    string s = "class Test { public dynamic a() { print \"hello\"; } public dynamic foo() { print bar; } } main { a++; }";
+    string s = "class Test { public dynamic a(z, x, y = 1) { print \"hello\"; } public dynamic foo(bar) { print bar; } } main { a++; }";
 
     Parser sp = Parser();
     queue<PostfixError> pe;
@@ -28,7 +29,7 @@ int main() {
             pe.pop();
         }
         for (it = (*ops).begin(); it != (*ops).end(); it++) {
-            cout << "============ {[ Class " << it->first << " ]} ============" << endl;
+            cout << "============ { Class " << it->first << " } ============" << endl;
             methods = it->second->getMethods();
             for (it2 = methods.begin(); it2 != methods.end(); it2++) {
                 for (int i = 0; i < it2->second->getInstructionSize(); i++) {

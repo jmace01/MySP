@@ -1,5 +1,11 @@
 #include "Method.h"
-
+#include "Variables/Array.h"
+#include "Variables/Number.h"
+#include "Variables/Object.h"
+#include "Variables/String.h"
+#include "Variables/Variable.h"
+#include <stdlib.h>
+#include <iostream>
 
 using namespace std;
 
@@ -10,6 +16,8 @@ using namespace std;
 Method::Method(Visibility visibility, bool isStatic) {
     this->visibility = visibility;
     this->isStatic  = isStatic;
+    this->parameters = std::vector< std::string >();
+    this->defaultParameters = std::vector<Variable*>();
     this->instructions = vector<OperationNode*>();
 }
 
@@ -62,4 +70,25 @@ void Method::addInstruction(OperationNode* op) {
  ****************************************************************************************/
 OperationNode* Method::getInstruction(unsigned long iNum) {
     return this->instructions.at(iNum);
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Method::addParameter(string &name) {
+    this->parameters.push_back(name);
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Method::addDefault(Token &t) {
+    Variable* v;
+    if (t.type == 's') {
+        v = new String(PUBLIC, false, t.word);
+    } else if (t.type == 'n') {
+        v = new Number(PUBLIC, false, strtof(t.word.c_str(), NULL));
+    }
 }

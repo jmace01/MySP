@@ -1,14 +1,10 @@
-// #yolo -- turn off all error messages and warnings
-// #selfie -- turn off wornings
-// #whereisthelove -- set precision
 
 class d {}
 
-
 class demo inherits d {
 
-    protected dynamic a;
-    protected dynamic b;
+    public    dynamic a;
+    private   dynamic b;
     protected dynamic c;
     private   static  d;
     
@@ -31,11 +27,10 @@ class demo inherits d {
 
 }
 
-
 main {
     
     d = demo();
     d->foo();
-    d::bar();
+    demo::bar();
     
 }

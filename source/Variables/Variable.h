@@ -2,7 +2,10 @@
 #define SOURCE_VARIABLES_VARIABLE_H_
 
 #include <string>
-#include "../Method.h"
+
+
+enum Visibility {PRIVATE, PUBLIC, PROTECTED};
+
 
 class Variable {
     protected:
