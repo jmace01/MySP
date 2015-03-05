@@ -4,9 +4,23 @@
 #include <string>
 
 
+//Visibility types
 enum Visibility {PRIVATE, PUBLIC, PROTECTED};
 
 
+//This is an unfortunate circular reference
+class Method;
+
+
+//RuntimeError struct for throwing
+struct RuntimeError {
+        RuntimeError(std::string msg) : msg(msg) {}
+        std::string msg;
+};
+
+
+
+//Variable class definition
 class Variable {
     protected:
         Visibility visibility;
@@ -18,10 +32,26 @@ class Variable {
         Visibility getVisibility();
 
         virtual char getType();
+        virtual std::string getTypeString();
         virtual float getNumberValue();
         virtual std::string getStringValue();
         virtual Variable* getArrayValue();
-        virtual void getObjectValue();
+
+        virtual Variable* operator= (Variable &rhs);
+        virtual Variable* operator+ (Variable &rhs);
+        virtual Variable* operator- (Variable &rhs);
+        virtual Variable* operator++ (int);
+        virtual Variable* operator-- (int);
+        virtual Variable* operator* (Variable &rhs);
+        virtual Variable* operator/ (Variable &rhs);
+        virtual Variable* operator% (Variable &rhs);
+        virtual Variable* operator[] (int i);
+        virtual bool operator== (Variable &rhs);
+        virtual bool operator< (Variable &rhs);
+
+        virtual Variable* power(Variable &rhs);
+        virtual Method* getMethod(std::string, bool isStatic);
+        virtual Variable* getPropery(std::string, bool isStatic);
 };
 
 #endif

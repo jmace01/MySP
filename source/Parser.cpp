@@ -918,18 +918,9 @@ void Parser::getTokens(string infix, queue<Token> &result) {
 
 
 /****************************************************************************************
- * Creates Token instances for each string, number, word, or operator
+ *
  ****************************************************************************************/
-Token Parser::getNext() {
-    //Initialize variable
-    string word = "";
-    char type;
-
-    //Use "i" instead of "this->infixPos"
-    int i = this->infixPos;
-
-
-    //Eat whitespace
+void Parser::eatWhitespace(int &i) {
     while (
             this->infix[i] == ' '  ||
             this->infix[i] == '\r' ||
@@ -941,9 +932,13 @@ Token Parser::getNext() {
         }
         i++;
     }
+}
 
 
-    //Eat comments
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Parser::eatComments(int &i) {
     if (this->infix[i] == '/' && (this->infix[i + 1] == '/' || this->infix[i+1] == '*')) {
         i++;
         if (this->infix[i] == '/') { // for "//" comments
@@ -965,7 +960,39 @@ Token Parser::getNext() {
             i += 2;
         }
     }
+}
 
+
+/****************************************************************************************
+ * Creates Token instances for each string, number, word, or operator
+ ****************************************************************************************/
+Token Parser::getNext() {
+    //Initialize variable
+    string word = "";
+    char type;
+
+    //Use "i" instead of "this->infixPos"
+    int i = this->infixPos;
+
+
+    //While there are comments or whitespace, eat them
+    while (
+            this->infix[i] == ' '  ||
+            this->infix[i] == '\r' ||
+            this->infix[i] == '\n' ||
+            this->infix[i] == '\t' ||
+            (
+                this->infix[i] == '/' &&
+                (
+                    this->infix[i + 1] == '/' ||
+                    this->infix[i+1] == '*'
+                )
+            )
+          )
+    {
+        this->eatWhitespace(i);
+        this->eatComments(i);
+    }
 
     //Save the line number for the token
     int line = this->lineNumber;

@@ -22,10 +22,12 @@ class Test {
         Test() {
             Test::testExTreeBldr();
             Test::testParser();
+            Test::testVariables();
         }
 
         static void testExTreeBldr();
         static void testParser();
+        static void testVariables();
 };
 
 #endif

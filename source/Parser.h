@@ -46,6 +46,8 @@ class Parser {
         void clearErrors();
 
     private:
+        void eatWhitespace(int &i);
+        void eatComments(int &i);
         Token getNext();
         void addToken(Token &t, bool pushOnFunction);
         void addCondition(bool toFunction);

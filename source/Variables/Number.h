@@ -12,6 +12,7 @@ class Number : public Variable {
         ~Number();
 
         char getType();
+        std::string getTypeString();
         float getNumberValue();
 };
 

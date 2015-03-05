@@ -1,5 +1,21 @@
+/**
+ *
+ * TODO
+ * 
+ * Create file reader/tokenizer class
+ * Finish Variable classes
+ *     Object class needs to save all member variable
+ *     Create operators
+ *     Float and integer types?
+ * Create executer classes
+ *
+ **/
 
-class d {}
+class d {
+    public dynamic blah() {
+        print "?";
+    }
+}
 
 class demo inherits d {
 
@@ -18,6 +34,7 @@ class demo inherits d {
     public dynamic foo(n = 1, j = 2) {
         for (int i = 0; i < j; i++) {
             print n * ( a + b + c );
+            this->blah();
         }
     }
     
