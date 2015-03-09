@@ -1,4 +1,5 @@
 #include "Number.h"
+#include <math.h>
 
 
 using namespace std;
@@ -7,7 +8,7 @@ using namespace std;
 /****************************************************************************************
  *
  ****************************************************************************************/
-Number::Number(Visibility visibility, bool isStatic, int value)
+Number::Number(Visibility visibility, bool isStatic, double value)
     : Variable(visibility, isStatic)
 {
     this->value = value;
@@ -18,7 +19,7 @@ Number::Number(Visibility visibility, bool isStatic, int value)
  *
  ****************************************************************************************/
 Number::~Number() {
-    //
+    //Nothing to free
 }
 
 
@@ -41,6 +42,110 @@ string Number::getTypeString() {
 /****************************************************************************************
  *
  ****************************************************************************************/
-float Number::getNumberValue() {
+double Number::getNumberValue() {
     return this->value;
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+string Number::getStringValue() {
+    char val[30];
+
+    //Can this value not be an int?
+    if (this->value != (int) this->value) {
+        sprintf(val, "%g", this->value);
+    }
+    //Else print as an int
+    else {
+        sprintf(val, "%i", (int) this->value);
+    }
+
+    return string(val);
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+Variable* Number::operator+ (Variable &rhs) {
+    return new Number(PUBLIC, false, this->value + rhs.getNumberValue());
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+Variable* Number::operator- (Variable &rhs) {
+    return new Number(PUBLIC, false, this->value - rhs.getNumberValue());
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+Variable* Number::operator++ (int) {
+    this->value += 1;
+    return new Number(PUBLIC, false, this->value - 1);
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+Variable* Number::operator-- (int) {
+    this->value -= 1;
+    return new Number(PUBLIC, false, this->value + 1);
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+Variable* Number::operator* (Variable &rhs) {
+    return new Number(PUBLIC, false, this->value * rhs.getNumberValue());
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+Variable* Number::operator/ (Variable &rhs) {
+    if (rhs.getNumberValue() == 0) {
+        throw RuntimeError("Division by 0");
+    }
+    return new Number(PUBLIC, false, this->value / rhs.getNumberValue());
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+Variable* Number::operator% (Variable &rhs) {
+    return new Number(PUBLIC, false, (int) this->value % (int) rhs.getNumberValue());
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+bool Number::operator== (Variable &rhs) {
+    return new Number(PUBLIC, false, this->value == rhs.getNumberValue());
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+bool Number::operator< (Variable &rhs) {
+    return new Number(PUBLIC, false, this->value < rhs.getNumberValue());
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+Variable* Number::power(Variable &rhs) {
+    return new Number(PUBLIC, false, pow(this->value, rhs.getNumberValue()));
 }

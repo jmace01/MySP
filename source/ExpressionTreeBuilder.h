@@ -36,10 +36,10 @@ class ExpressionTreeBuilder {
         ExpressionTreeBuilder();
         ~ExpressionTreeBuilder();
         OperationNode* getExpressionTree(std::queue<Token> &toks) throw(PostfixError);
-        short getOperatorHeirchy(std::string op);
-        bool isPostUnary(std::string);
-        bool isPreUnary(std::string);
-        bool isControlWord(std::string op);
+        static short getOperatorHeirchy(std::string op);
+        static bool isPostUnary(std::string);
+        static bool isPreUnary(std::string);
+        static bool isControlWord(std::string op);
 
     private:
         void addOperation(bool isUnary);

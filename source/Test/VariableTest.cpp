@@ -20,19 +20,13 @@ void Test::testVariables() {
     int i = 0;
     int passed = 0;
 
-    try {
-        i++;
-        *a + *b;
-    } catch (RuntimeError &e) {
-        passed++;
-    }
+    b = (*b + *b);
+    cout << b->getTypeString() << endl;
+    b = (*b = *a);
+    cout << b->getTypeString() << endl;
 
-    try {
-        i++;
-        *a - *b;
-    } catch (RuntimeError &e) {
-        passed++;
-    }
+    delete a;
+    delete b;
 
     float targetSpeed = 0.0001 * i;
     float time = (float)(clock() - timer) / CLOCKS_PER_SEC;

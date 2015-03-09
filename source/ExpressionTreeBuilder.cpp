@@ -55,6 +55,11 @@ OperationNode* ExpressionTreeBuilder::getExpressionTree(queue<Token> &toks) thro
         t = toks.front();
         toks.pop();
 
+        //Mark unary operations
+        if (isPreUnary(t.word) || isPostUnary(t.word)) {
+            t.isUnary = true;
+        }
+
         //Pre Unary operators, such as !, ~
         if (t.type == 'o' && this->isPreUnary(t.word)) {
             operators.push(t);
@@ -333,7 +338,7 @@ void ExpressionTreeBuilder::initializeHierarchy() {
 /****************************************************************************************
  *
  ****************************************************************************************/
-short ExpressionTreeBuilder::getOperatorHeirchy(std::string op) {
+short ExpressionTreeBuilder::getOperatorHeirchy(string op) {
     return ExpressionTreeBuilder::opHierarchy[op];
 }
 
@@ -342,7 +347,7 @@ short ExpressionTreeBuilder::getOperatorHeirchy(std::string op) {
  *
  ****************************************************************************************/
 bool ExpressionTreeBuilder::isPostUnary(string op) {
-    short h = this->getOperatorHeirchy(op);
+    short h = ExpressionTreeBuilder::getOperatorHeirchy(op);
     return (h == 12);
 }
 
@@ -351,7 +356,7 @@ bool ExpressionTreeBuilder::isPostUnary(string op) {
  *
  ****************************************************************************************/
 bool ExpressionTreeBuilder::isPreUnary(string op) {
-    short h = this->getOperatorHeirchy(op);
+    short h = ExpressionTreeBuilder::getOperatorHeirchy(op);
     return (h == 13);
 }
 
@@ -360,7 +365,7 @@ bool ExpressionTreeBuilder::isPreUnary(string op) {
  *
  ****************************************************************************************/
 bool ExpressionTreeBuilder::isControlWord(string op) {
-    short h = this->getOperatorHeirchy(op);
+    short h = ExpressionTreeBuilder::getOperatorHeirchy(op);
     return (h == 1);
 }
 

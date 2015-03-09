@@ -1,7 +1,10 @@
 source/MySP.d: ../source/MySP.cpp ../source/OperationNode.h \
   ../source/token.h ../source/./Test/Test.h ../source/./Test/../Parser.h \
   ../source/Variables/Variable.h ../source/ClassDefinition.h \
-  ../source/Method.h ../source/ExpressionTreeBuilder.h
+  ../source/Method.h ../source/ExpressionTreeBuilder.h \
+  ../source/Executor.h ../source/Variables/Array.h \
+  ../source/Variables/Number.h ../source/Variables/Object.h \
+  ../source/Variables/String.h
 
 ../source/OperationNode.h:
 
@@ -18,3 +21,13 @@ source/MySP.d: ../source/MySP.cpp ../source/OperationNode.h \
 ../source/Method.h:
 
 ../source/ExpressionTreeBuilder.h:
+
+../source/Executor.h:
+
+../source/Variables/Array.h:
+
+../source/Variables/Number.h:
+
+../source/Variables/Object.h:
+
+../source/Variables/String.h:

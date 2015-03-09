@@ -5,15 +5,28 @@
 
 class Number : public Variable {
     private:
-        float value;
+        double value;
 
     public:
-        Number(Visibility visibility, bool isStatic, int value);
+        Number(Visibility visibility, bool isStatic, double value);
         ~Number();
 
         char getType();
         std::string getTypeString();
-        float getNumberValue();
+        double getNumberValue();
+        virtual std::string getStringValue();
+
+        virtual Variable* operator+ (Variable &rhs);
+        virtual Variable* operator- (Variable &rhs);
+        virtual Variable* operator++ (int);
+        virtual Variable* operator-- (int);
+        virtual Variable* operator* (Variable &rhs);
+        virtual Variable* operator/ (Variable &rhs);
+        virtual Variable* operator% (Variable &rhs);
+        virtual bool operator== (Variable &rhs);
+        virtual bool operator< (Variable &rhs);
+
+        virtual Variable* power(Variable &rhs);
 };
 
 #endif

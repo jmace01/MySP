@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include "Executor.h"
 #include "ExpressionTreeBuilder.h"
 #include "Parser.h"
 
@@ -13,13 +14,23 @@ using namespace std;
 
 int main() {
 
-    string s = "class Test { public dynamic a(z, x, y = 1) { print \"hello\"; } public dynamic foo(bar) { print bar; } } main { a++; }";
+    string s = "main { a++; a = 1 + 2.1 + 3; }";
 
     Parser sp = Parser();
+    Executor ex = Executor();
     queue<PostfixError> pe;
 
     try {
         map<string, ClassDefinition* >* ops = sp.parseText(s);
+        ex.run(ops);
+    } catch (PostfixError &e) {
+        cout << e.msg << endl;
+    }
+
+    cout << endl << endl;
+
+
+    /*
         map<string, ClassDefinition* >::iterator it;
         map<string, Method*> methods;
         map<string, Method*>::iterator it2;
@@ -41,11 +52,8 @@ int main() {
         }
         delete ops;
         cout << "--------------------------------------" << endl;
-    } catch (PostfixError &e) {
-        cout << e.msg << endl;
-    }
+     */
 
-    cout << endl << endl;
 
     //Unit test
 	Test();

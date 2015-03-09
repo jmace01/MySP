@@ -49,7 +49,7 @@ string Variable::getTypeString() {
 /****************************************************************************************
  *
  ****************************************************************************************/
-float Variable::getNumberValue() {
+double Variable::getNumberValue() {
     return 0;
 }
 
@@ -74,8 +74,16 @@ Variable* Variable::getArrayValue() {
  *
  ****************************************************************************************/
 Variable* Variable::operator= (Variable &rhs) {
-    throw RuntimeError("Cannot use = operator on type '"+this->getTypeString()+"'");
-    return new Variable(PUBLIC, false);
+    //If possible, copy over the value
+    //
+
+    //Create new variable
+    Variable* var;
+
+    var = new Variable(PUBLIC, false);
+
+    delete this;
+    return var;
 }
 
 

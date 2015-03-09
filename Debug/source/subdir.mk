@@ -5,6 +5,7 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
 ../source/ClassDefinition.cpp \
+../source/Executor.cpp \
 ../source/ExpressionTreeBuilder.cpp \
 ../source/Method.cpp \
 ../source/MySP.cpp \
@@ -13,6 +14,7 @@ CPP_SRCS += \
 
 OBJS += \
 ./source/ClassDefinition.o \
+./source/Executor.o \
 ./source/ExpressionTreeBuilder.o \
 ./source/Method.o \
 ./source/MySP.o \
@@ -21,6 +23,7 @@ OBJS += \
 
 CPP_DEPS += \
 ./source/ClassDefinition.d \
+./source/Executor.d \
 ./source/ExpressionTreeBuilder.d \
 ./source/Method.d \
 ./source/MySP.d \

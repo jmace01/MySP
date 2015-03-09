@@ -4,6 +4,7 @@
 #include <string>
 
 
+
 //Visibility types
 enum Visibility {PRIVATE, PUBLIC, PROTECTED};
 
@@ -33,11 +34,11 @@ class Variable {
 
         virtual char getType();
         virtual std::string getTypeString();
-        virtual float getNumberValue();
+        virtual double getNumberValue();
         virtual std::string getStringValue();
         virtual Variable* getArrayValue();
 
-        virtual Variable* operator= (Variable &rhs);
+        Variable* operator= (Variable &rhs);
         virtual Variable* operator+ (Variable &rhs);
         virtual Variable* operator- (Variable &rhs);
         virtual Variable* operator++ (int);
