@@ -13,6 +13,7 @@ class String : public Variable {
     public:
         String(Visibility visibility, bool isStatic, std::string &value);
         ~String();
+        std::string getStringValue();
 };
 
 #endif

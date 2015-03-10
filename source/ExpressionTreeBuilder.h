@@ -17,8 +17,9 @@
  *
  ****************************************************************************************/
 struct PostfixError {
-	PostfixError(std::string imsg) { msg = imsg; };
+	PostfixError(std::string imsg, Token &t) : msg(imsg), t(t) {}
 	std::string msg;
+	Token t;
 };
 
 

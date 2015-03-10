@@ -206,19 +206,19 @@ void ExpressionTreeBuilder::validateStatement(queue<Token> toks) throw (PostfixE
 		//Parenthesis
 		if (t.word == "(" || t.word == "[") {
 		    if (t.word == "[" && !wasWord && !wasClosingBacket) {
-		        throw PostfixError("Illegal use of '[' without an array");
+		        throw PostfixError("Illegal use of '[' without an array", t);
 		    }
 		    else if (t.word == "(" && wasClosingParenth) {
-		        throw PostfixError("Illegal use of '('");
+		        throw PostfixError("Illegal use of '('", t);
 		    }
 			parenths.push(t.word[0]);
 			expectingOperator = false;
 		} else if (t.word == ")" || t.word == "]") {
 			if ((t.word == ")" && !wasFunctionOpenning) && (parenths.size() < 1 || !expectingOperator || (t.word == ")" && parenths.top() != '(') || (t.word == "]" && parenths.top() != '['))) {
 			    if (t.word == ")")
-			        throw PostfixError("Unexpected closing parenthesis");
+			        throw PostfixError("Unexpected closing parenthesis", t);
 			    else
-			        throw PostfixError("Unexpected closing bracket");
+			        throw PostfixError("Unexpected closing bracket", t);
 			}
 			parenths.pop();
 			expectingOperator = true;
@@ -226,9 +226,9 @@ void ExpressionTreeBuilder::validateStatement(queue<Token> toks) throw (PostfixE
 
 		//Unexpected Operators
 		else if (expectingOperator && t.type != 'o') {
-			throw PostfixError("Unexpected Value " + t.word);
+			throw PostfixError("Unexpected Value " + t.word, t);
 		} else if (!expectingOperator && t.type == 'o' && !this->isPreUnary(t.word) && !this->isControlWord(t.word)) {
-			throw PostfixError("Unexpected Operator " + t.word);
+			throw PostfixError("Unexpected Operator " + t.word, t);
 		}
 
 		//Other
@@ -237,16 +237,16 @@ void ExpressionTreeBuilder::validateStatement(queue<Token> toks) throw (PostfixE
 		        ternaryParenth.push(parenths.size());
 		    } else if (t.word == ":") {
 		        if (ternaryParenth.size() == 0) {
-		            throw PostfixError("Unexpected ':' with no preceeding '?'");
+		            throw PostfixError("Unexpected ':' with no preceeding '?'", t);
 		        } else if (ternaryParenth.top() != parenths.size()) {
-		            throw PostfixError("Unexpected ':', expecting ')'");
+		            throw PostfixError("Unexpected ':', expecting ')'", t);
 		        }
 		        ternaryParenth.pop();
 		    } else if (t.word == "&" && (toks.empty() || toks.front().type != 'w')) {
-		        throw PostfixError("Illegal use of '&' without variable");
+		        throw PostfixError("Illegal use of '&' without variable", t);
 		    } else if (isControlWord(t.word)) {
 		        if (!isFirst || (!toks.empty() && t.word != "print" && t.word != "echo" && t.word != "return")) {
-		            throw PostfixError("Unexpected keyword '" + t.word + "'");
+		            throw PostfixError("Unexpected keyword '" + t.word + "'", t);
 		        }
 		    }
 			expectingOperator = (
@@ -271,11 +271,11 @@ void ExpressionTreeBuilder::validateStatement(queue<Token> toks) throw (PostfixE
 	}
 
 	if (parenths.size() > 0) {
-		throw PostfixError("Unclosed parenthesis");
+		throw PostfixError("Unclosed parenthesis", t);
 	} else if (ternaryParenth.size() > 0) {
-	    throw PostfixError("Unfinished ternary statement requires ':' after '?'");
+	    throw PostfixError("Unfinished ternary statement requires ':' after '?'", t);
 	} else if (!expectingOperator && !wasKeyword && t.word != "return") {
-	    throw PostfixError("Expecting operand to finish statement");
+	    throw PostfixError("Expecting operand to finish statement", t);
 	}
 }
 

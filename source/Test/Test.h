@@ -22,7 +22,7 @@ class Test {
         Test() {
             Test::testExTreeBldr();
             Test::testParser();
-            Test::testVariables();
+            //Test::testVariables();
         }
 
         static void testExTreeBldr();

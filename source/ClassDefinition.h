@@ -18,8 +18,8 @@ class ClassDefinition {
     public:
         ClassDefinition();
         ~ClassDefinition();
-        void addProperty(std::string &name, Variable &v);
-        void addMethod(std::string &name, Method* m);
+        void addProperty(std::string &name, Variable &v, Token &t);
+        void addMethod(std::string &name, Method* m, Token &t);
         std::map<std::string, Method*> getMethods();
         Method* getMethod(std::string &name);
         void setInheritance(ClassDefinition* inherClass);

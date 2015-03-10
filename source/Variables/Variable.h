@@ -6,7 +6,7 @@
 
 
 //Visibility types
-enum Visibility {PRIVATE, PUBLIC, PROTECTED};
+enum Visibility {PRIVATE, PUBLIC, PROTECTED, TEMP};
 
 
 //This is an unfortunate circular reference
@@ -17,6 +17,7 @@ class Method;
 struct RuntimeError {
         RuntimeError(std::string msg) : msg(msg) {}
         std::string msg;
+        int line;
 };
 
 

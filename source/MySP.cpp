@@ -14,7 +14,7 @@ using namespace std;
 
 int main() {
 
-    string s = "main { a++; a = 1 + 2.1 + 3; }";
+    string s = "main { print 3%2; }";
 
     Parser sp = Parser();
     Executor ex = Executor();

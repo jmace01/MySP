@@ -41,49 +41,47 @@ Executor::~Executor() {
  *
  ****************************************************************************************/
 void Executor::initializeOperationMap() {
-    operationMap["print"]  = &Executor::add;
-    operationMap["echo"]   = &Executor::add;
-    operationMap["return"] = &Executor::add;
-    operationMap["break"]  = &Executor::add;
-    operationMap["="]      = &Executor::add;
-    operationMap["+="]     = &Executor::add;
-    operationMap["-="]     = &Executor::add;
-    operationMap["*="]     = &Executor::add;
-    operationMap["/="]     = &Executor::add;
-    operationMap["%"]      = &Executor::add;
-    operationMap["^="]     = &Executor::add;
-    operationMap["===="]   = &Executor::add;
-    operationMap["==="]    = &Executor::add;
-    operationMap["=="]     = &Executor::add;
-    operationMap["!==="]   = &Executor::add;
-    operationMap["!=="]    = &Executor::add;
-    operationMap["!="]     = &Executor::add;
-    operationMap["<"]      = &Executor::add;
-    operationMap["<="]     = &Executor::add;
-    operationMap[">"]      = &Executor::add;
-    operationMap[">="]     = &Executor::add;
-    operationMap["&&"]     = &Executor::add;
-    operationMap["||"]     = &Executor::add;
-    operationMap["."]      = &Executor::add;
-    operationMap["-"]      = &Executor::add;
+    operationMap["print"]  = &Executor::print;
+    operationMap["echo"]   = &Executor::print;
+    //operationMap["return"] = &Executor::print;
+    //operationMap["break"]  = &Executor::print;
+    //operationMap["="]      = &Executor::print;
+    //operationMap["+="]     = &Executor::print;
+    //operationMap["-="]     = &Executor::print;
+    //operationMap["*="]     = &Executor::print;
+    //operationMap["/="]     = &Executor::print;
+    //operationMap["%="]     = &Executor::print;
+    //operationMap["^="]     = &Executor::print;
+    //operationMap["===="]   = &Executor::print;
+    //operationMap["==="]    = &Executor::print;
+    //operationMap["=="]     = &Executor::print;
+    //operationMap["!==="]   = &Executor::print;
+    //operationMap["!=="]    = &Executor::print;
+    //operationMap["!="]     = &Executor::print;
+    //operationMap["<"]      = &Executor::print;
+    //operationMap["<="]     = &Executor::print;
+    //operationMap[">"]      = &Executor::print;
+    //operationMap[">="]     = &Executor::print;
+    //operationMap["&&"]     = &Executor::print;
+    //operationMap["||"]     = &Executor::print;
+    //operationMap["."]      = &Executor::print;
+    operationMap["-"]      = &Executor::sub;
     operationMap["+"]      = &Executor::add;
-    operationMap["*"]      = &Executor::add;
-    operationMap["/"]      = &Executor::add;
-    operationMap["%"]      = &Executor::add;
-    operationMap["^"]      = &Executor::add;
-    operationMap["++"]     = &Executor::add;
-    operationMap["--"]     = &Executor::add;
-    operationMap["!"]      = &Executor::add;
-    operationMap["~"]      = &Executor::add;
-    operationMap["&"]      = &Executor::add;
-    operationMap["->"]     = &Executor::add;
-    operationMap["::"]     = &Executor::add;
-    operationMap["P"]      = &Executor::add;
-    operationMap["C"]      = &Executor::add;
-    operationMap[""]       = &Executor::add;
-    operationMap[""]       = &Executor::add;
-    operationMap[""]       = &Executor::add;
-    operationMap[""]       = &Executor::add;
+    operationMap["*"]      = &Executor::mul;
+    operationMap["/"]      = &Executor::div;
+    operationMap["%"]      = &Executor::mod;
+    operationMap["^"]      = &Executor::pow;
+    operationMap["++"]     = &Executor::inc;
+    operationMap["--"]     = &Executor::dec;
+    //operationMap["!"]      = &Executor::print;
+    //operationMap["~"]      = &Executor::print;
+    //operationMap["&"]      = &Executor::print;
+    //operationMap["->"]     = &Executor::print;
+    //operationMap["::"]     = &Executor::print;
+    //operationMap["P"]      = &Executor::print;
+    //operationMap["C"]      = &Executor::print;
+    //operationMap["jmp"]    = &Executor::print;
+    //operationMap["if"]     = &Executor::print;
 }
 
 /****************************************************************************************
@@ -117,11 +115,11 @@ void Executor::executeInstruction(OperationNode* op) {
     if (op->operation.type != 'o') {
         //Number
         if (op->operation.type == 'n') {
-            var = new Number(PUBLIC, false, strtod(op->operation.word.c_str(), NULL));
+            var = new Number(TEMP, false, strtod(op->operation.word.c_str(), NULL));
         }
         //String
         else if (op->operation.type == 's') {
-            var = new String(PUBLIC, false, op->operation.word);
+            var = new String(TEMP, false, op->operation.word);
         }
         //Variables or constants
         else if (op->operation.type == 'w') {
@@ -130,7 +128,7 @@ void Executor::executeInstruction(OperationNode* op) {
 
             //Create the variable if it does not yet exist
             if (this->variables.find(op->operation.word) == this->variables.end()) {
-                this->variables[op->operation.word] = new Variable(PUBLIC, false);
+                this->variables[op->operation.word] = new Variable(TEMP, false);
             }
             //Put the variable in the "register" stack
             var = this->variables[op->operation.word];
@@ -180,6 +178,254 @@ void Executor::preserveClasses(bool preserve) {
 /****************************************************************************************
  *
  ****************************************************************************************/
+void Executor::print() {
+    Variable* v = this->registerVariables.top();
+
+    cout << v->getStringValue();
+
+    if (v->getVisibility() == TEMP) {
+        delete v;
+    }
+
+    this->registerVariables.pop();
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
 void Executor::add() {
-    cout << "YES!" << endl;
+    Variable* a;
+    Variable* b;
+    Variable* result;
+
+    //Get operand values
+    a = this->registerVariables.top();
+    this->registerVariables.pop();
+    b = this->registerVariables.top();
+    this->registerVariables.pop();
+
+    //Compute result
+    result = (*a + *b);
+
+    //Delete operand a if visibility is TEMP
+    if (a->getVisibility() == TEMP) {
+        delete a;
+    }
+
+    //Delete operand b if visibility is TEMP
+    if (b->getVisibility() == TEMP) {
+        delete b;
+    }
+
+    //Push on result
+    this->registerVariables.push(result);
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Executor::sub() {
+    Variable* a;
+    Variable* b;
+    Variable* result;
+
+    //Get operand values
+    a = this->registerVariables.top();
+    this->registerVariables.pop();
+    b = this->registerVariables.top();
+    this->registerVariables.pop();
+
+    //Compute result
+    result = (*a - *b);
+
+    //Delete operand a if visibility is TEMP
+    if (a->getVisibility() == TEMP) {
+        delete a;
+    }
+
+    //Delete operand b if visibility is TEMP
+    if (b->getVisibility() == TEMP) {
+        delete b;
+    }
+
+    //Push on result
+    this->registerVariables.push(result);
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Executor::mul() {
+    Variable* a;
+    Variable* b;
+    Variable* result;
+
+    //Get operand values
+    a = this->registerVariables.top();
+    this->registerVariables.pop();
+    b = this->registerVariables.top();
+    this->registerVariables.pop();
+
+    //Compute result
+    result = (*a * *b);
+
+    //Delete operand a if visibility is TEMP
+    if (a->getVisibility() == TEMP) {
+        delete a;
+    }
+
+    //Delete operand b if visibility is TEMP
+    if (b->getVisibility() == TEMP) {
+        delete b;
+    }
+
+    //Push on result
+    this->registerVariables.push(result);
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Executor::div() {
+    Variable* a;
+    Variable* b;
+    Variable* result;
+
+    //Get operand values
+    a = this->registerVariables.top();
+    this->registerVariables.pop();
+    b = this->registerVariables.top();
+    this->registerVariables.pop();
+
+    //Compute result
+    result = (*a / *b);
+
+    //Delete operand a if visibility is TEMP
+    if (a->getVisibility() == TEMP) {
+        delete a;
+    }
+
+    //Delete operand b if visibility is TEMP
+    if (b->getVisibility() == TEMP) {
+        delete b;
+    }
+
+    //Push on result
+    this->registerVariables.push(result);
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Executor::mod() {
+    Variable* a;
+    Variable* b;
+    Variable* result;
+
+    //Get operand values
+    a = this->registerVariables.top();
+    this->registerVariables.pop();
+    b = this->registerVariables.top();
+    this->registerVariables.pop();
+
+    //Compute result
+    result = (*a % *b);
+
+    //Delete operand a if visibility is TEMP
+    if (a->getVisibility() == TEMP) {
+        delete a;
+    }
+
+    //Delete operand b if visibility is TEMP
+    if (b->getVisibility() == TEMP) {
+        delete b;
+    }
+
+    //Push on result
+    this->registerVariables.push(result);
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Executor::pow() {
+    Variable* a;
+    Variable* b;
+    Variable* result;
+
+    //Get operand values
+    a = this->registerVariables.top();
+    this->registerVariables.pop();
+    b = this->registerVariables.top();
+    this->registerVariables.pop();
+
+    //Compute result
+    result = a->power(*b);
+
+    //Delete operand a if visibility is TEMP
+    if (a->getVisibility() == TEMP) {
+        delete a;
+    }
+
+    //Delete operand b if visibility is TEMP
+    if (b->getVisibility() == TEMP) {
+        delete b;
+    }
+
+    //Push on result
+    this->registerVariables.push(result);
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Executor::inc() {
+    Variable* a;
+    Variable* result;
+
+    //Get operand values
+    a = this->registerVariables.top();
+    this->registerVariables.pop();
+
+    //Compute result
+    result = (*a)++;
+
+    //Delete operand a if visibility is TEMP
+    if (a->getVisibility() == TEMP) {
+        delete a;
+    }
+
+    //Push on result
+    this->registerVariables.push(result);
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Executor::dec() {
+    Variable* a;
+    Variable* result;
+
+    //Get operand values
+    a = this->registerVariables.top();
+    this->registerVariables.pop();
+
+    //Compute result
+    result = (*a)--;
+
+    //Delete operand a if visibility is TEMP
+    if (a->getVisibility() == TEMP) {
+        delete a;
+    }
+
+    //Push on result
+    this->registerVariables.push(result);
 }

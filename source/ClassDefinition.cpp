@@ -28,10 +28,10 @@ ClassDefinition::~ClassDefinition() {
 /****************************************************************************************
  *
  ****************************************************************************************/
-void ClassDefinition::addProperty(string &name, Variable &v) {
+void ClassDefinition::addProperty(string &name, Variable &v, Token &t) {
     //Does the property already exist?
     if (this->properties.find(name) != this->properties.end()) {
-        throw PostfixError("Redefinition of property '"+name+"'");
+        throw PostfixError("Redefinition of property '"+name+"'", t);
     }
 
     //Create the method
@@ -45,10 +45,10 @@ void ClassDefinition::addProperty(string &name, Variable &v) {
 /****************************************************************************************
  *
  ****************************************************************************************/
-void ClassDefinition::addMethod(string &name, Method* m) {
+void ClassDefinition::addMethod(string &name, Method* m, Token &t) {
     //Does the method already exist?
     if (this->methods.find(name) != this->methods.end()) {
-        throw PostfixError("Redefinition of method '"+name+"'");
+        throw PostfixError("Redefinition of method '"+name+"'", t);
     }
 
     //Create the method

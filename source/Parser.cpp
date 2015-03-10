@@ -67,35 +67,35 @@ map< string, ClassDefinition* >* Parser::parseText(string infix) {
 
         //Check for classes
         if (this->currentClass == NULL && lowercaseWord != "main" && lowercaseWord != "class") {
-            this->errors.push(PostfixError("Use of global statements is forbidden"));
+            this->errors.push(PostfixError("Use of global statements is forbidden", t));
             return this->classes;
         } else if (this->currentClass == NULL && lowercaseWord == "main") {
-            this->startMain();
+            this->startMain(t);
             continue;
         } else if (this->currentClass == NULL && lowercaseWord == "class") {
             if (this->toks.empty() || this->toks.front().type != 'w') {
-                this->errors.push(PostfixError("Expecting class name after 'class' keyword"));
+                this->errors.push(PostfixError("Expecting class name after 'class' keyword", t));
                 continue;
             }
             className = toks.front().word;
             this->toks.pop();
             if (!this->toks.empty() && this->toks.front().word != "{" && this->toks.front().word != "inherits") {
-                this->errors.push(PostfixError("Expecting '{' after class name"));
+                this->errors.push(PostfixError("Expecting '{' after class name", t));
                 continue;
             } else if (!this->toks.empty() && this->toks.front().word == "inherits") {
                 if (this->toks.empty() || this->toks.front().type != 'w') {
-                    this->errors.push(PostfixError("Expecting class name after 'inherits'"));
+                    this->errors.push(PostfixError("Expecting class name after 'inherits'", t));
                     continue;
                 }
                 this->inheritance[this->toks.front().word] = className;
                 this->toks.pop();
                 if (!this->toks.empty() && this->toks.front().word != "{") {
-                    this->errors.push(PostfixError("Expecting '{' after class name"));
+                    this->errors.push(PostfixError("Expecting '{' after class name", t));
                     continue;
                 }
             }
 
-            this->startClass(className);
+            this->startClass(className, t);
             this->toks.pop();
         } else if (this->currentMethod == NULL && isKeyWord(t.word) > 1 && isKeyWord(t.word) < 5) {
             this->startProperty(t);
@@ -108,12 +108,12 @@ map< string, ClassDefinition* >* Parser::parseText(string infix) {
         if (isKeyWord(lowercaseWord)) {
             if (lowercaseWord == "if") {
                 //Add condition first
-                this->addCondition(true);
+                this->addCondition(true, t);
                 //Add if statement to controlStack and add it instructions
                 this->addToken(t, true);
             } else if (lowercaseWord == "else") {
                 if (!upcomingElse) {
-                    this->errors.push(PostfixError("Unexpected 'else' not following 'if'"));
+                    this->errors.push(PostfixError("Unexpected 'else' not following 'if'", t));
                 }
                 //Add else statement to controlStack but not to instructions
                 this->addToken(t, false);
@@ -123,7 +123,7 @@ map< string, ClassDefinition* >* Parser::parseText(string infix) {
                 op = this->createJump(pos, true);
                 this->controlStack.push(op);
                 //Add condition to control stack
-                this->addCondition(false);
+                this->addCondition(false, t);
                 //Add empty jump
                 op = this->createJump(0, false);
                 this->controlStack.push(op);
@@ -133,7 +133,7 @@ map< string, ClassDefinition* >* Parser::parseText(string infix) {
                 this->addToken(t, false);
             } else if (lowercaseWord == "do") {
                 if (this->toks.front().word != "{") {
-                    this->errors.push(PostfixError("Expecting '{' after 'do'"));
+                    this->errors.push(PostfixError("Expecting '{' after 'do'", t));
                 }
                 //Save current position
                 pos = currentMethod->getInstructionSize();
@@ -150,7 +150,7 @@ map< string, ClassDefinition* >* Parser::parseText(string infix) {
         //Deal with end of scopes
         else if (t.word == "}") {
             if (this->currentClass == NULL && this->currentMethod == NULL) {
-                this->errors.push(PostfixError("Unexpected '}'"));
+                this->errors.push(PostfixError("Unexpected '}'", t));
             } else if (controlStack.empty() && this->currentMethod != NULL) {
                 this->endMethod();
             } else if (controlStack.empty()) {
@@ -175,7 +175,7 @@ map< string, ClassDefinition* >* Parser::parseText(string infix) {
         else {
             try {
                 this->getStatement(t, false);
-                this->addStatement(true);
+                this->addStatement(true, t);
                 this->endScope(false);
             } catch (PostfixError &e) {
                 this->errors.push(e);
@@ -187,7 +187,7 @@ map< string, ClassDefinition* >* Parser::parseText(string infix) {
     map<string, string>::iterator it;
     for (it = inheritance.begin(); it != inheritance.end(); it++) {
         if (this->classes->find(it->second) == this->classes->end()) {
-            this->errors.push(PostfixError("Inherited class '"+it->second+"' not found"));
+            this->errors.push(PostfixError("Inherited class '"+it->second+"' not found", t));
         }
         (*this->classes)[it->first]->setInheritance((*this->classes)[it->second]);
     }
@@ -199,15 +199,15 @@ map< string, ClassDefinition* >* Parser::parseText(string infix) {
 /****************************************************************************************
  *
  ****************************************************************************************/
-void Parser::startMain() {
+void Parser::startMain(Token &t) {
     string className  = "~";
     string methodName = "main";
 
-    this->startClass(className);
-    this->startMethod(methodName, PUBLIC, false);
+    this->startClass(className, t);
+    this->startMethod(methodName, PUBLIC, false, t);
 
     if (this->toks.front().word != "{") {
-        this->errors.push(PostfixError("Expecting '{' after main"));
+        this->errors.push(PostfixError("Expecting '{' after main", t));
     }
 
     toks.pop();
@@ -217,9 +217,9 @@ void Parser::startMain() {
 /****************************************************************************************
  *
  ****************************************************************************************/
-void Parser::startClass(string &name) {
+void Parser::startClass(string &name, Token &t) {
     if (this->classes->find(name) != this->classes->end()) {
-        this->errors.push(PostfixError("A class with the name '"+name+"' already exists."));
+        this->errors.push(PostfixError("A class with the name '"+name+"' already exists.", t));
     }
     this->currentClass = new ClassDefinition();
     (*this->classes)[name] = this->currentClass;
@@ -229,9 +229,9 @@ void Parser::startClass(string &name) {
 /****************************************************************************************
  *
  ****************************************************************************************/
-void Parser::startMethod(string &name, Visibility visibility, bool isStatic) {
+void Parser::startMethod(string &name, Visibility visibility, bool isStatic, Token &t) {
     this->currentMethod = new Method(visibility, isStatic);
-    this->currentClass->addMethod(name, this->currentMethod);
+    this->currentClass->addMethod(name, this->currentMethod, t);
 }
 
 
@@ -245,7 +245,7 @@ void inline Parser::startProperty(Token &t) {
 
     if (val < 2 || val > 4) {
         cout << "--" << toks.front().word << "--" << endl;
-        this->errors.push(PostfixError("Expecting visibility 'public' 'private' or 'protected'"));
+        this->errors.push(PostfixError("Expecting visibility 'public' 'private' or 'protected'", t));
         return;
     }
 
@@ -262,7 +262,7 @@ void inline Parser::startProperty(Token &t) {
     }
 
     if (toks.empty() || isKeyWord(toks.front().word) < 5) {
-        this->errors.push(PostfixError("Expecting 'static' or 'dynamic' keyword before property"));
+        this->errors.push(PostfixError("Expecting 'static' or 'dynamic' keyword before property", t));
         return;
     }
 
@@ -271,7 +271,7 @@ void inline Parser::startProperty(Token &t) {
     isStatic = isKeyWord(t.word) < 6;
 
     if (toks.empty() || toks.front().type != 'w') {
-        this->errors.push(PostfixError("Expecting property name"));
+        this->errors.push(PostfixError("Expecting property name", t));
         return;
     }
 
@@ -280,12 +280,12 @@ void inline Parser::startProperty(Token &t) {
 
     if (toks.front().word == ";") {
         Variable v(visibility, isStatic);
-        this->currentClass->addProperty(t.word, v);
+        this->currentClass->addProperty(t.word, v, t);
     } else {
         //Add method
-        this->startMethod(t.word, visibility, isStatic);
+        this->startMethod(t.word, visibility, isStatic, t);
         //Get parameters
-        this->addMethodParameters();
+        this->addMethodParameters(t);
     }
 }
 
@@ -350,11 +350,11 @@ void Parser::getStatement(Token &t, bool isFor) {
     }
 
     if (!isFor && parenth < 0) {
-        throw PostfixError("Expecting ';' in statement");
+        throw PostfixError("Expecting ';' in statement", t);
     } if (!isFor && !this->toks.empty() && this->toks.front().word == ";") {
         this->toks.pop();
     } else if (isFor && t.word != ")") {
-        throw PostfixError("Expecting ')' in FOR loop condition");
+        throw PostfixError("Expecting ')' in FOR loop condition", t);
     } else if (isFor) {
         this->toks.pop();
     }
@@ -364,13 +364,13 @@ void Parser::getStatement(Token &t, bool isFor) {
 /****************************************************************************************
  *
  ****************************************************************************************/
-void Parser::addStatement(bool toFunction) {
+void Parser::addStatement(bool toFunction, Token t) {
     OperationNode* op;
 
     try {
         op = expTreeBuilder.getExpressionTree(statementQueue);
         if (op == NULL && !toFunction) {
-            this->errors.push(PostfixError("Expecting condition"));
+            this->errors.push(PostfixError("Expecting condition", t));
         }
         if (toFunction) {
             currentMethod->addInstruction(op);
@@ -389,20 +389,20 @@ void Parser::addStatement(bool toFunction) {
  * Add the conditional part of a construct.
  * while (xxxx), if (xxxx)
  ****************************************************************************************/
-void Parser::addCondition(bool toFunction) {
+void Parser::addCondition(bool toFunction, Token t) {
     unsigned int parenths = 1;
 
     //Are there no more tokens?
     if (toks.empty()) {
-        this->errors.push(PostfixError("Unexpected end of file after construct keyword"));
+        this->errors.push(PostfixError("Unexpected end of file after construct keyword", t));
         return;
     }
 
-    Token t = toks.front();
+    t = toks.front();
 
     //Is the next token not a parenthesis?
     if (t.word != "(") {
-        this->errors.push(PostfixError("Unexpected '" + t.word + "' after construct keyword"));
+        this->errors.push(PostfixError("Unexpected '" + t.word + "' after construct keyword", t));
         return;
     }
 
@@ -417,17 +417,17 @@ void Parser::addCondition(bool toFunction) {
         } else if (t.word == ")") {
             parenths--;
         } else if (t.word == ";") {
-            this->errors.push(PostfixError("Unexpected ';' in conditional statement"));
+            this->errors.push(PostfixError("Unexpected ';' in conditional statement", t));
         } else {
             statementQueue.push(t);
         }
     }
 
     if (parenths > 0) {
-        this->errors.push(PostfixError("Unexpected end of file"));
+        this->errors.push(PostfixError("Unexpected end of file", t));
     }
 
-    this->addStatement(toFunction);
+    this->addStatement(toFunction, t);
 }
 
 
@@ -435,17 +435,16 @@ void Parser::addCondition(bool toFunction) {
  * Add the parameters for a method definition
  * public static foo (xxxxxxxxx) {}
  ****************************************************************************************/
-void Parser::addMethodParameters() {
+void Parser::addMethodParameters(Token &t) {
     //Remove first parenth
     this->toks.pop();
 
     //Are there no more tokens?
     if (this->toks.empty()) {
-        this->errors.push(PostfixError("Unexpected end of file after method definition"));
+        this->errors.push(PostfixError("Unexpected end of file after method definition", t));
         return;
     }
 
-    Token t;
     bool mustAssign = false;
     short point     = 0;
 
@@ -455,11 +454,11 @@ void Parser::addMethodParameters() {
         toks.pop();
         point++;
         if ((point == 1 || point == 3) && t.type == 'o') {
-            this->errors.push(PostfixError("Expecting value in method definition"));
+            this->errors.push(PostfixError("Expecting value in method definition", t));
         } else if ((point == 2 || point == 4) && (t.word != "=" && t.word != ",")) {
-            this->errors.push(PostfixError("Unexpected value in method definition"));
+            this->errors.push(PostfixError("Unexpected value in method definition", t));
         } else if (point == 2 && mustAssign && t.word != "=") {
-            this->errors.push(PostfixError("Expecting default parameter in method definition"));
+            this->errors.push(PostfixError("Expecting default parameter in method definition", t));
         } else if (point == 1) {
             this->currentMethod->addParameter(t.word);
         } else if (point == 2) {
@@ -476,13 +475,13 @@ void Parser::addMethodParameters() {
     }
 
     if (this->toks.front().word != ")") {
-        this->errors.push(PostfixError("Unexpected end of file"));
+        this->errors.push(PostfixError("Unexpected end of file", t));
         return;
     }
 
     this->toks.pop();
     if (this->toks.front().word != "{") {
-        this->errors.push(PostfixError("Expecting '{' after method definition"));
+        this->errors.push(PostfixError("Expecting '{' after method definition", t));
         return;
     }
 
@@ -653,7 +652,7 @@ void Parser::endDoWhile() {
 
     //Make sure there are more tokens
     if (this->toks.empty()) {
-        this->errors.push(PostfixError("Unexpected end before 'while' in 'do while'"));
+        this->errors.push(PostfixError("Unexpected end before 'while' in 'do while'", t));
         return;
     }
 
@@ -665,16 +664,16 @@ void Parser::endDoWhile() {
     }
 
     if (lowercaseWord != "while") {
-        this->errors.push(PostfixError("Expecting 'while' after 'do'"));
+        this->errors.push(PostfixError("Expecting 'while' after 'do'", t));
         return;
     }
     this->toks.pop();
 
     //Add the condition
-    this->addCondition(true);
+    this->addCondition(true, t);
 
     if (this->toks.front().word != ";") {
-        this->errors.push(PostfixError("Expecting ';' after do while loop"));
+        this->errors.push(PostfixError("Expecting ';' after do while loop", t));
     }
 
     //Add the if
@@ -705,7 +704,7 @@ void Parser::beginFor(Token &t, string &lowercaseWord) {
     int pos;
 
     if (this->toks.front().word != "(") {
-        this->errors.push(PostfixError("Expecting condition in FOR loop"));
+        this->errors.push(PostfixError("Expecting condition in FOR loop", t));
         return;
     }
     try {
@@ -719,7 +718,7 @@ void Parser::beginFor(Token &t, string &lowercaseWord) {
         this->toks.pop();
         if (t.word != ";") {
             this->getStatement(t, false);
-            this->addStatement(true);
+            this->addStatement(true, t);
         }
         //Save current position
         pos = currentMethod->getInstructionSize() + 1;
@@ -730,7 +729,7 @@ void Parser::beginFor(Token &t, string &lowercaseWord) {
         this->toks.pop();
         if (t.word != ";") {
             this->getStatement(t, false);
-            this->addStatement(false);
+            this->addStatement(false, t);
         } else {
             this->controlStack.push(NULL);
         }
@@ -739,7 +738,7 @@ void Parser::beginFor(Token &t, string &lowercaseWord) {
         this->toks.pop();
         if (t.word != ")") {
             this->getStatement(t, true);
-            this->addStatement(false);
+            this->addStatement(false, t);
         } else {
             this->controlStack.push(NULL);
         }
@@ -974,6 +973,8 @@ Token Parser::getNext() {
     //Use "i" instead of "this->infixPos"
     int i = this->infixPos;
 
+    Token t;
+
 
     //While there are comments or whitespace, eat them
     while (
@@ -1011,7 +1012,8 @@ Token Parser::getNext() {
         }
         while ((this->infix[i] != delimiter || slash) && i < this->infix.size());
         if (i == this->infix.size()) {
-            this->errors.push(PostfixError("Unterminated String"));
+            t.line = line;
+            this->errors.push(PostfixError("Unterminated String", t));
         }
         word += this->infix[i++];
     }
@@ -1079,7 +1081,8 @@ Token Parser::getNext() {
             }
         }
         if (word != "" && this->expTreeBuilder.getOperatorHeirchy(word) == 0) {
-            this->errors.push(PostfixError("Unknown operator '"+word+"'"));
+            t.line = line;
+            this->errors.push(PostfixError("Unknown operator '"+word+"'", t));
         }
     }
 
@@ -1088,7 +1091,7 @@ Token Parser::getNext() {
     this->infixPos = i;
 
     //Create the return token
-    Token t = Token();
+    t = Token();
     t.word = word;
     t.line = line;
     t.type = type;

@@ -47,7 +47,15 @@ class Executor {
         void executeOperator(OperationNode* op);
 
         //Operators
+        void print();
         void add();
+        void sub();
+        void mul();
+        void div();
+        void mod();
+        void pow();
+        void inc();
+        void dec();
 };
 
 #endif
