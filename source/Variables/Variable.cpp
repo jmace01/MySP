@@ -91,7 +91,7 @@ Variable* Variable::operator= (Variable &rhs) {
  *
  ****************************************************************************************/
 Variable* Variable::operator+ (Variable &rhs) {
-    throw RuntimeError("Cannot use + operator on type '"+this->getTypeString()+"'");
+    throw RuntimeError("Cannot use + operator on type '"+this->getTypeString()+"'", WARNING);
     return new Variable(TEMP, false);
 }
 
@@ -100,7 +100,7 @@ Variable* Variable::operator+ (Variable &rhs) {
  *
  ****************************************************************************************/
 Variable* Variable::operator- (Variable &rhs) {
-    throw RuntimeError("Cannot use - operator on type '"+this->getTypeString()+"'");
+    throw RuntimeError("Cannot use - operator on type '"+this->getTypeString()+"'", WARNING);
     return new Variable(TEMP, false);
 }
 
@@ -109,7 +109,7 @@ Variable* Variable::operator- (Variable &rhs) {
  *
  ****************************************************************************************/
 Variable* Variable::operator++ (int) {
-    throw RuntimeError("Cannot use ++ operator on type '"+this->getTypeString()+"'");
+    throw RuntimeError("Cannot use ++ operator on type '"+this->getTypeString()+"'", WARNING);
     return new Variable(TEMP, false);
 }
 
@@ -118,7 +118,7 @@ Variable* Variable::operator++ (int) {
  *
  ****************************************************************************************/
 Variable* Variable::operator-- (int) {
-    throw RuntimeError("Cannot use -- operator on type '"+this->getTypeString()+"'");
+    throw RuntimeError("Cannot use -- operator on type '"+this->getTypeString()+"'", WARNING);
     return new Variable(TEMP, false);
 }
 
@@ -127,7 +127,7 @@ Variable* Variable::operator-- (int) {
  *
  ****************************************************************************************/
 Variable* Variable::operator* (Variable &rhs) {
-    throw RuntimeError("Cannot use * operator on type '"+this->getTypeString()+"'");
+    throw RuntimeError("Cannot use * operator on type '"+this->getTypeString()+"'", WARNING);
     return new Variable(TEMP, false);
 }
 
@@ -136,7 +136,7 @@ Variable* Variable::operator* (Variable &rhs) {
  *
  ****************************************************************************************/
 Variable* Variable::operator/ (Variable &rhs) {
-    throw RuntimeError("Cannot use / operator on type '"+this->getTypeString()+"'");
+    throw RuntimeError("Cannot use / operator on type '"+this->getTypeString()+"'", WARNING);
     return new Variable(TEMP, false);
 }
 
@@ -145,7 +145,7 @@ Variable* Variable::operator/ (Variable &rhs) {
  *
  ****************************************************************************************/
 Variable* Variable::operator% (Variable &rhs) {
-    throw RuntimeError("Cannot use % operator on type '"+this->getTypeString()+"'");
+    throw RuntimeError("Cannot use % operator on type '"+this->getTypeString()+"'", WARNING);
     return new Variable(TEMP, false);
 }
 
@@ -154,7 +154,7 @@ Variable* Variable::operator% (Variable &rhs) {
  *
  ****************************************************************************************/
 Variable* Variable::operator[] (int i) {
-    throw RuntimeError("Cannot use index operator on type '"+this->getTypeString()+"'");
+    throw RuntimeError("Cannot use index operator on type '"+this->getTypeString()+"'", WARNING);
     return new Variable(TEMP, false);
 }
 
@@ -179,7 +179,7 @@ bool Variable::operator< (Variable &rhs) {
  *
  ****************************************************************************************/
 Variable* Variable::power(Variable &rhs) {
-    throw RuntimeError("Cannot use ^ operator on type '"+this->getTypeString()+"'");
+    throw RuntimeError("Cannot use ^ operator on type '"+this->getTypeString()+"'", WARNING);
     return new Variable(TEMP, false);
 }
 
@@ -189,7 +189,7 @@ Variable* Variable::power(Variable &rhs) {
  ****************************************************************************************/
 Method* Variable::getMethod(std::string, bool isStatic) {
     string op = (isStatic) ? "::" : "->";
-    throw RuntimeError("Cannot use "+op+" operator on type '"+this->getTypeString()+"'");
+    throw RuntimeError("Cannot use "+op+" operator on type '"+this->getTypeString()+"'", WARNING);
     return NULL;
 }
 
@@ -199,6 +199,6 @@ Method* Variable::getMethod(std::string, bool isStatic) {
  ****************************************************************************************/
 Variable* Variable::getPropery(std::string, bool isStatic) {
     string op = (isStatic) ? "::" : "->";
-    throw RuntimeError("Cannot use "+op+" operator on type '"+this->getTypeString()+"'");
+    throw RuntimeError("Cannot use "+op+" operator on type '"+this->getTypeString()+"'", WARNING);
     return new Variable(TEMP, false);
 }

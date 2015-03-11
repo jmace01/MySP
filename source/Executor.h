@@ -43,8 +43,10 @@ class Executor {
 
     private:
         void initializeOperationMap();
-        void executeInstruction(OperationNode* op);
+        void executeInstruction(OperationNode* op) throw (RuntimeError);
         void executeOperator(OperationNode* op);
+        void clearRegisters();
+        void displayError(RuntimeError &e);
 
         //Operators
         void print();

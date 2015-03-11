@@ -1,28 +1,24 @@
-source/MySP.d: ../source/MySP.cpp ../source/OperationNode.h \
-  ../source/token.h ../source/./Test/Test.h ../source/./Test/../Parser.h \
-  ../source/Variables/Variable.h ../source/ClassDefinition.h \
-  ../source/Method.h ../source/ExpressionTreeBuilder.h \
-  ../source/Executor.h ../source/Variables/Array.h \
-  ../source/Variables/Number.h ../source/Variables/Object.h \
-  ../source/Variables/String.h
+source/MySP.d: ../source/MySP.cpp ../source/Executor.h \
+  ../source/ClassDefinition.h ../source/Method.h \
+  ../source/OperationNode.h ../source/token.h \
+  ../source/Variables/Variable.h ../source/ExpressionTreeBuilder.h \
+  ../source/Variables/Array.h ../source/Variables/Number.h \
+  ../source/Variables/Object.h ../source/Variables/String.h \
+  ../source/Parser.h ../source/./Test/Test.h ../source/Tokenizer.h
 
-../source/OperationNode.h:
-
-../source/token.h:
-
-../source/./Test/Test.h:
-
-../source/./Test/../Parser.h:
-
-../source/Variables/Variable.h:
+../source/Executor.h:
 
 ../source/ClassDefinition.h:
 
 ../source/Method.h:
 
-../source/ExpressionTreeBuilder.h:
+../source/OperationNode.h:
 
-../source/Executor.h:
+../source/token.h:
+
+../source/Variables/Variable.h:
+
+../source/ExpressionTreeBuilder.h:
 
 ../source/Variables/Array.h:
 
@@ -31,3 +27,9 @@ source/MySP.d: ../source/MySP.cpp ../source/OperationNode.h \
 ../source/Variables/Object.h:
 
 ../source/Variables/String.h:
+
+../source/Parser.h:
+
+../source/./Test/Test.h:
+
+../source/Tokenizer.h:

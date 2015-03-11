@@ -10,7 +10,8 @@ CPP_SRCS += \
 ../source/Method.cpp \
 ../source/MySP.cpp \
 ../source/OperationNode.cpp \
-../source/Parser.cpp 
+../source/Parser.cpp \
+../source/Tokenizer.cpp 
 
 OBJS += \
 ./source/ClassDefinition.o \
@@ -19,7 +20,8 @@ OBJS += \
 ./source/Method.o \
 ./source/MySP.o \
 ./source/OperationNode.o \
-./source/Parser.o 
+./source/Parser.o \
+./source/Tokenizer.o 
 
 CPP_DEPS += \
 ./source/ClassDefinition.d \
@@ -28,7 +30,8 @@ CPP_DEPS += \
 ./source/Method.d \
 ./source/MySP.d \
 ./source/OperationNode.d \
-./source/Parser.d 
+./source/Parser.d \
+./source/Tokenizer.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

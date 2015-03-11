@@ -113,7 +113,7 @@ Variable* Number::operator* (Variable &rhs) {
  ****************************************************************************************/
 Variable* Number::operator/ (Variable &rhs) {
     if (rhs.getNumberValue() == 0) {
-        throw RuntimeError("Division by 0");
+        throw RuntimeError("Division by 0", WARNING);
     }
     return new Number(TEMP, false, this->value / rhs.getNumberValue());
 }

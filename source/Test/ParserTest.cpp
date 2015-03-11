@@ -1,4 +1,6 @@
 #include "Test.h"
+#include "../token.h"
+#include "../Tokenizer.h"
 #include "../ClassDefinition.h"
 #include "../Method.h"
 #include <iostream>
@@ -54,7 +56,7 @@ void Test::testParser() {
         ),
         TestIO( //If without condition
                 "main { if }",
-                "Unexpected '}' after construct keyword"
+                "Unexpected '}' after construct keyword | Expecting '}' to end method"
         ),
         TestIO( //While loop with scope
                 "main { while (1) { print '1'; } }",
@@ -69,7 +71,7 @@ void Test::testParser() {
                 "4 jmp | 0 | 4 if | '1' print | 1 | 7 if | 1 jmp"
         ),
         TestIO( //Do while loop
-                "main { do { B; } while (A);",
+                "main { do { B; } while (A); }",
                 "B | A | 4 if | 0 jmp"
         ),
         TestIO( //Do while loop missing while
@@ -102,7 +104,7 @@ void Test::testParser() {
         ),
         TestIO(
                 "main { for a { b; } }",
-                "Expecting condition in FOR loop"
+                "Expecting condition in FOR loop | Use of global statements is forbidden"
         ),
         TestIO(
                 "c++",
@@ -147,6 +149,7 @@ void Test::testParser() {
     map<string, ClassDefinition* >::iterator it;
     map<string, Method*> methods;
     map<string, Method*>::iterator it2;
+    Tokenizer tokenizer;
 
     cout << "Starting Parser Unit Test" << endl;
     clock_t timer = clock();
@@ -156,7 +159,9 @@ void Test::testParser() {
         errorState = false;
 
         try {
-            ops = sp.parseText(tests[i].input);
+            toks = queue<Token>();
+            tokenizer.getTokens(tests[i].input, toks);
+            ops = sp.parseTokens(toks);
             pe = sp.getErrors();
             while (!pe.empty()) {
                 if (output != "") output += " | ";

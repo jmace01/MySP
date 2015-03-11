@@ -1,7 +1,10 @@
 
 #include "Test.h"
+#include "../token.h"
+#include "../Tokenizer.h"
 #include <sstream>
 #include <iostream>
+#include <queue>
 
 using namespace std;
 
@@ -174,6 +177,7 @@ void Test::testExTreeBldr() {
     ExpressionTreeBuilder* etb = new ExpressionTreeBuilder();
     OperationNode* t;
     queue<PostfixError> pe;
+    Tokenizer tokenizer;
 
     queue<Token> toks;
     string output;
@@ -191,7 +195,7 @@ void Test::testExTreeBldr() {
     	try {
     	    //Tokenize statement
     	    toks = queue<Token>();
-    	    psr.getTokens(tests[i].input, toks);
+    	    tokenizer.getTokens(tests[i].input, toks);
 
     	    //Get parser errors
     	    pe = psr.getErrors();

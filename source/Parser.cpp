@@ -35,14 +35,14 @@ Parser::~Parser() {
  * the same name as the script entry point.
  *
  ****************************************************************************************/
-map< string, ClassDefinition* >* Parser::parseText(string infix) {
+map< string, ClassDefinition* >* Parser::parseTokens(queue<Token> &intoks) {
     this->classes = new map<string, ClassDefinition*>();
     this->currentClass = NULL;
     this->currentMethod = NULL;
+    this->isMain = false;
 
-    this->toks = queue<Token>();
+    this->toks = intoks;
     this->statementQueue = queue<Token>();
-    this->getTokens(infix, toks);
 
     Token t;
     Token temp;
@@ -87,6 +87,7 @@ map< string, ClassDefinition* >* Parser::parseText(string infix) {
                     this->errors.push(PostfixError("Expecting class name after 'inherits'", t));
                     continue;
                 }
+                this->toks.pop();
                 this->inheritance[this->toks.front().word] = className;
                 this->toks.pop();
                 if (!this->toks.empty() && this->toks.front().word != "{") {
@@ -183,6 +184,15 @@ map< string, ClassDefinition* >* Parser::parseText(string infix) {
         }
     }
 
+    if (this->currentMethod != NULL) {
+        this->errors.push(PostfixError("Expecting '}' to end method", t));
+    } else if (this->currentClass != NULL) {
+        this->errors.push(PostfixError("Expecting '}' to end class", t));
+    } else if (this->classes->find("~") == this->classes->end()) {
+        t = Token();
+        this->errors.push(PostfixError("Expecting declaration of main", t));
+    }
+
     //Set up inheritance on classes
     map<string, string>::iterator it;
     for (it = inheritance.begin(); it != inheritance.end(); it++) {
@@ -202,6 +212,7 @@ map< string, ClassDefinition* >* Parser::parseText(string infix) {
 void Parser::startMain(Token &t) {
     string className  = "~";
     string methodName = "main";
+    this->isMain = true;
 
     this->startClass(className, t);
     this->startMethod(methodName, PUBLIC, false, t);
@@ -304,6 +315,10 @@ void Parser::endClass() {
  ****************************************************************************************/
 void Parser::endMethod() {
     this->currentMethod = NULL;
+    if (this->isMain) {
+        this->endClass();
+        this->isMain = false;
+    }
 }
 
 
@@ -895,207 +910,4 @@ void Parser::clearErrors() {
     while(!this->errors.empty()) {
         this->errors.pop();
     }
-}
-
-
-/****************************************************************************************
- *
- ****************************************************************************************/
-void Parser::getTokens(string infix, queue<Token> &result) {
-    string s;
-    Token t;
-    this->infix = infix;
-    this->lineNumber = 1;
-    this->infixPos = 0;
-    while (this->infixPos < this->infix.size()) {
-        t = this->getNext();
-        if (t.word != "") {
-            result.push(t);
-        }
-    }
-}
-
-
-/****************************************************************************************
- *
- ****************************************************************************************/
-void Parser::eatWhitespace(int &i) {
-    while (
-            this->infix[i] == ' '  ||
-            this->infix[i] == '\r' ||
-            this->infix[i] == '\n' ||
-            this->infix[i] == '\t'
-          ) {
-        if (this->infix[i] == '\n') {
-            this->lineNumber++;
-        }
-        i++;
-    }
-}
-
-
-/****************************************************************************************
- *
- ****************************************************************************************/
-void Parser::eatComments(int &i) {
-    if (this->infix[i] == '/' && (this->infix[i + 1] == '/' || this->infix[i+1] == '*')) {
-        i++;
-        if (this->infix[i] == '/') { // for "//" comments
-            i++;
-            while (this->infix[i] != '\n' && this->infix[i] != '\r' && i < this->infix.size()) {
-                i++;
-            }
-            this->lineNumber++;
-        } else { //for "/**/" comments
-            i++;
-            while (i < this->infix.size() - 1) {
-                if (this->infix[i] == '*' && this->infix[i+1] == '/') {
-                    break;
-                } else if (this->infix[i] == '\n' || this->infix[i] == '\r') {
-                    this->lineNumber++;
-                }
-                i++;
-            }
-            i += 2;
-        }
-    }
-}
-
-
-/****************************************************************************************
- * Creates Token instances for each string, number, word, or operator
- ****************************************************************************************/
-Token Parser::getNext() {
-    //Initialize variable
-    string word = "";
-    char type;
-
-    //Use "i" instead of "this->infixPos"
-    int i = this->infixPos;
-
-    Token t;
-
-
-    //While there are comments or whitespace, eat them
-    while (
-            this->infix[i] == ' '  ||
-            this->infix[i] == '\r' ||
-            this->infix[i] == '\n' ||
-            this->infix[i] == '\t' ||
-            (
-                this->infix[i] == '/' &&
-                (
-                    this->infix[i + 1] == '/' ||
-                    this->infix[i+1] == '*'
-                )
-            )
-          )
-    {
-        this->eatWhitespace(i);
-        this->eatComments(i);
-    }
-
-    //Save the line number for the token
-    int line = this->lineNumber;
-
-
-    //Get String
-    if (this->infix[i] == '"' || this->infix[i] == '\'')
-    {
-        type = 's';
-        char delimiter = this->infix[i];
-        bool slash = false;
-        do
-        {
-            slash = (!slash && this->infix[i] == '\\');
-            word += this->infix[i++];
-        }
-        while ((this->infix[i] != delimiter || slash) && i < this->infix.size());
-        if (i == this->infix.size()) {
-            t.line = line;
-            this->errors.push(PostfixError("Unterminated String", t));
-        }
-        word += this->infix[i++];
-    }
-
-
-    //Get number
-    else if (isnumber(this->infix[i]) //its a number
-            || (    //it's a decimal followed by a number
-                    this->infix[i] == '.' &&
-                    i < this->infix.size() - 1 && //don't walk off the array
-                    isnumber(this->infix[i + 1])
-                )
-            || ( //It's a negative number
-                    this->infix[i] == '-'
-                    && (
-                            (i < this->infix.size()-1 && isnumber(this->infix[i + 1]))
-                            ||
-                            (i < this->infix.size()-2 && this->infix[i+1] == '.' && isnumber(this->infix[i+2]))
-                        )
-                )
-            )
-    {
-        type = 'n';
-        bool dec = false; //Was a decimal used yet?
-        bool first = true; //Is this the first iteration? (Only allow '-' as first char)
-        while (isnumber(this->infix[i])
-              || (
-                      this->infix[i] == '-' &&
-                      first
-                  )
-              || (
-                      !dec && this->infix[i] == '.' &&
-                      i < this->infix.size() - 1    &&
-                      isnumber(this->infix[i + 1])
-                  )
-              ) {
-            if (this->infix[i] == '.') {
-                dec = true;
-            }
-            word += this->infix[i++];
-            //If you want to track floats, put IF here and check (dec == true)
-            first = false;
-        }
-    }
-
-
-    //Get Word
-    else if (isalpha(this->infix[i])) {
-        type = 'w';
-        while ((isalnum(this->infix[i]) || this->infix[i] == '_') &&  i <  this->infix.size())
-            word += this->infix[i++];
-        if (this->expTreeBuilder.isControlWord(word) && (word == "print" || word == "echo" || word == "return")) {
-            type = 'o';
-        }
-    }
-
-
-    //Get Operator
-    else {
-        type = 'o';
-        while (i < this->infix.size()) {
-            word += this->infix[i++];
-            if (this->expTreeBuilder.getOperatorHeirchy(word + this->infix[i]) == 0) {
-                break;
-            }
-        }
-        if (word != "" && this->expTreeBuilder.getOperatorHeirchy(word) == 0) {
-            t.line = line;
-            this->errors.push(PostfixError("Unknown operator '"+word+"'", t));
-        }
-    }
-
-
-    //Save position
-    this->infixPos = i;
-
-    //Create the return token
-    t = Token();
-    t.word = word;
-    t.line = line;
-    t.type = type;
-
-    //Return the token
-    return t;
 }

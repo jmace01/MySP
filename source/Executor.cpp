@@ -100,7 +100,13 @@ void Executor::run(map<string, ClassDefinition* >* classes) {
             this->scopeStack.pop();
             continue;
         }
-        executeInstruction(this->currentMethod->getInstruction(this->instructionPointer++));
+
+        try {
+            executeInstruction(this->currentMethod->getInstruction(this->instructionPointer++));
+        } catch (RuntimeError &e) {
+            this->displayError(e);
+            this->clearRegisters();
+        }
     }
 }
 
@@ -108,7 +114,7 @@ void Executor::run(map<string, ClassDefinition* >* classes) {
 /****************************************************************************************
  *
  ****************************************************************************************/
-void Executor::executeInstruction(OperationNode* op) {
+void Executor::executeInstruction(OperationNode* op) throw (RuntimeError) {
     Variable* var;
 
     //Deal with leaf nodes (values)
@@ -146,7 +152,12 @@ void Executor::executeInstruction(OperationNode* op) {
     }
 
     //Execute operation
-    this->executeOperator(op);
+    try {
+        this->executeOperator(op);
+    } catch (RuntimeError &e) {
+        e.line = op->operation.line;
+        throw e;
+    }
 
     return;
 }
@@ -164,6 +175,37 @@ inline void Executor::executeOperator(OperationNode* op) {
     if (operationMap[w] != NULL) {
         (this->*func)();
     }
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Executor::clearRegisters() {
+    Variable* v;
+    while (!this->registerVariables.empty()) {
+        v = this->registerVariables.top();
+        if (v->getVisibility() == TEMP) {
+            delete v;
+        }
+        this->registerVariables.pop();
+    }
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Executor::displayError(RuntimeError &e) {
+    string header;
+    if (e.level == WARNING) {
+        header = "WARNING: ";
+    } else if (e.level == ERROR) {
+        header = "ERROR: ";
+    } else {
+        header = "FATAL ERROR: ";
+    }
+    cout << header << e.msg << " (line " << e.line << ')' << endl;
 }
 
 

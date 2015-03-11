@@ -13,10 +13,14 @@ enum Visibility {PRIVATE, PUBLIC, PROTECTED, TEMP};
 class Method;
 
 
+enum ERROR_LEVEL {WARNING, ERROR, FATAL};
+
+
 //RuntimeError struct for throwing
 struct RuntimeError {
-        RuntimeError(std::string msg) : msg(msg) {}
+        RuntimeError(std::string msg, ERROR_LEVEL level) : msg(msg), level(level), line(0) {}
         std::string msg;
+        ERROR_LEVEL level;
         int line;
 };
 

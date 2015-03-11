@@ -23,6 +23,7 @@ class Parser {
         std::map<std::string, std::string> inheritance;
         ClassDefinition* currentClass;
         Method* currentMethod;
+        bool isMain;
 
         static std::map<std::string, short> keywords;
         ExpressionTreeBuilder expTreeBuilder;
@@ -40,15 +41,11 @@ class Parser {
         ~Parser();
         void initKeywords();
         short static isKeyWord(std::string word);
-        std::map< std::string, ClassDefinition* >* parseText(std::string infix);
-        void getTokens(std::string infix, std::queue<Token> &result);
+        std::map< std::string, ClassDefinition* >* parseTokens(std::queue<Token> &intoks);
         std::queue<PostfixError> getErrors();
         void clearErrors();
 
     private:
-        void eatWhitespace(int &i);
-        void eatComments(int &i);
-        Token getNext();
         void addToken(Token &t, bool pushOnFunction);
         void addCondition(bool toFunction, Token t);
         void addMethodParameters(Token &t);
