@@ -1,5 +1,6 @@
 #include <string>
 #include "Variable.h"
+#include <iostream>
 
 
 using namespace std;
@@ -162,24 +163,17 @@ Variable* Variable::operator[] (int i) {
 /****************************************************************************************
  *
  ****************************************************************************************/
-bool Variable::operator== (Variable &rhs) {
-    return (rhs.getType() == 'u');
-}
-
-
-/****************************************************************************************
- *
- ****************************************************************************************/
-bool Variable::operator< (Variable &rhs) {
-    return (rhs.getType() != 'u');
-}
-
-
-/****************************************************************************************
- *
- ****************************************************************************************/
 Variable* Variable::power(Variable &rhs) {
     throw RuntimeError("Cannot use ^ operator on type '"+this->getTypeString()+"'", WARNING);
+    return new Variable(TEMP, false);
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+Variable* Variable::concat(Variable &rhs) {
+    throw RuntimeError("Cannot use '.' operator on type '"+this->getTypeString()+"'", WARNING);
     return new Variable(TEMP, false);
 }
 
@@ -201,4 +195,33 @@ Variable* Variable::getPropery(std::string, bool isStatic) {
     string op = (isStatic) ? "::" : "->";
     throw RuntimeError("Cannot use "+op+" operator on type '"+this->getTypeString()+"'", WARNING);
     return new Variable(TEMP, false);
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+bool Variable::operator== (Variable &rhs) {
+    return !((getType() == 'u' && rhs.getType() != 'u') ||
+            (getType() != 'u' && rhs.getType() == 'u') ||
+            getStringValue() != rhs.getStringValue());
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+bool Variable::operator< (Variable &rhs) {
+    return !((this->getType() == 'u' && rhs.getType() == 'u') ||
+            (this->getType() != 'u' && rhs.getType() == 'u') ||
+            this->getStringValue() >= rhs.getStringValue());
+}
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+bool Variable::operator> (Variable &rhs) {
+    return !((this->getType() == 'u' && rhs.getType() == 'u') ||
+            (this->getType() == 'u' && rhs.getType() != 'u') ||
+            this->getStringValue() <= rhs.getStringValue());
 }

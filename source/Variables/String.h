@@ -13,7 +13,10 @@ class String : public Variable {
     public:
         String(Visibility visibility, bool isStatic, std::string &value);
         ~String();
+        char getType();
         std::string getStringValue();
+        Variable* concat(Variable &rhs);
+        std::string getTypeString();
 };
 
 #endif

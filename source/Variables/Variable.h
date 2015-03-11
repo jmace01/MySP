@@ -54,8 +54,10 @@ class Variable {
         virtual Variable* operator[] (int i);
         virtual bool operator== (Variable &rhs);
         virtual bool operator< (Variable &rhs);
+        virtual bool operator> (Variable &rhs);
 
         virtual Variable* power(Variable &rhs);
+        virtual Variable* concat(Variable &rhs);
         virtual Method* getMethod(std::string, bool isStatic);
         virtual Variable* getPropery(std::string, bool isStatic);
 };

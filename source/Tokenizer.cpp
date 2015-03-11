@@ -318,6 +318,31 @@ void Tokenizer::eatComments(char &currentChar) {
 
 
 /****************************************************************************************
+ *
+ ****************************************************************************************/
+char Tokenizer::getSlashedChar(char c) {
+    char r;
+    switch (c) {
+        case 'r':
+            r = '\r';
+        break;
+        case 'n':
+            r = '\n';
+        break;
+        case 't':
+            r = '\t';
+        break;
+        case 'b':
+            r = '\b';
+        break;
+        default:
+            r = c;
+    }
+    return r;
+}
+
+
+/****************************************************************************************
  * Creates Token instances for each string, number, word, or operator
  ****************************************************************************************/
 Token Tokenizer::getNextToken(bool &wasOp, char &currentChar) {
@@ -357,10 +382,17 @@ Token Tokenizer::getNextToken(bool &wasOp, char &currentChar) {
         type = 's';
         char delimiter = currentChar;
         bool slash = false;
+        char slashedChar;
         do
         {
-            slash = (!slash && currentChar == '\\');
-            word += currentChar;
+            if (delimiter == '"' && slash) {
+                slashedChar = getSlashedChar(currentChar);
+                word[word.length() - 1] = slashedChar;
+                slash = false;
+            } else {
+                slash = (!slash && currentChar == '\\');
+                word += currentChar;
+            }
             input->get(currentChar);
         }
         while ((currentChar != delimiter || slash) && input->good());

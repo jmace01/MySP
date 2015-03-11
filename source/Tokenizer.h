@@ -25,6 +25,7 @@ class Tokenizer {
         void eatWhitespace(char &currentChar);
         void eatComments(char &currentChar);
         Token getNextToken(bool &wasOp, char &currentChar);
+        char getSlashedChar(char c);
 };
 
 #endif

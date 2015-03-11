@@ -50,14 +50,26 @@ class Executor {
 
         //Operators
         void print();
+        void variableEquals();
+        void typeEquals();
+        void equals();
+        void notVariableEquals();
+        void notTypeEquals();
+        void notEquals();
+        void lessThan();
+        void lessThanEqual();
+        void greaterThan();
+        void greaterThanEqual();
         void add();
         void sub();
         void mul();
         void div();
         void mod();
         void pow();
+        void cat();
         void inc();
         void dec();
+        void negate();
 };
 
 #endif

@@ -23,8 +23,6 @@ class Number : public Variable {
         virtual Variable* operator* (Variable &rhs);
         virtual Variable* operator/ (Variable &rhs);
         virtual Variable* operator% (Variable &rhs);
-        virtual bool operator== (Variable &rhs);
-        virtual bool operator< (Variable &rhs);
 
         virtual Variable* power(Variable &rhs);
 };
