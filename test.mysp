@@ -89,8 +89,22 @@ main {
     a++;
     1/0;
     
-    d = demo();
-    d->foo();
-    demo::bar();
+    print "\n";
+    
+    a = 10;
+    a = a + 2;
+    print a++."\n";
+    a = 'The answer is ' . a;
+    print a."\n";
+    
+    if (1 == 1) {
+        print "YES!";
+    } else {
+        print "NO!";
+    }
+    
+    //d = demo();
+    //d->foo(10);
+    //demo::bar();
     
 }

@@ -31,11 +31,14 @@ class Variable {
     protected:
         Visibility visibility;
         bool isStatic;
+        Variable** pointer;
 
     public:
         Variable(Visibility visibility, bool isStatic);
         virtual ~Variable();
         Visibility getVisibility();
+        void setPointer(Variable** pointer);
+        Variable** getPointer();
 
         virtual char getType();
         virtual std::string getTypeString();

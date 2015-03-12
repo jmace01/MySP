@@ -30,10 +30,11 @@ class Executor {
         Method* currentMethod;
         std::stack<Scope> scopeStack;
         std::stack<Variable*> registerVariables;
-        std::map<std::string, Variable*> variables;
+        std::map<std::string, Variable**> variables;
         std::map<std::string, ClassDefinition* >* classes;
         static std::map<std::string, void (Executor::*)(void)> operationMap;
         Variable* returnVariable;
+        int lastValue;
 
     public:
         Executor();
@@ -50,6 +51,7 @@ class Executor {
 
         //Operators
         void print();
+        void assignment();
         void variableEquals();
         void typeEquals();
         void equals();
@@ -70,6 +72,8 @@ class Executor {
         void inc();
         void dec();
         void negate();
+        void iff();
+        void jmp();
 };
 
 #endif

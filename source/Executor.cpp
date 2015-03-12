@@ -15,8 +15,9 @@ Executor::Executor() {
     this->classes = NULL;
     this->scopeStack = stack<Scope>();
     this->registerVariables = stack<Variable*>();
-    this->variables = map<string, Variable*>();
+    this->variables = map<string, Variable**>();
     this->returnVariable = NULL;
+    this->lastValue = 0;
     if (Executor::operationMap.empty()) {
         this->initializeOperationMap();
     }
@@ -45,7 +46,7 @@ void Executor::initializeOperationMap() {
     operationMap["echo"]   = &Executor::print;
     //operationMap["return"] = &Executor::print;
     //operationMap["break"]  = &Executor::print;
-    //operationMap["="]      = &Executor::print;
+    operationMap["="]      = &Executor::assignment;
     //operationMap["+="]     = &Executor::print;
     //operationMap["-="]     = &Executor::print;
     //operationMap["*="]     = &Executor::print;
@@ -80,8 +81,8 @@ void Executor::initializeOperationMap() {
     //operationMap["::"]     = &Executor::print;
     //operationMap["P"]      = &Executor::print;
     //operationMap["C"]      = &Executor::print;
-    //operationMap["jmp"]    = &Executor::print;
-    //operationMap["if"]     = &Executor::print;
+    operationMap["jmp"]    = &Executor::jmp;
+    operationMap["if"]     = &Executor::iff;
     //operationMap["["]      = &Executor::print;
     //operationMap[":"]      = &Executor::print;
 }
@@ -105,6 +106,11 @@ void Executor::run(map<string, ClassDefinition* >* classes) {
 
         try {
             executeInstruction(this->currentMethod->getInstruction(this->instructionPointer++));
+            //For conditional statements
+            if (!this->registerVariables.empty()) {
+                this->lastValue = this->registerVariables.top()->getNumberValue();
+                this->clearRegisters();
+            }
         } catch (RuntimeError &e) {
             this->displayError(e);
             this->clearRegisters();
@@ -118,6 +124,7 @@ void Executor::run(map<string, ClassDefinition* >* classes) {
  ****************************************************************************************/
 void Executor::executeInstruction(OperationNode* op) throw (RuntimeError) {
     Variable* var;
+    Variable** vPointer = new Variable*;
 
     //Deal with leaf nodes (values)
     if (op->operation.type != 'o') {
@@ -136,10 +143,13 @@ void Executor::executeInstruction(OperationNode* op) throw (RuntimeError) {
 
             //Create the variable if it does not yet exist
             if (this->variables.find(op->operation.word) == this->variables.end()) {
-                this->variables[op->operation.word] = new Variable(PUBLIC, false);
+                var = new Variable(PUBLIC, false);
+                *vPointer = var;
+                var->setPointer(vPointer);
+                this->variables[op->operation.word] = vPointer;
             }
             //Put the variable in the "register" stack
-            var = this->variables[op->operation.word];
+            var = *(this->variables[op->operation.word]);
         }
         this->registerVariables.push(var);
         return;
@@ -237,6 +247,53 @@ void Executor::print() {
     }
 
     this->registerVariables.pop();
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Executor::assignment() {
+    Variable* a;
+    Variable* b;
+    Variable* result;
+
+    //Get operand values
+    a = this->registerVariables.top();
+    this->registerVariables.pop();
+    b = this->registerVariables.top();
+    this->registerVariables.pop();
+
+    if (a->getVisibility() == TEMP) {
+        throw RuntimeError("Assignment to value instead of variable", WARNING);
+    }
+
+    //Create the new variable
+    if (b->getType() == 'n') {
+        result = new Number(PUBLIC, false, b->getNumberValue());
+    } else if (b->getType() == 's') {
+        string s = b->getStringValue();
+        result = new String(PUBLIC, false, s);
+    } else if (b->getType() == 'a') {
+        result = new Array(PUBLIC, false);
+    } else if (b->getType() == 'o') {
+        result = new Object(PUBLIC, false);
+    } else {
+        result = new Variable(PUBLIC, false);
+    }
+
+    //Set the new variable
+    result->setPointer(a->getPointer());
+    *(a->getPointer()) = result;
+    delete a;
+
+    //Delete operand b if visibility is TEMP
+    if (b->getVisibility() == TEMP) {
+        //delete b;
+    }
+
+    //Push on result
+    this->registerVariables.push(result);
 }
 
 
@@ -932,4 +989,46 @@ void Executor::negate() {
 
     //Push on result
     this->registerVariables.push(result);
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Executor::iff() {
+    Variable* a;
+
+    //Get operand values
+    a = this->registerVariables.top();
+    this->registerVariables.pop();
+
+    //Compute result
+    if (!this->lastValue) { //If not true, take the jump
+        this->instructionPointer = a->getNumberValue();
+    }
+
+    //Delete operand a if visibility is TEMP
+    if (a->getVisibility() == TEMP) {
+        delete a;
+    }
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Executor::jmp() {
+    Variable* a;
+
+    //Get operand values
+    a = this->registerVariables.top();
+    this->registerVariables.pop();
+
+    //Compute result
+        this->instructionPointer = a->getNumberValue();
+
+    //Delete operand a if visibility is TEMP
+    if (a->getVisibility() == TEMP) {
+        delete a;
+    }
 }
