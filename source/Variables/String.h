@@ -15,6 +15,7 @@ class String : public Variable {
         ~String();
         char getType();
         std::string getStringValue();
+        bool getBooleanValue();
         Variable* concat(Variable &rhs);
         std::string getTypeString();
 };

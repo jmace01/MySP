@@ -30,7 +30,7 @@ int main() {
             ex.run(ops);
         } else {
             while (!pe.empty()) {
-                cout << pe.front().msg << endl;
+                cout << pe.front().msg << " (line " << pe.front().t.line << ")" << endl;
                 pe.pop();
             }
         }

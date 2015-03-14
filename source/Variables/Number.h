@@ -15,6 +15,7 @@ class Number : public Variable {
         std::string getTypeString();
         double getNumberValue();
         virtual std::string getStringValue();
+        virtual bool getBooleanValue();
 
         virtual Variable* operator+ (Variable &rhs);
         virtual Variable* operator- (Variable &rhs);

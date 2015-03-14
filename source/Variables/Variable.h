@@ -44,7 +44,8 @@ class Variable {
         virtual std::string getTypeString();
         virtual double getNumberValue();
         virtual std::string getStringValue();
-        virtual Variable* getArrayValue();
+        virtual bool getBooleanValue();
+        virtual Variable* getArrayValue(std::string index);
 
         Variable* operator= (Variable &rhs);
         virtual Variable* operator+ (Variable &rhs);

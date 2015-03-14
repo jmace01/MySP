@@ -18,6 +18,7 @@ Executor::Executor() {
     this->variables = map<string, Variable**>();
     this->returnVariable = NULL;
     this->lastValue = 0;
+    this->executeLeft = true;
     if (Executor::operationMap.empty()) {
         this->initializeOperationMap();
     }
@@ -29,12 +30,21 @@ map<string, void (Executor::*)(void)> Executor::operationMap = map<string, void 
  *
  ****************************************************************************************/
 Executor::~Executor() {
+    //Remove classes if set
     if (this->deleteClasses) {
         map<string, ClassDefinition* >::iterator it;
         for (it = this->classes->begin(); it != this->classes->end(); it++) {
             delete it->second;
         }
     }
+    //Remove variables
+    map<string, Variable**>::iterator it;
+    for (it = this->variables.begin(); it != this->variables.end(); it++) {
+        delete (*it->second);
+        delete it->second;
+    }
+    //Remove register data
+    this->clearRegisters();
 }
 
 
@@ -124,7 +134,7 @@ void Executor::run(map<string, ClassDefinition* >* classes) {
  ****************************************************************************************/
 void Executor::executeInstruction(OperationNode* op) throw (RuntimeError) {
     Variable* var;
-    Variable** vPointer = new Variable*;
+    Variable** vPointer;
     this->executeLeft = true;
 
     //Deal with leaf nodes (values)
@@ -145,6 +155,7 @@ void Executor::executeInstruction(OperationNode* op) throw (RuntimeError) {
             //Create the variable if it does not yet exist
             if (this->variables.find(op->operation.word) == this->variables.end()) {
                 var = new Variable(PUBLIC, false);
+                vPointer = new Variable*;
                 *vPointer = var;
                 var->setPointer(vPointer);
                 this->variables[op->operation.word] = vPointer;
@@ -716,7 +727,7 @@ void Executor::andd() {
     a = this->registerVariables.top();
 
     //Compute result
-    this->executeLeft = (a->getNumberValue());
+    this->executeLeft = (a->getBooleanValue());
 
     if (this->executeLeft) {
         //Delete operand a if visibility is TEMP
@@ -738,7 +749,7 @@ void Executor::orr() {
     a = this->registerVariables.top();
 
     //Compute result
-    this->executeLeft = (!a->getNumberValue());
+    this->executeLeft = (!a->getBooleanValue());
 
     if (this->executeLeft) {
         //Delete operand a if visibility is TEMP
@@ -1043,7 +1054,7 @@ void Executor::negate() {
     this->registerVariables.pop();
 
     //Compute result
-    result = new Number(TEMP, false, !a->getNumberValue());
+    result = new Number(TEMP, false, !a->getBooleanValue());
 
     //Delete operand a if visibility is TEMP
     if (a->getVisibility() == TEMP) {

@@ -83,7 +83,16 @@ string Variable::getStringValue() {
 /****************************************************************************************
  *
  ****************************************************************************************/
-Variable* Variable::getArrayValue() {
+bool Variable::getBooleanValue() {
+    return false;
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+Variable* Variable::getArrayValue(string index) {
+    throw RuntimeError("Cannot index '"+this->getTypeString()+"'", WARNING);
     return NULL;
 }
 
