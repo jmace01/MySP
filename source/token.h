@@ -4,11 +4,12 @@
 #include <string>
 
 struct Token{
-    Token() : type(0), line(0), isUnary(false) {}
+    Token() : type(0), line(0), isUnary(false), isTerminating(false) {}
     std::string word;
     char type;
     int line;
     bool isUnary;
+    bool isTerminating;
 };
 
 

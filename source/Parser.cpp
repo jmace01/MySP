@@ -348,7 +348,7 @@ void Parser::getStatement(Token &t, bool isFor) {
     statementQueue = queue<Token>();
     statementQueue.push(t);
 
-    int parenth = 0;
+    int parenth = (t.word == "(") - (t.word == ")");
 
     while (!toks.empty() && toks.front().word != ";") {
         t = toks.front();
@@ -606,6 +606,7 @@ inline void Parser::endWhile() {
 
     //Modify jump
     jmp = this->controlStack.top();
+    jmp->operation.type = 'o';
     this->controlStack.pop();
     jmp->right = new OperationNode();
     jmp->right->operation = Token();
@@ -623,12 +624,14 @@ inline void Parser::endWhile() {
 
     //Push on last jump
     jmp = this->controlStack.top();
+    jmp->operation.type = 'o';
     this->controlStack.pop();
     currentMethod->addInstruction(jmp);
 
     //Update while jump
     sprintf(num, "%lu", currentMethod->getInstructionSize());
     whl->operation.word = "if";
+    whl->operation.type = 'o';
     whl->right = new OperationNode();
     whl->right->operation = Token();
     whl->right->operation.type = 'n';
@@ -705,6 +708,7 @@ void Parser::endDoWhile() {
 
     //Add the jump back
     op = this->controlStack.top();
+    op->operation.type = 'o';
     this->controlStack.pop();
     currentMethod->addInstruction(op);
 }
@@ -793,6 +797,7 @@ void Parser::endFor() {
 
     //Get the initial jmp
     jmp = this->controlStack.top();
+    jmp->operation.type = 'o';
     this->controlStack.pop();
     bool iterNotNull = this->controlStack.top() != NULL;
     sprintf(num, "%lu", currentMethod->getInstructionSize() + iterNotNull);
@@ -831,6 +836,7 @@ void Parser::endFor() {
 
     //Get final jump
     jmp = this->controlStack.top();
+    jmp->operation.type = 'o';
     this->controlStack.pop();
     currentMethod->addInstruction(jmp);
 }

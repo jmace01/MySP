@@ -41,6 +41,7 @@ class ExpressionTreeBuilder {
         static bool isPostUnary(std::string);
         static bool isPreUnary(std::string);
         static bool isControlWord(std::string op);
+        static bool isTerminating(std::string op);
 
     private:
         void addOperation(bool isUnary);

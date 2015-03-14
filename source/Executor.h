@@ -35,6 +35,7 @@ class Executor {
         static std::map<std::string, void (Executor::*)(void)> operationMap;
         Variable* returnVariable;
         int lastValue;
+        bool executeLeft;
 
     public:
         Executor();
@@ -62,6 +63,8 @@ class Executor {
         void lessThanEqual();
         void greaterThan();
         void greaterThanEqual();
+        void andd();
+        void orr();
         void add();
         void sub();
         void mul();

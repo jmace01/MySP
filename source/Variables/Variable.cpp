@@ -12,6 +12,7 @@ using namespace std;
 Variable::Variable(Visibility visibility, bool isStatic) {
     this->visibility = visibility;
     this->isStatic   = isStatic;
+    this->pointer    = NULL;
 }
 
 
@@ -228,6 +229,9 @@ bool Variable::operator== (Variable &rhs) {
  *
  ****************************************************************************************/
 bool Variable::operator< (Variable &rhs) {
+    if (getType() == 'n' && rhs.getType() == 'n') {
+        return getNumberValue() < rhs.getNumberValue();
+    }
     return !((this->getType() == 'u' && rhs.getType() == 'u') ||
             (this->getType() != 'u' && rhs.getType() == 'u') ||
             this->getStringValue() >= rhs.getStringValue());
@@ -237,6 +241,9 @@ bool Variable::operator< (Variable &rhs) {
  *
  ****************************************************************************************/
 bool Variable::operator> (Variable &rhs) {
+    if (getType() == 'n' && rhs.getType() == 'n') {
+        return getNumberValue() > rhs.getNumberValue();
+    }
     return !((this->getType() == 'u' && rhs.getType() == 'u') ||
             (this->getType() == 'u' && rhs.getType() != 'u') ||
             this->getStringValue() <= rhs.getStringValue());

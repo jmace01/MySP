@@ -92,7 +92,7 @@ void Test::testParser() {
         ),
         TestIO(
                 "main { for (A) { B; }",
-                "Expecting ';' in FOR loop condition | Unexpected closing parenthesis"
+                "Expecting ';' in FOR loop condition | Expecting ';' in statement | Unexpected Operator {"
         ),
         TestIO(
                 "main { for (;;) b; }",

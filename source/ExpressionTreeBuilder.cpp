@@ -60,6 +60,11 @@ OperationNode* ExpressionTreeBuilder::getExpressionTree(queue<Token> &toks) thro
             t.isUnary = true;
         }
 
+        //Mark operations that terminate before evaluating both branches
+        if (isTerminating(t.word)) {
+            t.isTerminating = true;
+        }
+
         //Pre Unary operators, such as !, ~
         if (t.type == 'o' && this->isPreUnary(t.word)) {
             operators.push(t);
@@ -358,6 +363,15 @@ bool ExpressionTreeBuilder::isPostUnary(string op) {
 bool ExpressionTreeBuilder::isPreUnary(string op) {
     short h = ExpressionTreeBuilder::getOperatorHeirchy(op);
     return (h == 13);
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+bool ExpressionTreeBuilder::isTerminating(string op) {
+    short h = ExpressionTreeBuilder::getOperatorHeirchy(op);
+    return (h >= 4 && h <= 7);
 }
 
 

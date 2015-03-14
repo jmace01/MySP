@@ -63,8 +63,8 @@ void Executor::initializeOperationMap() {
     operationMap["<="]     = &Executor::lessThanEqual;
     operationMap[">"]      = &Executor::greaterThan;
     operationMap[">="]     = &Executor::greaterThanEqual;
-    //operationMap["&&"]     = &Executor::print;
-    //operationMap["||"]     = &Executor::print;
+    operationMap["&&"]     = &Executor::andd;
+    operationMap["||"]     = &Executor::orr;
     operationMap["."]      = &Executor::cat;
     operationMap["-"]      = &Executor::sub;
     operationMap["+"]      = &Executor::add;
@@ -125,6 +125,7 @@ void Executor::run(map<string, ClassDefinition* >* classes) {
 void Executor::executeInstruction(OperationNode* op) throw (RuntimeError) {
     Variable* var;
     Variable** vPointer = new Variable*;
+    this->executeLeft = true;
 
     //Deal with leaf nodes (values)
     if (op->operation.type != 'o') {
@@ -155,25 +156,43 @@ void Executor::executeInstruction(OperationNode* op) throw (RuntimeError) {
         return;
     }
 
-    //Jump down to leaf nodes to start
-    if (op->left != NULL) {
-        this->executeInstruction(op->left);
-    }
+    //Execute terminating operations like && and ||
+    if (op->operation.isTerminating) {
+        //Get right node
+        if (op->right != NULL) {
+            this->executeInstruction(op->right);
+        }
+        //Execute conditional
+        try {
+            this->executeOperator(op);
+        } catch (RuntimeError &e) {
+            e.line = op->operation.line;
+            throw e;
+        }
+        //Execute left if needed
+        if (op->left != NULL && this->executeLeft) {
+            this->executeInstruction(op->left);
+        }
+    } else {
 
-    //
-    // Handle some operations here
-    //
+        //Get left node
+        if (op->left != NULL) {
+            this->executeInstruction(op->left);
+        }
 
-    if (op->right != NULL) {
-        this->executeInstruction(op->right);
-    }
 
-    //Execute operation
-    try {
-        this->executeOperator(op);
-    } catch (RuntimeError &e) {
-        e.line = op->operation.line;
-        throw e;
+        //Get right node
+        if (op->right != NULL) {
+            this->executeInstruction(op->right);
+        }
+
+        //Execute no terminating operations
+        try {
+            this->executeOperator(op);
+        } catch (RuntimeError &e) {
+            e.line = op->operation.line;
+            throw e;
+        }
     }
 
     return;
@@ -289,7 +308,7 @@ void Executor::assignment() {
 
     //Delete operand b if visibility is TEMP
     if (b->getVisibility() == TEMP) {
-        //delete b;
+        delete b;
     }
 
     //Push on result
@@ -690,6 +709,50 @@ void Executor::greaterThanEqual() {
 /****************************************************************************************
  *
  ****************************************************************************************/
+void Executor::andd() {
+    Variable* a;
+
+    //Get operand values
+    a = this->registerVariables.top();
+
+    //Compute result
+    this->executeLeft = (a->getNumberValue());
+
+    if (this->executeLeft) {
+        //Delete operand a if visibility is TEMP
+        this->registerVariables.pop();
+        if (a->getVisibility() == TEMP) {
+            delete a;
+        }
+    }
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Executor::orr() {
+    Variable* a;
+
+    //Get operand values
+    a = this->registerVariables.top();
+
+    //Compute result
+    this->executeLeft = (!a->getNumberValue());
+
+    if (this->executeLeft) {
+        //Delete operand a if visibility is TEMP
+        this->registerVariables.pop();
+        if (a->getVisibility() == TEMP) {
+            delete a;
+        }
+    }
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
 void Executor::add() {
     Variable* a;
     Variable* b;
@@ -1025,7 +1088,7 @@ void Executor::jmp() {
     this->registerVariables.pop();
 
     //Compute result
-        this->instructionPointer = a->getNumberValue();
+    this->instructionPointer = a->getNumberValue();
 
     //Delete operand a if visibility is TEMP
     if (a->getVisibility() == TEMP) {

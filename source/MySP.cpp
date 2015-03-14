@@ -13,7 +13,7 @@ using namespace std;
 
 int main() {
 
-    //string s = " main { print 5; }";
+    //string s = "main { (a = 1) && (b = 1); }";
     //istringstream* s = new istringstream("main { print 5; }");
     istream* s = new ifstream("./test.mysp");
 
@@ -41,5 +41,5 @@ int main() {
     cout << endl << endl;
 
     //Unit test
-	//Test();
+	Test();
 }
