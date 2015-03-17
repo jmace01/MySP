@@ -371,7 +371,7 @@ bool ExpressionTreeBuilder::isPreUnary(string op) {
  ****************************************************************************************/
 bool ExpressionTreeBuilder::isTerminating(string op) {
     short h = ExpressionTreeBuilder::getOperatorHeirchy(op);
-    return (h >= 4 && h <= 7);
+    return ((h >= 4 && h <= 7) || h == 14);
 }
 
 
@@ -499,6 +499,7 @@ void inline ExpressionTreeBuilder::addFunctionCall() {
     temp->operation = Token();
     temp->operation.type = 'o';
     temp->operation.word = "C";
+    temp->operation.isTerminating = true;
 
     //If there are parameters, add them to the left
     //It is important they be on the left!

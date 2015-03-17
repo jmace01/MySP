@@ -47,6 +47,10 @@ void Test::testExTreeBldr() {
                     "4 5 o [ +"
             )
             , TestIO( //Ternary statement
+                    "1 ? 2 : 3",
+                    "3 2 : 1 ?"
+            )
+            , TestIO( //Ternary statement
                     "x = A + ((true == false) ? 1 + 1 : 2 * 2) + B",
                     "B 2 2 * 1 1 + : + false true == ? A + x ="
             )

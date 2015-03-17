@@ -17,14 +17,17 @@ Executor::Executor() {
     this->registerVariables = stack<Variable*>();
     this->variables = map<string, Variable**>();
     this->returnVariable = NULL;
+    this->currentNode = NULL;
     this->lastValue = 0;
     this->executeLeft = true;
+    this->ternaryLeft = false;
     if (Executor::operationMap.empty()) {
         this->initializeOperationMap();
     }
 }
 
 map<string, void (Executor::*)(void)> Executor::operationMap = map<string, void (Executor::*)(void)>();
+
 
 /****************************************************************************************
  *
@@ -87,14 +90,14 @@ void Executor::initializeOperationMap() {
     operationMap["!"]      = &Executor::negate;
     //operationMap["~"]      = &Executor::print;
     //operationMap["&"]      = &Executor::print;
-    //operationMap["->"]     = &Executor::print;
-    //operationMap["::"]     = &Executor::print;
+    operationMap["->"]     = &Executor::dynamicVar;
+    operationMap["::"]     = &Executor::staticVar;
     //operationMap["P"]      = &Executor::print;
-    //operationMap["C"]      = &Executor::print;
+    operationMap["C"]      = &Executor::call;
     operationMap["jmp"]    = &Executor::jmp;
     operationMap["if"]     = &Executor::iff;
-    //operationMap["["]      = &Executor::print;
-    //operationMap[":"]      = &Executor::print;
+    operationMap["["]      = &Executor::arrayIndex;
+    operationMap["?"]      = &Executor::ternary;
 }
 
 /****************************************************************************************
@@ -149,6 +152,7 @@ void Executor::executeInstruction(OperationNode* op) throw (RuntimeError) {
         }
         //Variables or constants
         else if (op->operation.type == 'w') {
+            //
             //Constants? Handle them here
             //
 
@@ -169,10 +173,15 @@ void Executor::executeInstruction(OperationNode* op) throw (RuntimeError) {
 
     //Execute terminating operations like && and ||
     if (op->operation.isTerminating) {
+
+        //Don't execute go down :: and -> nodes
+        bool dontDescend = op->operation.word == "::" || op->operation.word == "->";
+
         //Get right node
-        if (op->right != NULL) {
+        if (op->right != NULL && !dontDescend && op->operation.word != "C") {
             this->executeInstruction(op->right);
         }
+
         //Execute conditional
         try {
             this->executeOperator(op);
@@ -180,11 +189,24 @@ void Executor::executeInstruction(OperationNode* op) throw (RuntimeError) {
             e.line = op->operation.line;
             throw e;
         }
+
         //Execute left if needed
-        if (op->left != NULL && this->executeLeft) {
-            this->executeInstruction(op->left);
+        if (op->left != NULL && this->executeLeft && !dontDescend) {
+            if (op->operation.word == "?") {
+                if (this->ternaryLeft) {
+                    this->executeInstruction(op->left->left);
+                } else {
+                    this->executeInstruction(op->left->right);
+                }
+            } else {
+                this->executeInstruction(op->left);
+            }
         }
-    } else {
+
+    }
+
+    //Normal operation-- traverse left, then right, then execute
+    else {
 
         //Get left node
         if (op->left != NULL) {
@@ -214,6 +236,7 @@ void Executor::executeInstruction(OperationNode* op) throw (RuntimeError) {
  *
  ****************************************************************************************/
 inline void Executor::executeOperator(OperationNode* op) {
+    this->currentNode = op;
     string w = op->operation.word;
 
     void (Executor::*func)(void);
@@ -1069,6 +1092,82 @@ void Executor::negate() {
 /****************************************************************************************
  *
  ****************************************************************************************/
+void Executor::call() {
+    OperationNode* nextOp;
+    Variable* a;
+    Variable* result;
+
+    //Compute result
+    this->executeLeft = false;
+    nextOp = this->currentNode->right;
+
+    bool isStatic = nextOp->operation.word == "::";
+    bool isDynamic = nextOp->operation.word == "->";
+
+    //Is this a method call?
+    if (isStatic || isDynamic) {
+
+        //Get the variable
+        this->executeInstruction(this->currentNode->right->right);
+        a = this->registerVariables.top();
+        this->registerVariables.pop();
+
+        //Call static function
+        if (isStatic) {
+            //cout << "STATIC FUNCTION CALL" << endl;
+        } else {
+            //cout << "DYNAMIC FUNCTION CALL" << endl;
+        }
+
+        //Get the result
+        result = new Variable(TEMP, false);
+
+    } else {
+
+        //Create an array
+        if (this->currentNode->right->operation.word == "array") {
+            result = new Array(TEMP, false);
+        }
+
+        //Create a new class instance
+        else {
+            //cout << "CONSTRUCTOR FUNCTION CALL" << endl;
+            result = new Variable(TEMP, false);
+        }
+
+    }
+
+    this->registerVariables.push(result);
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Executor::staticVar() {
+    Variable* result;
+
+    //Compute result
+    result = new Variable(TEMP, false);
+    this->registerVariables.push(result);
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Executor::dynamicVar() {
+    Variable* result;
+
+    //Compute result
+    result = new Variable(TEMP, false);
+    this->registerVariables.push(result);
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
 void Executor::iff() {
     Variable* a;
 
@@ -1105,4 +1204,60 @@ void Executor::jmp() {
     if (a->getVisibility() == TEMP) {
         delete a;
     }
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Executor::ternary() {
+    Variable* a;
+
+    //Get operand values
+    a = this->registerVariables.top();
+    this->registerVariables.pop();
+
+    //Compute result
+    this->ternaryLeft = !(a->getBooleanValue());
+
+    //Delete operand a if visibility is TEMP
+    if (a->getVisibility() == TEMP) {
+        delete a;
+    }
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Executor::arrayIndex() {
+    Variable* a;
+    Variable* b;
+    Variable* result;
+
+    //Get operand values
+    a = this->registerVariables.top();
+    this->registerVariables.pop();
+    b = this->registerVariables.top();
+    this->registerVariables.pop();
+
+    //Compute result
+    if (a->getType() != 'a') {
+        throw RuntimeError("Cannot index from type "+a->getTypeString(), WARNING);
+    } else {
+        result = a->getArrayValue(b->getStringValue());
+    }
+
+    //Delete operand a if visibility is TEMP
+    if (a->getVisibility() == TEMP) {
+        delete a;
+    }
+
+    //Delete operand b if visibility is TEMP
+    if (b->getVisibility() == TEMP) {
+        delete b;
+    }
+
+    //Push on result
+    this->registerVariables.push(result);
 }

@@ -34,8 +34,10 @@ class Executor {
         std::map<std::string, ClassDefinition* >* classes;
         static std::map<std::string, void (Executor::*)(void)> operationMap;
         Variable* returnVariable;
+        OperationNode* currentNode;
         int lastValue;
         bool executeLeft;
+        bool ternaryLeft;
 
     public:
         Executor();
@@ -75,8 +77,13 @@ class Executor {
         void inc();
         void dec();
         void negate();
+        void call();
         void iff();
         void jmp();
+        void ternary();
+        void staticVar();
+        void dynamicVar();
+        void arrayIndex();
 };
 
 #endif

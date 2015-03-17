@@ -296,16 +296,16 @@ void Tokenizer::eatComments(char &currentChar) {
         input->get(currentChar);
         if (currentChar == '/') { // for "//" comments
             input->get(currentChar);
-            while (currentChar != '\n' && currentChar != '\r' && input->good()) {
+            while (currentChar != '\n' && input->good()) {
                 input->get(currentChar);
             }
-            this->lineNumber++;
+            //this->lineNumber++;
         } else { //for "/**/" comments
             input->get(currentChar);
             while (input->good()) {
                 if (currentChar == '*' && input->peek() == '/') {
                     break;
-                } else if (currentChar == '\n' || currentChar == '\r') {
+                } else if (currentChar == '\n') {
                     this->lineNumber++;
                 }
                 input->get(currentChar);

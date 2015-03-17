@@ -13,7 +13,7 @@ using namespace std;
 
 int main() {
 
-    //string s = "main { (a = 1) && (b = 1); }";
+    //string s = "main { a = 0 ? '1' : '2'; print a; }";
     //istringstream* s = new istringstream("main { print 5; }");
     istream* s = new ifstream("./test.mysp");
 
@@ -35,7 +35,7 @@ int main() {
             }
         }
     } catch (PostfixError &e) {
-        cout << e.msg << endl;
+        cout << e.msg << " (line " << e.t.line << ")" << endl;
     }
 
     cout << endl << endl;

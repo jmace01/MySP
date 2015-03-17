@@ -11,6 +11,7 @@ class demo inherits d {
     private   dynamic b;
     protected dynamic c;
     private   static  d;
+    public    static  e;
     
     public dynamic demo() {
         this->a = 1;
@@ -135,8 +136,34 @@ main {
     (1==2) || (v4 = 1);
     print v1.v2.v3.v4."\n";
     
-    //d = demo();
-    //d->foo(10);
-    //demo::bar();
+    print "\n";
+    
+    //TERNARY STATEMENTS
+    a = 0 ? 'YES' : 'NO';
+    b = 1 ? 'YES' : 'NO';
+    print a . ', ' . b . "\n";
+    
+    print "\n";
+    
+    //ARRAYS AND INDEXES
+    a = array();
+    a[0] = array();
+    a[0][0] = 1;
+    print a . ', ' . a[0] . ', ' . a[0][0] . "\n";
+    
+    print "\n";
+    
+    //CONSTRUCTORS AND METHODS
+    d = demo();
+    d->foo(10);
+    demo::bar();
+    
+    print "\n";
+    
+    //MEMBER VARIABLES
+    d->a = 1;
+    d::e = 2;
+    print d->a;
+    print demo::e;
     
 }
