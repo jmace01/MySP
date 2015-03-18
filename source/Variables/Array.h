@@ -9,7 +9,7 @@ class Array: public Variable {
         std::map<std::string, Variable**> values;
 
     public:
-        Array(Visibility visibility, bool isStatic);
+        Array(Visibility visibility);
         ~Array();
         char getType();
         std::string getTypeString();

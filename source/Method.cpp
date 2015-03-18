@@ -87,8 +87,8 @@ void Method::addParameter(string &name) {
 void Method::addDefault(Token &t) {
     Variable* v;
     if (t.type == 's') {
-        v = new String(PUBLIC, false, t.word);
+        v = new String(PUBLIC, t.word);
     } else if (t.type == 'n') {
-        v = new Number(PUBLIC, false, strtof(t.word.c_str(), NULL));
+        v = new Number(PUBLIC, strtof(t.word.c_str(), NULL));
     }
 }

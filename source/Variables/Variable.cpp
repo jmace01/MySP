@@ -9,9 +9,8 @@ using namespace std;
 /****************************************************************************************
  *
  ****************************************************************************************/
-Variable::Variable(Visibility visibility, bool isStatic) {
+Variable::Variable(Visibility visibility) {
     this->visibility = visibility;
-    this->isStatic   = isStatic;
     this->pointer    = NULL;
 }
 
@@ -100,6 +99,24 @@ Variable* Variable::getArrayValue(string index) {
 /****************************************************************************************
  *
  ****************************************************************************************/
+Variable* Variable::getProperty(string index) {
+    throw RuntimeError("Cannot get property of '"+this->getTypeString()+"'", FATAL);
+    return NULL;
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+Method* Variable::getMethod(string index) {
+    throw RuntimeError("Cannot get method of '"+this->getTypeString()+"'", FATAL);
+    return NULL;
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
 Variable* Variable::operator= (Variable &rhs) {
     //If possible, copy over the value
     //
@@ -107,7 +124,7 @@ Variable* Variable::operator= (Variable &rhs) {
     //Create new variable
     Variable* var;
 
-    var = new Variable(TEMP, false);
+    var = new Variable(TEMP);
 
     delete this;
     return var;
@@ -119,7 +136,7 @@ Variable* Variable::operator= (Variable &rhs) {
  ****************************************************************************************/
 Variable* Variable::operator+ (Variable &rhs) {
     throw RuntimeError("Cannot use + operator on type '"+this->getTypeString()+"'", WARNING);
-    return new Variable(TEMP, false);
+    return NULL;
 }
 
 
@@ -128,7 +145,7 @@ Variable* Variable::operator+ (Variable &rhs) {
  ****************************************************************************************/
 Variable* Variable::operator- (Variable &rhs) {
     throw RuntimeError("Cannot use - operator on type '"+this->getTypeString()+"'", WARNING);
-    return new Variable(TEMP, false);
+    return NULL;
 }
 
 
@@ -137,7 +154,7 @@ Variable* Variable::operator- (Variable &rhs) {
  ****************************************************************************************/
 Variable* Variable::operator++ (int) {
     throw RuntimeError("Cannot use ++ operator on type '"+this->getTypeString()+"'", WARNING);
-    return new Variable(TEMP, false);
+    return NULL;
 }
 
 
@@ -146,7 +163,7 @@ Variable* Variable::operator++ (int) {
  ****************************************************************************************/
 Variable* Variable::operator-- (int) {
     throw RuntimeError("Cannot use -- operator on type '"+this->getTypeString()+"'", WARNING);
-    return new Variable(TEMP, false);
+    return NULL;
 }
 
 
@@ -155,7 +172,7 @@ Variable* Variable::operator-- (int) {
  ****************************************************************************************/
 Variable* Variable::operator* (Variable &rhs) {
     throw RuntimeError("Cannot use * operator on type '"+this->getTypeString()+"'", WARNING);
-    return new Variable(TEMP, false);
+    return NULL;
 }
 
 
@@ -164,7 +181,7 @@ Variable* Variable::operator* (Variable &rhs) {
  ****************************************************************************************/
 Variable* Variable::operator/ (Variable &rhs) {
     throw RuntimeError("Cannot use / operator on type '"+this->getTypeString()+"'", WARNING);
-    return new Variable(TEMP, false);
+    return NULL;
 }
 
 
@@ -173,7 +190,7 @@ Variable* Variable::operator/ (Variable &rhs) {
  ****************************************************************************************/
 Variable* Variable::operator% (Variable &rhs) {
     throw RuntimeError("Cannot use % operator on type '"+this->getTypeString()+"'", WARNING);
-    return new Variable(TEMP, false);
+    return NULL;
 }
 
 
@@ -182,7 +199,7 @@ Variable* Variable::operator% (Variable &rhs) {
  ****************************************************************************************/
 Variable* Variable::operator[] (int i) {
     throw RuntimeError("Cannot use index operator on type '"+this->getTypeString()+"'", WARNING);
-    return new Variable(TEMP, false);
+    return NULL;
 }
 
 
@@ -191,7 +208,7 @@ Variable* Variable::operator[] (int i) {
  ****************************************************************************************/
 Variable* Variable::power(Variable &rhs) {
     throw RuntimeError("Cannot use ^ operator on type '"+this->getTypeString()+"'", WARNING);
-    return new Variable(TEMP, false);
+    return NULL;
 }
 
 
@@ -200,27 +217,7 @@ Variable* Variable::power(Variable &rhs) {
  ****************************************************************************************/
 Variable* Variable::concat(Variable &rhs) {
     throw RuntimeError("Cannot use '.' operator on type '"+this->getTypeString()+"'", WARNING);
-    return new Variable(TEMP, false);
-}
-
-
-/****************************************************************************************
- *
- ****************************************************************************************/
-Method* Variable::getMethod(std::string, bool isStatic) {
-    string op = (isStatic) ? "::" : "->";
-    throw RuntimeError("Cannot use "+op+" operator on type '"+this->getTypeString()+"'", WARNING);
     return NULL;
-}
-
-
-/****************************************************************************************
- *
- ****************************************************************************************/
-Variable* Variable::getPropery(std::string, bool isStatic) {
-    string op = (isStatic) ? "::" : "->";
-    throw RuntimeError("Cannot use "+op+" operator on type '"+this->getTypeString()+"'", WARNING);
-    return new Variable(TEMP, false);
 }
 
 

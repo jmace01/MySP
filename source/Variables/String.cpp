@@ -7,8 +7,8 @@ using namespace std;
 /****************************************************************************************
  *
  ****************************************************************************************/
-String::String(Visibility visibility, bool isStatic, string &value)
-    : Variable(visibility, isStatic)
+String::String(Visibility visibility, string &value)
+    : Variable(visibility)
 {
     if (value[0] == '"' || value[0] == '\'') {
         this->value = value.substr(1, value.length() - 2);
@@ -63,6 +63,6 @@ bool String::getBooleanValue() {
  ****************************************************************************************/
 Variable* String::concat(Variable &rhs) {
     string v = this->value + rhs.getStringValue();
-    Variable* result = new String(TEMP, false, v);
+    Variable* result = new String(TEMP, v);
     return result;
 }

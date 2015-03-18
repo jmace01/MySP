@@ -14,8 +14,8 @@ void Test::testVariables() {
     cout << "Starting Variable Unit Test" << endl;
     clock_t timer = clock();
 
-    Variable* a = new Variable(PUBLIC, false);
-    Variable* b = new Number(PUBLIC, false, 0);
+    Variable* a = new Variable(PUBLIC);
+    Variable* b = new Number(PUBLIC, 0);
 
     int i = 0;
     int passed = 0;

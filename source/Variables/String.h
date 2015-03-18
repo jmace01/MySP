@@ -11,7 +11,7 @@ class String : public Variable {
         std::string value;
 
     public:
-        String(Visibility visibility, bool isStatic, std::string &value);
+        String(Visibility visibility, std::string &value);
         ~String();
         char getType();
         std::string getStringValue();

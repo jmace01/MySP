@@ -9,6 +9,7 @@ using namespace std;
 ClassDefinition::ClassDefinition() {
     this->inheritedClass   = NULL;
     this->properties = map<string, Variable>();
+    this->staticProperties = map<string, Variable**>();
     this->methods    = map<string, Method*>();
 }
 
@@ -22,6 +23,12 @@ ClassDefinition::~ClassDefinition() {
     for (it = methods.begin(); it != methods.end(); it++) {
         delete it->second;
     }
+    //Remove static variables
+    map<string, Variable**>::iterator sit;
+    for (sit = staticProperties.begin(); sit != staticProperties.end(); it++) {
+        delete (*sit->second);
+        delete sit->second;
+    }
 }
 
 
@@ -32,12 +39,37 @@ void ClassDefinition::addProperty(string &name, Variable &v, Token &t) {
     //Does the property already exist?
     if (this->properties.find(name) != this->properties.end()) {
         throw PostfixError("Redefinition of property '"+name+"'", t);
+    } else if (this->staticProperties.find(name) != this->staticProperties.end()) {
+        throw PostfixError("Redefinition of property '"+name+"'", t);
     }
 
     //Create the method
     else {
         //Don't use default constructor (properties[name] = v)
         this->properties.insert(std::pair<string,Variable>(name,v));
+    }
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void ClassDefinition::addStaticProperty(string &name, Variable &v, Token &t) {
+    //Does the property already exist?
+    if (this->properties.find(name) != this->properties.end()) {
+            throw PostfixError("Redefinition of property '"+name+"'", t);
+    } else if (this->staticProperties.find(name) != this->staticProperties.end()) {
+        throw PostfixError("Redefinition of property '"+name+"'", t);
+    }
+
+    //Create the method
+    else {
+        //Don't use default constructor
+        Variable** vPointer = new Variable*;
+        Variable* var = new Variable(v.getVisibility());
+        *vPointer = var;
+        var->setPointer(vPointer);
+        this->staticProperties[name] = vPointer;
     }
 }
 
@@ -88,9 +120,26 @@ Method* ClassDefinition::getMethod(string &name) {
 }
 
 
+map<string, Variable> ClassDefinition::getProperties() {
+    return this->properties;
+}
+
+
 /****************************************************************************************
  *
  ****************************************************************************************/
 void ClassDefinition::setInheritance(ClassDefinition* inherClass) {
     this->inheritedClass = inherClass;
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+Variable* ClassDefinition::getStaticProperty(string index) {
+    if (this->staticProperties.find(index) == this->staticProperties.end()) {
+        throw RuntimeError("Static property '"+index+"' of class does not exist", ERROR);
+    }
+
+    return *(this->staticProperties[index]);
 }

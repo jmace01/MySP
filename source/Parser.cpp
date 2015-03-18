@@ -290,8 +290,12 @@ void inline Parser::startProperty(Token &t) {
     toks.pop();
 
     if (toks.front().word == ";") {
-        Variable v(visibility, isStatic);
-        this->currentClass->addProperty(t.word, v, t);
+        Variable v(visibility);
+        if (isStatic) {
+            this->currentClass->addStaticProperty(t.word, v, t);
+        } else {
+            this->currentClass->addProperty(t.word, v, t);
+        }
     } else {
         //Add method
         this->startMethod(t.word, visibility, isStatic, t);

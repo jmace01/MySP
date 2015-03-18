@@ -30,11 +30,10 @@ struct RuntimeError {
 class Variable {
     protected:
         Visibility visibility;
-        bool isStatic;
         Variable** pointer;
 
     public:
-        Variable(Visibility visibility, bool isStatic);
+        Variable(Visibility visibility);
         virtual ~Variable();
         Visibility getVisibility();
         void setPointer(Variable** pointer);
@@ -62,8 +61,8 @@ class Variable {
 
         virtual Variable* power(Variable &rhs);
         virtual Variable* concat(Variable &rhs);
-        virtual Method* getMethod(std::string, bool isStatic);
-        virtual Variable* getPropery(std::string, bool isStatic);
+        virtual Method* getMethod(std::string index);
+        virtual Variable* getProperty(std::string index);
 };
 
 #endif

@@ -8,7 +8,7 @@ class Number : public Variable {
         double value;
 
     public:
-        Number(Visibility visibility, bool isStatic, double value);
+        Number(Visibility visibility, double value);
         ~Number();
 
         char getType();

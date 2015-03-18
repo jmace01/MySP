@@ -13,16 +13,20 @@ class ClassDefinition {
     private:
         ClassDefinition* inheritedClass;
         std::map<std::string, Variable> properties;
+        std::map<std::string, Variable**> staticProperties;
         std::map<std::string, Method*> methods;
 
     public:
         ClassDefinition();
         ~ClassDefinition();
         void addProperty(std::string &name, Variable &v, Token &t);
+        void addStaticProperty(std::string &name, Variable &v, Token &t);
         void addMethod(std::string &name, Method* m, Token &t);
         std::map<std::string, Method*> getMethods();
         Method* getMethod(std::string &name);
+        std::map<std::string, Variable> getProperties();
         void setInheritance(ClassDefinition* inherClass);
+        Variable* getStaticProperty(std::string index);
 };
 
 #endif

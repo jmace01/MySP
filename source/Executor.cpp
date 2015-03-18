@@ -144,11 +144,11 @@ void Executor::executeInstruction(OperationNode* op) throw (RuntimeError) {
     if (op->operation.type != 'o') {
         //Number
         if (op->operation.type == 'n') {
-            var = new Number(TEMP, false, strtod(op->operation.word.c_str(), NULL));
+            var = new Number(TEMP, strtod(op->operation.word.c_str(), NULL));
         }
         //String
         else if (op->operation.type == 's') {
-            var = new String(TEMP, false, op->operation.word);
+            var = new String(TEMP, op->operation.word);
         }
         //Variables or constants
         else if (op->operation.type == 'w') {
@@ -158,7 +158,7 @@ void Executor::executeInstruction(OperationNode* op) throw (RuntimeError) {
 
             //Create the variable if it does not yet exist
             if (this->variables.find(op->operation.word) == this->variables.end()) {
-                var = new Variable(PUBLIC, false);
+                var = new Variable(PUBLIC);
                 vPointer = new Variable*;
                 *vPointer = var;
                 var->setPointer(vPointer);
@@ -323,16 +323,16 @@ void Executor::assignment() {
 
     //Create the new variable
     if (b->getType() == 'n') {
-        result = new Number(PUBLIC, false, b->getNumberValue());
+        result = new Number(a->getVisibility(), b->getNumberValue());
     } else if (b->getType() == 's') {
         string s = b->getStringValue();
-        result = new String(PUBLIC, false, s);
+        result = new String(a->getVisibility(), s);
     } else if (b->getType() == 'a') {
-        result = new Array(PUBLIC, false);
+        result = new Array(a->getVisibility());
     } else if (b->getType() == 'o') {
-        result = new Object(PUBLIC, false);
+        result = new Object(a->getVisibility(), (Object*) b);
     } else {
-        result = new Variable(PUBLIC, false);
+        result = new Variable(a->getVisibility());
     }
 
     //Set the new variable
@@ -369,9 +369,9 @@ void Executor::variableEquals() {
             a == b
         )
     {
-        result = new Number(TEMP, false, 1);
+        result = new Number(TEMP, 1);
     } else {
-        result = new Number(TEMP, false, 0);
+        result = new Number(TEMP, 0);
     }
 
     //Delete operand a if visibility is TEMP
@@ -408,9 +408,9 @@ void Executor::typeEquals() {
             *a == *b && a->getType() == b->getType()
         )
     {
-        result = new Number(TEMP, false, 1);
+        result = new Number(TEMP, 1);
     } else {
-        result = new Number(TEMP, false, 0);
+        result = new Number(TEMP, 0);
     }
 
     //Delete operand a if visibility is TEMP
@@ -447,9 +447,9 @@ void Executor::equals() {
             *a == *b
         )
     {
-        result = new Number(TEMP, false, 1);
+        result = new Number(TEMP, 1);
     } else {
-        result = new Number(TEMP, false, 0);
+        result = new Number(TEMP, 0);
     }
 
     //Delete operand a if visibility is TEMP
@@ -486,9 +486,9 @@ void Executor::notVariableEquals() {
             a == b
         )
     {
-        result = new Number(TEMP, false, 0);
+        result = new Number(TEMP, 0);
     } else {
-        result = new Number(TEMP, false, 1);
+        result = new Number(TEMP, 1);
     }
 
     //Delete operand a if visibility is TEMP
@@ -525,9 +525,9 @@ void Executor::notTypeEquals() {
             *a == *b && a->getType() == b->getType()
         )
     {
-        result = new Number(TEMP, false, 0);
+        result = new Number(TEMP, 0);
     } else {
-        result = new Number(TEMP, false, 1);
+        result = new Number(TEMP, 1);
     }
 
     //Delete operand a if visibility is TEMP
@@ -564,9 +564,9 @@ void Executor::notEquals() {
             *a == *b
         )
     {
-        result = new Number(TEMP, false, 0);
+        result = new Number(TEMP, 0);
     } else {
-        result = new Number(TEMP, false, 1);
+        result = new Number(TEMP, 1);
     }
 
     //Delete operand a if visibility is TEMP
@@ -603,9 +603,9 @@ void Executor::lessThan() {
             *a < *b
         )
     {
-        result = new Number(TEMP, false, 1);
+        result = new Number(TEMP, 1);
     } else {
-        result = new Number(TEMP, false, 0);
+        result = new Number(TEMP, 0);
     }
 
     //Delete operand a if visibility is TEMP
@@ -642,9 +642,9 @@ void Executor::lessThanEqual() {
             (*a < *b) || (*a == *b)
         )
     {
-        result = new Number(TEMP, false, 1);
+        result = new Number(TEMP, 1);
     } else {
-        result = new Number(TEMP, false, 0);
+        result = new Number(TEMP, 0);
     }
 
     //Delete operand a if visibility is TEMP
@@ -681,9 +681,9 @@ void Executor::greaterThan() {
             *a > *b
         )
     {
-        result = new Number(TEMP, false, 1);
+        result = new Number(TEMP, 1);
     } else {
-        result = new Number(TEMP, false, 0);
+        result = new Number(TEMP, 0);
     }
 
     //Delete operand a if visibility is TEMP
@@ -720,9 +720,9 @@ void Executor::greaterThanEqual() {
             (*a > *b) || (*a == *b)
         )
     {
-        result = new Number(TEMP, false, 1);
+        result = new Number(TEMP, 1);
     } else {
-        result = new Number(TEMP, false, 0);
+        result = new Number(TEMP, 0);
     }
 
     //Delete operand a if visibility is TEMP
@@ -997,7 +997,7 @@ void Executor::cat() {
         result = a->concat(*b);
     } else {
         s = a->getStringValue();
-        t = new String(TEMP, 0, s);
+        t = new String(TEMP, s);
         result = t->concat(*b);
         delete t;
     }
@@ -1077,7 +1077,7 @@ void Executor::negate() {
     this->registerVariables.pop();
 
     //Compute result
-    result = new Number(TEMP, false, !a->getBooleanValue());
+    result = new Number(TEMP, !a->getBooleanValue());
 
     //Delete operand a if visibility is TEMP
     if (a->getVisibility() == TEMP) {
@@ -1120,19 +1120,21 @@ void Executor::call() {
         }
 
         //Get the result
-        result = new Variable(TEMP, false);
+        result = new Variable(TEMP);
 
     } else {
 
         //Create an array
         if (this->currentNode->right->operation.word == "array") {
-            result = new Array(TEMP, false);
+            result = new Array(TEMP);
         }
 
         //Create a new class instance
         else {
-            //cout << "CONSTRUCTOR FUNCTION CALL" << endl;
-            result = new Variable(TEMP, false);
+            if ((*this->classes).find(this->currentNode->right->operation.word) == this->classes->end()) {
+                throw RuntimeError("No class found", FATAL);
+            }
+            result = new Object(TEMP, (*this->classes)[this->currentNode->right->operation.word]);
         }
 
     }
@@ -1145,10 +1147,24 @@ void Executor::call() {
  *
  ****************************************************************************************/
 void Executor::staticVar() {
+    Variable* a;
     Variable* result;
 
+    //Get the class name
+    string className = this->currentNode->right->operation.word;
+
     //Compute result
-    result = new Variable(TEMP, false);
+    this->executeLeft = false;
+    if ((*this->classes).find(className) == (*this->classes).end()) {
+        throw RuntimeError("Unknown class '"+className+"'",ERROR);
+    }
+    ClassDefinition* cls = (*this->classes)[className];
+    result = cls->getStaticProperty(this->currentNode->left->operation.word);
+
+    if (result->getVisibility() != PUBLIC) {
+        throw RuntimeError("Cannot access private variable from outside class",ERROR);
+    }
+
     this->registerVariables.push(result);
 }
 
@@ -1157,10 +1173,22 @@ void Executor::staticVar() {
  *
  ****************************************************************************************/
 void Executor::dynamicVar() {
+    Variable* a;
     Variable* result;
 
+    //Get the class
+    this->executeInstruction(this->currentNode->right);
+    a = this->registerVariables.top();
+    this->registerVariables.pop();
+
     //Compute result
-    result = new Variable(TEMP, false);
+    this->executeLeft = false;
+    result = a->getProperty(this->currentNode->left->operation.word);
+
+    if (result->getVisibility() != PUBLIC) {
+        throw RuntimeError("Cannot access private variable from outside class",ERROR);
+    }
+
     this->registerVariables.push(result);
 }
 

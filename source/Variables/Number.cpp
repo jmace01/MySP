@@ -8,8 +8,8 @@ using namespace std;
 /****************************************************************************************
  *
  ****************************************************************************************/
-Number::Number(Visibility visibility, bool isStatic, double value)
-    : Variable(visibility, isStatic)
+Number::Number(Visibility visibility, double value)
+    : Variable(visibility)
 {
     this->value = value;
 }
@@ -78,7 +78,7 @@ bool Number::getBooleanValue() {
  *
  ****************************************************************************************/
 Variable* Number::operator+ (Variable &rhs) {
-    return new Number(TEMP, false, this->value + rhs.getNumberValue());
+    return new Number(TEMP, this->value + rhs.getNumberValue());
 }
 
 
@@ -86,7 +86,7 @@ Variable* Number::operator+ (Variable &rhs) {
  *
  ****************************************************************************************/
 Variable* Number::operator- (Variable &rhs) {
-    return new Number(TEMP, false, this->value - rhs.getNumberValue());
+    return new Number(TEMP, this->value - rhs.getNumberValue());
 }
 
 
@@ -95,7 +95,7 @@ Variable* Number::operator- (Variable &rhs) {
  ****************************************************************************************/
 Variable* Number::operator++ (int) {
     this->value += 1;
-    return new Number(TEMP, false, this->value - 1);
+    return new Number(TEMP, this->value - 1);
 }
 
 
@@ -104,7 +104,7 @@ Variable* Number::operator++ (int) {
  ****************************************************************************************/
 Variable* Number::operator-- (int) {
     this->value -= 1;
-    return new Number(TEMP, false, this->value + 1);
+    return new Number(TEMP, this->value + 1);
 }
 
 
@@ -112,7 +112,7 @@ Variable* Number::operator-- (int) {
  *
  ****************************************************************************************/
 Variable* Number::operator* (Variable &rhs) {
-    return new Number(TEMP, false, this->value * rhs.getNumberValue());
+    return new Number(TEMP, this->value * rhs.getNumberValue());
 }
 
 
@@ -123,7 +123,7 @@ Variable* Number::operator/ (Variable &rhs) {
     if (rhs.getNumberValue() == 0) {
         throw RuntimeError("Division by 0", WARNING);
     }
-    return new Number(TEMP, false, this->value / rhs.getNumberValue());
+    return new Number(TEMP, this->value / rhs.getNumberValue());
 }
 
 
@@ -131,7 +131,7 @@ Variable* Number::operator/ (Variable &rhs) {
  *
  ****************************************************************************************/
 Variable* Number::operator% (Variable &rhs) {
-    return new Number(TEMP, false, (int) this->value % (int) rhs.getNumberValue());
+    return new Number(TEMP, (int) this->value % (int) rhs.getNumberValue());
 }
 
 
@@ -139,5 +139,5 @@ Variable* Number::operator% (Variable &rhs) {
  *
  ****************************************************************************************/
 Variable* Number::power(Variable &rhs) {
-    return new Number(TEMP, false, pow(this->value, rhs.getNumberValue()));
+    return new Number(TEMP, pow(this->value, rhs.getNumberValue()));
 }

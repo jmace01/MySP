@@ -7,8 +7,8 @@ using namespace std;
 /****************************************************************************************
  *
  ****************************************************************************************/
-Array::Array(Visibility visibility, bool isStatic)
-    : Variable(visibility, isStatic)
+Array::Array(Visibility visibility)
+    : Variable(visibility)
 {
     this->values = map<string, Variable**>();
 }
@@ -70,11 +70,11 @@ bool Array::getBooleanValue() {
  *
  ****************************************************************************************/
 Variable* Array::getArrayValue(string index) {
-    Variable** vPointer;
+    Variable** vPointer = NULL;
     Variable* var;
 
     if (this->values.find(index) == this->values.end()) {
-        var = new Variable(PUBLIC, false);
+        var = new Variable(PUBLIC);
         vPointer = new Variable*;
         *vPointer = var;
         var->setPointer(vPointer);
