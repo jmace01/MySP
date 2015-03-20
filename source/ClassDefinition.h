@@ -27,6 +27,7 @@ class ClassDefinition {
         std::map<std::string, Variable> getProperties();
         void setInheritance(ClassDefinition* inherClass);
         Variable* getStaticProperty(std::string index);
+        ClassDefinition* getInheritedClass();
 };
 
 #endif

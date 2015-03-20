@@ -10,6 +10,7 @@
 #include "Method.h"
 #include "OperationNode.h"
 #include "Variables/Array.h"
+#include "Variables/Nil.h"
 #include "Variables/Number.h"
 #include "Variables/Object.h"
 #include "Variables/String.h"
@@ -31,6 +32,7 @@ class Executor {
         std::stack<Scope> scopeStack;
         std::stack<Variable*> registerVariables;
         std::map<std::string, Variable**> variables;
+        std::map<std::string, Variable*> constants;
         std::map<std::string, ClassDefinition* >* classes;
         static std::map<std::string, void (Executor::*)(void)> operationMap;
         Variable* returnVariable;
@@ -44,9 +46,11 @@ class Executor {
         ~Executor();
         void run(std::map<std::string, ClassDefinition* >* classes);
         void preserveClasses(bool preserve);
+        static Variable* makeVariableCopy(Variable* v, Visibility visibility);
 
     private:
         void initializeOperationMap();
+        void initializeConstants();
         void executeInstruction(OperationNode* op) throw (RuntimeError);
         void executeOperator(OperationNode* op);
         void clearRegisters();

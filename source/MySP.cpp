@@ -13,6 +13,7 @@ using namespace std;
 
 int main() {
 
+    clock_t timer = clock();
     //string s = "main { a = 0 ? '1' : '2'; print a; }";
     //istringstream* s = new istringstream("main { print 5; }");
     istream* s = new ifstream("./test.mysp");
@@ -39,7 +40,7 @@ int main() {
     }
 
     cout << endl << endl;
-
+    cout << ((float)(clock() - timer) / CLOCKS_PER_SEC) << endl;
     //Unit test
 	Test();
 }

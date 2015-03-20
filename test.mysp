@@ -36,28 +36,11 @@ class demo inherits d {
 
 main {
 
-    //WHILE LOOP
-    x = 0;
-    while (x < 10) {
-        print x++;
+    if (false) {
+        print "!\n";
+    } else {
+        print "?\n";
     }
-    
-    print "\n";
-    
-    //FOR LOOP
-    for (i=0; i < 10; i++) {
-        print i;
-    }
-    
-    print "\n";
-    
-    //DO WHILE LOOP
-    j = 0;
-    do {
-        print j++;
-    } while (j < 10);
-    
-    print "\n\n";
 
     //BOOLEAN TRUE
     print 1 < 2;
@@ -110,14 +93,40 @@ main {
     a = 'The answer is ' . a;
     print a."\n";
     
+    print "\n";
+    
     //IF/ELSE IF/ELSE STATEMENT
-    if (1 == 1) {
+    whichCase = 1;
+    if (whichCase == 1) {
         print "YES!";
-    } else if (1 == 2) {
+    } else if (whichCase == 2) {
         print "NO!";
     } else {
         print "?";
     }
+    
+    print "\n";
+
+    //WHILE LOOP
+    x = 0;
+    while (x < 10) {
+        print x++;
+    }
+    
+    print "\n";
+    
+    //FOR LOOP
+    for (i=0; i < 10; i++) {
+        print i;
+    }
+    
+    print "\n";
+    
+    //DO WHILE LOOP
+    j = 0;
+    do {
+        print j++;
+    } while (j < 10);
     
     print "\n\n";
     
@@ -144,16 +153,17 @@ main {
     a[0][0] = 1;
     print a . ', ' . a[0] . ', ' . a[0][0];
     
+    print "\n\n";
+    
+    print false."\n";
+    print true."\n";
+    print null."\n";
+    print pi."\n";
+    
     print "\n";
     
-    //CONSTRUCTORS AND METHODS
+    //OBJECT PROPERTIES
     d = demo();
-    d->foo(10);
-    demo::bar();
-    
-    print "\n";
-    
-    //MEMBER VARIABLES
     d->a = 1;
     demo::e = 2;
     print d->a;
@@ -161,8 +171,8 @@ main {
     
     print "\n\n";
     
-    //WARNINGS
-    a++;
+    //WARNINGS AND ERRORS
+    noGood++;
     1/0;
     1 = 1;
     a[0];
@@ -170,5 +180,12 @@ main {
     d->b = 0;
     d->blah;
     demo::blah;
+    true++;
+    
+    print "\n";
+    
+    //METHODS CALLS
+    d->foo(10);
+    demo::bar();
     
 }

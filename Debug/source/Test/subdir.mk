@@ -4,19 +4,19 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
+../source/Test/ExecutorTest.cpp \
 ../source/Test/ExpressionTreeBuilderTest.cpp \
-../source/Test/ParserTest.cpp \
-../source/Test/VariableTest.cpp 
+../source/Test/ParserTest.cpp 
 
 OBJS += \
+./source/Test/ExecutorTest.o \
 ./source/Test/ExpressionTreeBuilderTest.o \
-./source/Test/ParserTest.o \
-./source/Test/VariableTest.o 
+./source/Test/ParserTest.o 
 
 CPP_DEPS += \
+./source/Test/ExecutorTest.d \
 ./source/Test/ExpressionTreeBuilderTest.d \
-./source/Test/ParserTest.d \
-./source/Test/VariableTest.d 
+./source/Test/ParserTest.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

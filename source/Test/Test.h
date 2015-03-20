@@ -3,6 +3,7 @@
 
 #include <string>
 #include "../Parser.h"
+#include "../Executor.h"
 #include "../ExpressionTreeBuilder.h"
 
 
@@ -22,12 +23,12 @@ class Test {
         Test() {
             Test::testExTreeBldr();
             Test::testParser();
-            //Test::testVariables();
+            Test::testExecutor();
         }
 
         static void testExTreeBldr();
         static void testParser();
-        static void testVariables();
+        static void testExecutor();
 };
 
 #endif

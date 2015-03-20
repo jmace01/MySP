@@ -6,26 +6,39 @@ using namespace std;
 
 
 /****************************************************************************************
- *
+ * Executor Constructor
  ****************************************************************************************/
 Executor::Executor() {
-    this->instructionPointer = 0;
-    this->deleteClasses = true;
-    this->currentMethod = NULL;
-    this->classes = NULL;
-    this->scopeStack = stack<Scope>();
-    this->registerVariables = stack<Variable*>();
-    this->variables = map<string, Variable**>();
-    this->returnVariable = NULL;
-    this->currentNode = NULL;
-    this->lastValue = 0;
-    this->executeLeft = true;
-    this->ternaryLeft = false;
+    //Execution and clean up
+    this->instructionPointer = 0;   //What instruction are we executing?
+    this->deleteClasses = true;     //Should classes be deleted when destructor is called?
+    this->currentMethod = NULL;     //The current method being executed
+    this->classes = NULL;           //The class definitions from the Parser
+
+    //Scope variables
+    this->scopeStack = stack<Scope>();              //The scope for function calls
+    this->registerVariables = stack<Variable*>();   //The temporary values for expressions
+    this->variables = map<string, Variable**>();    //The variables to be stored
+    this->constants = map<string, Variable*>();
+
+    this->initializeConstants();
+
+    //Special case variables (Used in special circumstance operations)
+    this->returnVariable = NULL;    //The return value of a function
+    this->currentNode = NULL;       //The current node being executed
+    this->lastValue = 0;            //Ending value of last statement (used in conditions)
+    this->executeLeft = true;       //In a short circuit expression, should the other side be executed?
+    this->ternaryLeft = false;      //In a ternary statement, which side should be executed?
+
+    //The operation map routes operations (such as "+") to method (such as Executer::add)
+    //The first time an Executor class is initialized, the map should be populated
     if (Executor::operationMap.empty()) {
         this->initializeOperationMap();
     }
 }
 
+
+//Create the operation-to-method map
 map<string, void (Executor::*)(void)> Executor::operationMap = map<string, void (Executor::*)(void)>();
 
 
@@ -46,6 +59,11 @@ Executor::~Executor() {
         delete (*it->second);
         delete it->second;
     }
+    //Remove constants
+    map<string, Variable*>::iterator cit;
+    for (cit = this->constants.begin(); cit != this->constants.end(); cit++) {
+        delete cit->second;
+    }
     //Remove register data
     this->clearRegisters();
 }
@@ -59,6 +77,7 @@ void Executor::initializeOperationMap() {
     operationMap["echo"]   = &Executor::print;
     //operationMap["return"] = &Executor::print;
     //operationMap["break"]  = &Executor::print;
+    //operationMap["continue"]  = &Executor::print;
     operationMap["="]      = &Executor::assignment;
     //operationMap["+="]     = &Executor::print;
     //operationMap["-="]     = &Executor::print;
@@ -100,6 +119,18 @@ void Executor::initializeOperationMap() {
     operationMap["?"]      = &Executor::ternary;
 }
 
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Executor::initializeConstants() {
+    this->constants["false"]          = new Number(CONST, 0);
+    this->constants["true"]           = new Number(CONST, 1);
+    this->constants["null"]           = new Nil(CONST);
+    this->constants["pi"]             = new Number(CONST, 3.14159);
+}
+
+
 /****************************************************************************************
  *
  ****************************************************************************************/
@@ -112,14 +143,16 @@ void Executor::run(map<string, ClassDefinition* >* classes) {
     this->scopeStack.push(Scope());
 
     while (!scopeStack.empty()) {
+        //If the method end has been reached, pop off the method and get the previous one
         if (instructionPointer >= this->currentMethod->getInstructionSize()) {
             this->scopeStack.pop();
             continue;
         }
 
         try {
+            //Execute instruction at instruction pointer
             executeInstruction(this->currentMethod->getInstruction(this->instructionPointer++));
-            //For conditional statements
+            //For conditional statements, save the last value
             if (!this->registerVariables.empty()) {
                 this->lastValue = this->registerVariables.top()->getNumberValue();
                 this->clearRegisters();
@@ -152,9 +185,11 @@ void Executor::executeInstruction(OperationNode* op) throw (RuntimeError) {
         }
         //Variables or constants
         else if (op->operation.type == 'w') {
-            //
-            //Constants? Handle them here
-            //
+            var = this->constants[op->operation.word];
+            if (var != NULL) {
+                this->registerVariables.push(var);
+                return;
+            }
 
             //Create the variable if it does not yet exist
             if (this->variables.find(op->operation.word) == this->variables.end()) {
@@ -177,9 +212,11 @@ void Executor::executeInstruction(OperationNode* op) throw (RuntimeError) {
         //Don't execute go down :: and -> nodes
         bool dontDescend = op->operation.word == "::" || op->operation.word == "->";
 
-        //Get right node
+        //Get right node unless its a function call, then go left
         if (op->right != NULL && !dontDescend && op->operation.word != "C") {
             this->executeInstruction(op->right);
+        } else if (op->left != NULL && op->operation.word == "C") {
+            this->executeInstruction(op->left);
         }
 
         //Execute conditional
@@ -191,7 +228,7 @@ void Executor::executeInstruction(OperationNode* op) throw (RuntimeError) {
         }
 
         //Execute left if needed
-        if (op->left != NULL && this->executeLeft && !dontDescend) {
+        if (op->left != NULL && this->executeLeft && !dontDescend && op->operation.word != "C") {
             if (op->operation.word == "?") {
                 if (this->ternaryLeft) {
                     this->executeInstruction(op->left->left);
@@ -304,6 +341,31 @@ void Executor::print() {
 
 
 /****************************************************************************************
+ * Creates a copy of an input variable
+ ****************************************************************************************/
+Variable* Executor::makeVariableCopy(Variable* v, Visibility visibility) {
+    Variable* result;
+
+    if (v->getType() == 'n') {
+        result = new Number(visibility, v->getNumberValue());
+    } else if (v->getType() == 's') {
+        string s = v->getStringValue();
+        result = new String(visibility, s);
+    } else if (v->getType() == 'a') {
+        result = new Array(visibility);
+    } else if (v->getType() == 'o') {
+        result = new Object(visibility, (Object*) v);
+    } else if (v->getType() == '0') {
+            result = new Nil(visibility);
+    } else {
+        result = new Variable(visibility);
+    }
+
+    return result;
+}
+
+
+/****************************************************************************************
  *
  ****************************************************************************************/
 void Executor::assignment() {
@@ -317,27 +379,16 @@ void Executor::assignment() {
     b = this->registerVariables.top();
     this->registerVariables.pop();
 
-    if (a->getVisibility() == TEMP) {
+    if (a->getVisibility() == TEMP || a->getVisibility() == CONST) {
         throw RuntimeError("Assignment to value instead of variable", WARNING);
     }
 
     //Create the new variable
-    if (b->getType() == 'n') {
-        result = new Number(a->getVisibility(), b->getNumberValue());
-    } else if (b->getType() == 's') {
-        string s = b->getStringValue();
-        result = new String(a->getVisibility(), s);
-    } else if (b->getType() == 'a') {
-        result = new Array(a->getVisibility());
-    } else if (b->getType() == 'o') {
-        result = new Object(a->getVisibility(), (Object*) b);
-    } else {
-        result = new Variable(a->getVisibility());
-    }
+    result = Executor::makeVariableCopy(b, a->getVisibility());
 
     //Set the new variable
-    result->setPointer(a->getPointer());
-    *(a->getPointer()) = result;
+    result->setPointer(a->getPointer()); //Set pointer in map
+    *(result->getPointer()) = result; //Set the point back to map
     delete a;
 
     //Delete operand b if visibility is TEMP
@@ -1028,6 +1079,10 @@ void Executor::inc() {
     a = this->registerVariables.top();
     this->registerVariables.pop();
 
+    if (a->getVisibility() == CONST) {
+        throw RuntimeError("Cannot increment a constant", ERROR);
+    }
+
     //Compute result
     result = (*a)++;
 
@@ -1051,6 +1106,10 @@ void Executor::dec() {
     //Get operand values
     a = this->registerVariables.top();
     this->registerVariables.pop();
+
+    if (a->getVisibility() == CONST) {
+        throw RuntimeError("Cannot increment a constant", ERROR);
+    }
 
     //Compute result
     result = (*a)--;
@@ -1147,7 +1206,6 @@ void Executor::call() {
  *
  ****************************************************************************************/
 void Executor::staticVar() {
-    Variable* a;
     Variable* result;
 
     //Get the class name

@@ -51,7 +51,7 @@ Variable** Variable::getPointer() {
  *
  ****************************************************************************************/
 char Variable::getType() {
-    return 'u'; //NULL
+    return 'u'; //Undefined
 }
 
 
@@ -59,7 +59,7 @@ char Variable::getType() {
  *
  ****************************************************************************************/
 string Variable::getTypeString() {
-    return "null"; //Undefined
+    return "undefined"; //Undefined
 }
 
 
@@ -75,7 +75,7 @@ double Variable::getNumberValue() {
  *
  ****************************************************************************************/
 string Variable::getStringValue() {
-    return "NULL";
+    return "UNDEFINED";
 }
 
 

@@ -1,7 +1,9 @@
 #include "Array.h"
+#include "Nil.h"
 #include "Number.h"
 #include "Object.h"
 #include "String.h"
+#include "../Executor.h"
 
 
 using namespace std;
@@ -18,15 +20,24 @@ Object::Object(Visibility visibility, ClassDefinition* cd)
 
     //Create Object Properties
     this->properties = map<string, Variable**>();
-    map<string, Variable> vars = cd->getProperties();
+    map<string, Variable> vars;
     map<string, Variable>::iterator it;
     Variable** vPointer = NULL;
     Variable* var;
-    for (it = vars.begin(); it != vars.end(); it++) {
-        var = new Variable(it->second.getVisibility());
-        vPointer = new Variable*;
-        *vPointer = var;
-        this->properties[it->first] = vPointer;
+
+    ClassDefinition* c = cd;
+    while (c != NULL) {
+        vars = c->getProperties();
+        for (it = vars.begin(); it != vars.end(); it++) {
+            if (c != cd && it->second.getVisibility() == PRIVATE) {
+                continue;
+            }
+            var = new Variable(it->second.getVisibility());
+            vPointer = new Variable*;
+            *vPointer = var;
+            this->properties[it->first] = vPointer;
+        }
+        c = c->getInheritedClass();
     }
 }
 
@@ -48,18 +59,7 @@ Object::Object(Visibility visibility, Object* obj)
     Variable* var;
     for (it = vars.begin(); it != vars.end(); it++) {
         vPointer = new Variable*;
-        if ((*it->second)->getType() == 'n') {
-            var = new Number((*it->second)->getVisibility(), (*it->second)->getNumberValue());
-        } else if ((*it->second)->getType() == 's') {
-            string s = (*it->second)->getStringValue();
-            var = new String((*it->second)->getVisibility(), s);
-        } else if ((*it->second)->getType() == 'a') {
-            var = new Array((*it->second)->getVisibility());
-        } else if ((*it->second)->getType() == 'o') {
-            var = new Object((*it->second)->getVisibility(), (Object*) (*it->second));
-        } else {
-            var = new Variable((*it->second)->getVisibility());
-        }
+        var = Executor::makeVariableCopy((*it->second), (*it->second)->getVisibility());
         *vPointer = var;
         var->setPointer(vPointer);
         this->properties[it->first] = vPointer;

@@ -143,3 +143,11 @@ Variable* ClassDefinition::getStaticProperty(string index) {
 
     return *(this->staticProperties[index]);
 }
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+ClassDefinition* ClassDefinition::getInheritedClass() {
+    return this->inheritedClass;
+}
