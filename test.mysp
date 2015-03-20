@@ -21,14 +21,16 @@ class demo inherits d {
     }
     
     public dynamic foo(n = 1, j = 2) {
+        j = (j == NULL) ? 1 : j;
         for (i = 0; i < j; i++) {
             print n * ( a + b + c );
-            this->blah();
         }
+        return 1;
     }
     
     public static bar(n) {
         print n * d;
+        return 2;
     }
 
 }
@@ -180,12 +182,11 @@ main {
     d->b = 0;
     d->blah;
     demo::blah;
-    true++;
+    //true++;
     
     print "\n";
     
     //METHODS CALLS
-    d->foo(10);
-    demo::bar();
-    
+    print d->foo();
+    print demo::bar();
 }

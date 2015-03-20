@@ -52,12 +52,18 @@ map< string, ClassDefinition* >* Parser::parseTokens(queue<Token> &intoks) {
     this->controlStack = stack<OperationNode*>();
     upcomingElse = false;
 
+    //Only show one invalid property message
+    bool invalidProperty = false;
+
     int pos = 0;
 
     while (!toks.empty()) {
         //Get token off queue
         t = toks.front();
         toks.pop();
+
+        //Don't allow leading or repeated semicolons
+        if (t.word == ";") continue;
 
         //Convert to lower-case
         lowercaseWord = "";
@@ -100,7 +106,16 @@ map< string, ClassDefinition* >* Parser::parseTokens(queue<Token> &intoks) {
             this->toks.pop();
         } else if (this->currentMethod == NULL && isKeyWord(t.word) > 1 && isKeyWord(t.word) < 5) {
             this->startProperty(t);
+        } else if (this->currentMethod == NULL && t.word != "}") {
+            if (!invalidProperty) {
+                invalidProperty = true;
+                this->errors.push(PostfixError("Expecting method or property definition", t));
+            }
+            continue;
         }
+
+        //Only one invalid property message
+        invalidProperty = false;
 
         //Don't allow leading or repeated semicolons
         if (t.word == ";") continue;
@@ -196,8 +211,9 @@ map< string, ClassDefinition* >* Parser::parseTokens(queue<Token> &intoks) {
     //Set up inheritance on classes
     map<string, string>::iterator it;
     for (it = inheritance.begin(); it != inheritance.end(); it++) {
-        if (this->classes->find(it->second) == this->classes->end()) {
-            this->errors.push(PostfixError("Inherited class '"+it->second+"' not found", t));
+        if (this->classes->find(it->first) == this->classes->end()) {
+            this->errors.push(PostfixError("Inherited class '"+it->first+"' not found", t));
+            continue;
         }
         (*this->classes)[it->first]->setInheritance((*this->classes)[it->second]);
     }

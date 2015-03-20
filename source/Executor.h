@@ -17,10 +17,15 @@
 #include "Variables/Variable.h"
 
 
+struct FunctionCall{};
+
+
 struct Scope {
         unsigned long instructionPointer;
         Method* method;
-        std::map<std::string, Variable*> variables;
+        std::map<std::string, Variable**>* variables;
+        std::stack<Variable*>* registerVariables;
+        OperationNode* currentNode;
 };
 
 
@@ -30,8 +35,9 @@ class Executor {
         unsigned long instructionPointer;
         Method* currentMethod;
         std::stack<Scope> scopeStack;
-        std::stack<Variable*> registerVariables;
-        std::map<std::string, Variable**> variables;
+        std::stack<Variable*>* registerVariables;
+        std::stack<OperationNode*> nodeStack;
+        std::map<std::string, Variable**>* variables;
         std::map<std::string, Variable*> constants;
         std::map<std::string, ClassDefinition* >* classes;
         static std::map<std::string, void (Executor::*)(void)> operationMap;
@@ -51,8 +57,10 @@ class Executor {
     private:
         void initializeOperationMap();
         void initializeConstants();
-        void executeInstruction(OperationNode* op) throw (RuntimeError);
+        void executeInstruction(OperationNode* op, std::string recover) throw (RuntimeError, FunctionCall);
+        void loadValue(OperationNode* op);
         void executeOperator(OperationNode* op);
+        std::string recoverPosition(OperationNode* op, char direction);
         void clearRegisters();
         void displayError(RuntimeError &e);
 

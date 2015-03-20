@@ -16,9 +16,10 @@ Executor::Executor() {
     this->classes = NULL;           //The class definitions from the Parser
 
     //Scope variables
-    this->scopeStack = stack<Scope>();              //The scope for function calls
-    this->registerVariables = stack<Variable*>();   //The temporary values for expressions
-    this->variables = map<string, Variable**>();    //The variables to be stored
+    this->scopeStack = stack<Scope>();                //The scope for function calls
+    this->nodeStack = stack<OperationNode*>();
+    this->registerVariables = new stack<Variable*>(); //The temporary values for expressions
+    this->variables = new map<string, Variable**>();  //The variables to be stored
     this->constants = map<string, Variable*>();
 
     this->initializeConstants();
@@ -55,7 +56,7 @@ Executor::~Executor() {
     }
     //Remove variables
     map<string, Variable**>::iterator it;
-    for (it = this->variables.begin(); it != this->variables.end(); it++) {
+    for (it = this->variables->begin(); it != this->variables->end(); it++) {
         delete (*it->second);
         delete it->second;
     }
@@ -142,67 +143,161 @@ void Executor::run(map<string, ClassDefinition* >* classes) {
     this->currentMethod = (*this->classes)["~"]->getMethod(startMethod);
     this->scopeStack.push(Scope());
 
+    string recover = "";
+
     while (!scopeStack.empty()) {
         //If the method end has been reached, pop off the method and get the previous one
         if (instructionPointer >= this->currentMethod->getInstructionSize()) {
+            if (this->scopeStack.size() > 1) {
+                Scope scope = this->scopeStack.top();
+                this->instructionPointer = scope.instructionPointer;
+                this->variables = scope.variables;
+                this->registerVariables = scope.registerVariables;
+                this->currentMethod = scope.method;
+                this->currentNode = scope.currentNode;
+                recover = this->recoverPosition(this->currentMethod->getInstruction(this->instructionPointer), '0');
+                if (recover != "" && recover != "0") {
+                    this->registerVariables->push(new Variable(TEMP));
+                } else {
+                    this->instructionPointer++;
+                }
+            }
             this->scopeStack.pop();
             continue;
         }
 
         try {
             //Execute instruction at instruction pointer
-            executeInstruction(this->currentMethod->getInstruction(this->instructionPointer++));
+            executeInstruction(this->currentMethod->getInstruction(this->instructionPointer++), recover);
             //For conditional statements, save the last value
-            if (!this->registerVariables.empty()) {
-                this->lastValue = this->registerVariables.top()->getNumberValue();
+            if (!this->registerVariables->empty()) {
+                this->lastValue = this->registerVariables->top()->getNumberValue();
                 this->clearRegisters();
             }
         } catch (RuntimeError &e) {
             this->displayError(e);
             this->clearRegisters();
-        }
+        } catch (FunctionCall &e) {}
+
+        recover = "";
     }
 }
 
 
 /****************************************************************************************
  *
- ****************************************************************************************/
+ ****************************************************************************************
 void Executor::executeInstruction(OperationNode* op) throw (RuntimeError) {
+    OperationNode* lastNode;
+    OperationNode* next;
+
+    bool shorted = false;
+    bool goLeft = true;
+    this->executeLeft = true;
+
+    while (!this->nodeStack.empty() || op != NULL) {
+        if (op != NULL && (op->operation.word == "::" || op->operation.word == "->")) {
+            try {
+                this->currentNode = op;
+                this->executeOperator(op);
+            } catch (RuntimeError &e) {
+                e.line = op->operation.line;
+                throw e;
+            }
+            lastNode = op;
+            op = NULL;
+            shorted = true;
+        } else if (op != NULL && goLeft) {
+            this->nodeStack.push(op);
+            op = op->left;
+        } else if (this->nodeStack.top()->right != NULL && lastNode != this->nodeStack.top()->right) {
+            op = this->nodeStack.top()->right;
+        } else {
+            //Execute no terminating operations
+            next = this->nodeStack.top();
+            if (next->operation.type != 'o') {
+                this->loadValue(this->nodeStack.top());
+            } else {
+                try {
+                    this->currentNode = next;
+                    this->executeOperator(next);
+                } catch (RuntimeError &e) {
+                    e.line = next->operation.line;
+                    throw e;
+                }
+            }
+            lastNode = next;
+            this->nodeStack.pop();
+        }
+        goLeft = !shorted;
+        shorted = false;
+    }
+}*/
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Executor::loadValue(OperationNode * op) {
     Variable* var;
     Variable** vPointer;
+
+    //Number
+    if (op->operation.type == 'n') {
+        var = new Number(TEMP, strtod(op->operation.word.c_str(), NULL));
+    }
+    //String
+    else if (op->operation.type == 's') {
+        var = new String(TEMP, op->operation.word);
+    }
+    //Variables or constants
+    else if (op->operation.type == 'w') {
+        var = this->constants[op->operation.word];
+        if (var != NULL) {
+            this->registerVariables->push(var);
+            return;
+        }
+
+        //Create the variable if it does not yet exist
+        if (this->variables->find(op->operation.word) == this->variables->end()) {
+            var = new Variable(PUBLIC);
+            vPointer = new Variable*;
+            *vPointer = var;
+            var->setPointer(vPointer);
+            (*this->variables)[op->operation.word] = vPointer;
+        }
+        //Put the variable in the "register" stack
+        var = *((*this->variables)[op->operation.word]);
+    }
+    this->registerVariables->push(var);
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Executor::executeInstruction(OperationNode* op, string recover) throw (RuntimeError, FunctionCall) {
     this->executeLeft = true;
+    bool recoverLeft  = false;
+    bool recoverRight = false;
+
+    //We left off before for a method call. Go back to where we were.
+    if (recover != "") {
+        if (recover == "0") {
+            return; //We just returned from our function call
+        } else if (recover[1] == 'L') {
+            recoverLeft = true;
+            this->executeInstruction(op->left, "0"+recover.substr(2));
+        } else {
+            recoverLeft  = true;
+            recoverRight = true;
+            this->executeInstruction(op->right, "0"+recover.substr(2));
+        }
+    }
 
     //Deal with leaf nodes (values)
     if (op->operation.type != 'o') {
-        //Number
-        if (op->operation.type == 'n') {
-            var = new Number(TEMP, strtod(op->operation.word.c_str(), NULL));
-        }
-        //String
-        else if (op->operation.type == 's') {
-            var = new String(TEMP, op->operation.word);
-        }
-        //Variables or constants
-        else if (op->operation.type == 'w') {
-            var = this->constants[op->operation.word];
-            if (var != NULL) {
-                this->registerVariables.push(var);
-                return;
-            }
-
-            //Create the variable if it does not yet exist
-            if (this->variables.find(op->operation.word) == this->variables.end()) {
-                var = new Variable(PUBLIC);
-                vPointer = new Variable*;
-                *vPointer = var;
-                var->setPointer(vPointer);
-                this->variables[op->operation.word] = vPointer;
-            }
-            //Put the variable in the "register" stack
-            var = *(this->variables[op->operation.word]);
-        }
-        this->registerVariables.push(var);
+        this->loadValue(op);
         return;
     }
 
@@ -213,10 +308,10 @@ void Executor::executeInstruction(OperationNode* op) throw (RuntimeError) {
         bool dontDescend = op->operation.word == "::" || op->operation.word == "->";
 
         //Get right node unless its a function call, then go left
-        if (op->right != NULL && !dontDescend && op->operation.word != "C") {
-            this->executeInstruction(op->right);
-        } else if (op->left != NULL && op->operation.word == "C") {
-            this->executeInstruction(op->left);
+        if (op->right != NULL && !dontDescend && op->operation.word != "C" && !recoverRight) {
+            this->executeInstruction(op->right, recover);
+        } else if (op->left != NULL && op->operation.word == "C" && !recoverRight) {
+            this->executeInstruction(op->left, recover);
         }
 
         //Execute conditional
@@ -228,15 +323,15 @@ void Executor::executeInstruction(OperationNode* op) throw (RuntimeError) {
         }
 
         //Execute left if needed
-        if (op->left != NULL && this->executeLeft && !dontDescend && op->operation.word != "C") {
+        if (op->left != NULL && this->executeLeft && !dontDescend && op->operation.word != "C" && !recoverLeft) {
             if (op->operation.word == "?") {
                 if (this->ternaryLeft) {
-                    this->executeInstruction(op->left->left);
+                    this->executeInstruction(op->left->left, recover);
                 } else {
-                    this->executeInstruction(op->left->right);
+                    this->executeInstruction(op->left->right, recover);
                 }
             } else {
-                this->executeInstruction(op->left);
+                this->executeInstruction(op->left, recover);
             }
         }
 
@@ -246,14 +341,14 @@ void Executor::executeInstruction(OperationNode* op) throw (RuntimeError) {
     else {
 
         //Get left node
-        if (op->left != NULL) {
-            this->executeInstruction(op->left);
+        if (op->left != NULL && !recoverLeft) {
+            this->executeInstruction(op->left, recover);
         }
 
 
         //Get right node
-        if (op->right != NULL) {
-            this->executeInstruction(op->right);
+        if (op->right != NULL && !recoverRight) {
+            this->executeInstruction(op->right, recover);
         }
 
         //Execute no terminating operations
@@ -288,14 +383,42 @@ inline void Executor::executeOperator(OperationNode* op) {
 /****************************************************************************************
  *
  ****************************************************************************************/
+string Executor::recoverPosition(OperationNode* op, char direction) {
+    string result = "";
+
+    if (op == NULL) {
+        return result;
+    } else if (op == this->currentNode) {
+        result += direction;
+    } else {
+        result = recoverPosition(op->left, 'L');
+        if (result != "") {
+            return direction + result;
+        } else {
+            result = recoverPosition(op->right, 'R');
+            if (result != "") {
+                return direction + result;
+            } else {
+                return "";
+            }
+        }
+    }
+
+    return result;
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
 void Executor::clearRegisters() {
     Variable* v;
-    while (!this->registerVariables.empty()) {
-        v = this->registerVariables.top();
+    while (!this->registerVariables->empty()) {
+        v = this->registerVariables->top();
         if (v->getVisibility() == TEMP) {
             delete v;
         }
-        this->registerVariables.pop();
+        this->registerVariables->pop();
     }
 }
 
@@ -328,7 +451,7 @@ void Executor::preserveClasses(bool preserve) {
  *
  ****************************************************************************************/
 void Executor::print() {
-    Variable* v = this->registerVariables.top();
+    Variable* v = this->registerVariables->top();
 
     cout << v->getStringValue();
 
@@ -336,7 +459,7 @@ void Executor::print() {
         delete v;
     }
 
-    this->registerVariables.pop();
+    this->registerVariables->pop();
 }
 
 
@@ -374,10 +497,10 @@ void Executor::assignment() {
     Variable* result;
 
     //Get operand values
-    a = this->registerVariables.top();
-    this->registerVariables.pop();
-    b = this->registerVariables.top();
-    this->registerVariables.pop();
+    a = this->registerVariables->top();
+    this->registerVariables->pop();
+    b = this->registerVariables->top();
+    this->registerVariables->pop();
 
     if (a->getVisibility() == TEMP || a->getVisibility() == CONST) {
         throw RuntimeError("Assignment to value instead of variable", WARNING);
@@ -397,7 +520,7 @@ void Executor::assignment() {
     }
 
     //Push on result
-    this->registerVariables.push(result);
+    this->registerVariables->push(result);
 }
 
 
@@ -410,10 +533,10 @@ void Executor::variableEquals() {
     Variable* result;
 
     //Get operand values
-    a = this->registerVariables.top();
-    this->registerVariables.pop();
-    b = this->registerVariables.top();
-    this->registerVariables.pop();
+    a = this->registerVariables->top();
+    this->registerVariables->pop();
+    b = this->registerVariables->top();
+    this->registerVariables->pop();
 
     //Compute result
     if (
@@ -436,7 +559,7 @@ void Executor::variableEquals() {
     }
 
     //Push on result
-    this->registerVariables.push(result);
+    this->registerVariables->push(result);
 }
 
 
@@ -449,10 +572,10 @@ void Executor::typeEquals() {
     Variable* result;
 
     //Get operand values
-    a = this->registerVariables.top();
-    this->registerVariables.pop();
-    b = this->registerVariables.top();
-    this->registerVariables.pop();
+    a = this->registerVariables->top();
+    this->registerVariables->pop();
+    b = this->registerVariables->top();
+    this->registerVariables->pop();
 
     //Compute result
     if (
@@ -475,7 +598,7 @@ void Executor::typeEquals() {
     }
 
     //Push on result
-    this->registerVariables.push(result);
+    this->registerVariables->push(result);
 }
 
 
@@ -488,10 +611,10 @@ void Executor::equals() {
     Variable* result;
 
     //Get operand values
-    a = this->registerVariables.top();
-    this->registerVariables.pop();
-    b = this->registerVariables.top();
-    this->registerVariables.pop();
+    a = this->registerVariables->top();
+    this->registerVariables->pop();
+    b = this->registerVariables->top();
+    this->registerVariables->pop();
 
     //Compute result
     if (
@@ -514,7 +637,7 @@ void Executor::equals() {
     }
 
     //Push on result
-    this->registerVariables.push(result);
+    this->registerVariables->push(result);
 }
 
 
@@ -527,10 +650,10 @@ void Executor::notVariableEquals() {
     Variable* result;
 
     //Get operand values
-    a = this->registerVariables.top();
-    this->registerVariables.pop();
-    b = this->registerVariables.top();
-    this->registerVariables.pop();
+    a = this->registerVariables->top();
+    this->registerVariables->pop();
+    b = this->registerVariables->top();
+    this->registerVariables->pop();
 
     //Compute result
     if (
@@ -553,7 +676,7 @@ void Executor::notVariableEquals() {
     }
 
     //Push on result
-    this->registerVariables.push(result);
+    this->registerVariables->push(result);
 }
 
 
@@ -566,10 +689,10 @@ void Executor::notTypeEquals() {
     Variable* result;
 
     //Get operand values
-    a = this->registerVariables.top();
-    this->registerVariables.pop();
-    b = this->registerVariables.top();
-    this->registerVariables.pop();
+    a = this->registerVariables->top();
+    this->registerVariables->pop();
+    b = this->registerVariables->top();
+    this->registerVariables->pop();
 
     //Compute result
     if (
@@ -592,7 +715,7 @@ void Executor::notTypeEquals() {
     }
 
     //Push on result
-    this->registerVariables.push(result);
+    this->registerVariables->push(result);
 }
 
 
@@ -605,10 +728,10 @@ void Executor::notEquals() {
     Variable* result;
 
     //Get operand values
-    a = this->registerVariables.top();
-    this->registerVariables.pop();
-    b = this->registerVariables.top();
-    this->registerVariables.pop();
+    a = this->registerVariables->top();
+    this->registerVariables->pop();
+    b = this->registerVariables->top();
+    this->registerVariables->pop();
 
     //Compute result
     if (
@@ -631,7 +754,7 @@ void Executor::notEquals() {
     }
 
     //Push on result
-    this->registerVariables.push(result);
+    this->registerVariables->push(result);
 }
 
 
@@ -644,10 +767,10 @@ void Executor::lessThan() {
     Variable* result;
 
     //Get operand values
-    a = this->registerVariables.top();
-    this->registerVariables.pop();
-    b = this->registerVariables.top();
-    this->registerVariables.pop();
+    a = this->registerVariables->top();
+    this->registerVariables->pop();
+    b = this->registerVariables->top();
+    this->registerVariables->pop();
 
     //Compute result
     if (
@@ -670,7 +793,7 @@ void Executor::lessThan() {
     }
 
     //Push on result
-    this->registerVariables.push(result);
+    this->registerVariables->push(result);
 }
 
 
@@ -683,10 +806,10 @@ void Executor::lessThanEqual() {
     Variable* result;
 
     //Get operand values
-    a = this->registerVariables.top();
-    this->registerVariables.pop();
-    b = this->registerVariables.top();
-    this->registerVariables.pop();
+    a = this->registerVariables->top();
+    this->registerVariables->pop();
+    b = this->registerVariables->top();
+    this->registerVariables->pop();
 
     //Compute result
     if (
@@ -709,7 +832,7 @@ void Executor::lessThanEqual() {
     }
 
     //Push on result
-    this->registerVariables.push(result);
+    this->registerVariables->push(result);
 }
 
 
@@ -722,10 +845,10 @@ void Executor::greaterThan() {
     Variable* result;
 
     //Get operand values
-    a = this->registerVariables.top();
-    this->registerVariables.pop();
-    b = this->registerVariables.top();
-    this->registerVariables.pop();
+    a = this->registerVariables->top();
+    this->registerVariables->pop();
+    b = this->registerVariables->top();
+    this->registerVariables->pop();
 
     //Compute result
     if (
@@ -748,7 +871,7 @@ void Executor::greaterThan() {
     }
 
     //Push on result
-    this->registerVariables.push(result);
+    this->registerVariables->push(result);
 }
 
 
@@ -761,10 +884,10 @@ void Executor::greaterThanEqual() {
     Variable* result;
 
     //Get operand values
-    a = this->registerVariables.top();
-    this->registerVariables.pop();
-    b = this->registerVariables.top();
-    this->registerVariables.pop();
+    a = this->registerVariables->top();
+    this->registerVariables->pop();
+    b = this->registerVariables->top();
+    this->registerVariables->pop();
 
     //Compute result
     if (
@@ -787,7 +910,7 @@ void Executor::greaterThanEqual() {
     }
 
     //Push on result
-    this->registerVariables.push(result);
+    this->registerVariables->push(result);
 }
 
 
@@ -798,14 +921,14 @@ void Executor::andd() {
     Variable* a;
 
     //Get operand values
-    a = this->registerVariables.top();
+    a = this->registerVariables->top();
 
     //Compute result
     this->executeLeft = (a->getBooleanValue());
 
     if (this->executeLeft) {
         //Delete operand a if visibility is TEMP
-        this->registerVariables.pop();
+        this->registerVariables->pop();
         if (a->getVisibility() == TEMP) {
             delete a;
         }
@@ -820,14 +943,14 @@ void Executor::orr() {
     Variable* a;
 
     //Get operand values
-    a = this->registerVariables.top();
+    a = this->registerVariables->top();
 
     //Compute result
     this->executeLeft = (!a->getBooleanValue());
 
     if (this->executeLeft) {
         //Delete operand a if visibility is TEMP
-        this->registerVariables.pop();
+        this->registerVariables->pop();
         if (a->getVisibility() == TEMP) {
             delete a;
         }
@@ -844,10 +967,10 @@ void Executor::add() {
     Variable* result;
 
     //Get operand values
-    a = this->registerVariables.top();
-    this->registerVariables.pop();
-    b = this->registerVariables.top();
-    this->registerVariables.pop();
+    a = this->registerVariables->top();
+    this->registerVariables->pop();
+    b = this->registerVariables->top();
+    this->registerVariables->pop();
 
     //Compute result
     result = (*a + *b);
@@ -863,7 +986,7 @@ void Executor::add() {
     }
 
     //Push on result
-    this->registerVariables.push(result);
+    this->registerVariables->push(result);
 }
 
 
@@ -876,10 +999,10 @@ void Executor::sub() {
     Variable* result;
 
     //Get operand values
-    a = this->registerVariables.top();
-    this->registerVariables.pop();
-    b = this->registerVariables.top();
-    this->registerVariables.pop();
+    a = this->registerVariables->top();
+    this->registerVariables->pop();
+    b = this->registerVariables->top();
+    this->registerVariables->pop();
 
     //Compute result
     result = (*a - *b);
@@ -895,7 +1018,7 @@ void Executor::sub() {
     }
 
     //Push on result
-    this->registerVariables.push(result);
+    this->registerVariables->push(result);
 }
 
 
@@ -908,10 +1031,10 @@ void Executor::mul() {
     Variable* result;
 
     //Get operand values
-    a = this->registerVariables.top();
-    this->registerVariables.pop();
-    b = this->registerVariables.top();
-    this->registerVariables.pop();
+    a = this->registerVariables->top();
+    this->registerVariables->pop();
+    b = this->registerVariables->top();
+    this->registerVariables->pop();
 
     //Compute result
     result = (*a * *b);
@@ -927,7 +1050,7 @@ void Executor::mul() {
     }
 
     //Push on result
-    this->registerVariables.push(result);
+    this->registerVariables->push(result);
 }
 
 
@@ -940,10 +1063,10 @@ void Executor::div() {
     Variable* result;
 
     //Get operand values
-    a = this->registerVariables.top();
-    this->registerVariables.pop();
-    b = this->registerVariables.top();
-    this->registerVariables.pop();
+    a = this->registerVariables->top();
+    this->registerVariables->pop();
+    b = this->registerVariables->top();
+    this->registerVariables->pop();
 
     //Compute result
     result = (*a / *b);
@@ -959,7 +1082,7 @@ void Executor::div() {
     }
 
     //Push on result
-    this->registerVariables.push(result);
+    this->registerVariables->push(result);
 }
 
 
@@ -972,10 +1095,10 @@ void Executor::mod() {
     Variable* result;
 
     //Get operand values
-    a = this->registerVariables.top();
-    this->registerVariables.pop();
-    b = this->registerVariables.top();
-    this->registerVariables.pop();
+    a = this->registerVariables->top();
+    this->registerVariables->pop();
+    b = this->registerVariables->top();
+    this->registerVariables->pop();
 
     //Compute result
     result = (*a % *b);
@@ -991,7 +1114,7 @@ void Executor::mod() {
     }
 
     //Push on result
-    this->registerVariables.push(result);
+    this->registerVariables->push(result);
 }
 
 
@@ -1004,10 +1127,10 @@ void Executor::pow() {
     Variable* result;
 
     //Get operand values
-    a = this->registerVariables.top();
-    this->registerVariables.pop();
-    b = this->registerVariables.top();
-    this->registerVariables.pop();
+    a = this->registerVariables->top();
+    this->registerVariables->pop();
+    b = this->registerVariables->top();
+    this->registerVariables->pop();
 
     //Compute result
     result = a->power(*b);
@@ -1023,7 +1146,7 @@ void Executor::pow() {
     }
 
     //Push on result
-    this->registerVariables.push(result);
+    this->registerVariables->push(result);
 }
 
 
@@ -1038,10 +1161,10 @@ void Executor::cat() {
     Variable* result;
 
     //Get operand values
-    a = this->registerVariables.top();
-    this->registerVariables.pop();
-    b = this->registerVariables.top();
-    this->registerVariables.pop();
+    a = this->registerVariables->top();
+    this->registerVariables->pop();
+    b = this->registerVariables->top();
+    this->registerVariables->pop();
 
     //Compute result
     if (a->getType() == 's') {
@@ -1064,7 +1187,7 @@ void Executor::cat() {
     }
 
     //Push on result
-    this->registerVariables.push(result);
+    this->registerVariables->push(result);
 }
 
 
@@ -1076,8 +1199,8 @@ void Executor::inc() {
     Variable* result;
 
     //Get operand values
-    a = this->registerVariables.top();
-    this->registerVariables.pop();
+    a = this->registerVariables->top();
+    this->registerVariables->pop();
 
     if (a->getVisibility() == CONST) {
         throw RuntimeError("Cannot increment a constant", ERROR);
@@ -1092,7 +1215,7 @@ void Executor::inc() {
     }
 
     //Push on result
-    this->registerVariables.push(result);
+    this->registerVariables->push(result);
 }
 
 
@@ -1104,8 +1227,8 @@ void Executor::dec() {
     Variable* result;
 
     //Get operand values
-    a = this->registerVariables.top();
-    this->registerVariables.pop();
+    a = this->registerVariables->top();
+    this->registerVariables->pop();
 
     if (a->getVisibility() == CONST) {
         throw RuntimeError("Cannot increment a constant", ERROR);
@@ -1120,7 +1243,7 @@ void Executor::dec() {
     }
 
     //Push on result
-    this->registerVariables.push(result);
+    this->registerVariables->push(result);
 }
 
 
@@ -1132,8 +1255,8 @@ void Executor::negate() {
     Variable* result;
 
     //Get operand values
-    a = this->registerVariables.top();
-    this->registerVariables.pop();
+    a = this->registerVariables->top();
+    this->registerVariables->pop();
 
     //Compute result
     result = new Number(TEMP, !a->getBooleanValue());
@@ -1144,7 +1267,7 @@ void Executor::negate() {
     }
 
     //Push on result
-    this->registerVariables.push(result);
+    this->registerVariables->push(result);
 }
 
 
@@ -1165,21 +1288,57 @@ void Executor::call() {
 
     //Is this a method call?
     if (isStatic || isDynamic) {
-
-        //Get the variable
-        this->executeInstruction(this->currentNode->right->right);
-        a = this->registerVariables.top();
-        this->registerVariables.pop();
+        Method* method;
 
         //Call static function
         if (isStatic) {
-            //cout << "STATIC FUNCTION CALL" << endl;
+            //Get method and class names
+            string methodName = this->currentNode->right->left->operation.word;
+            string className = this->currentNode->right->right->operation.word;
+
+            //Does the class exist?
+            if ((*this->classes).find(className) == (*this->classes).end()) {
+                throw RuntimeError("Unknown class '"+className+"'",FATAL);
+            }
+
+            ClassDefinition* classDef = (*this->classes)[className];
+            method = classDef->getMethod(methodName);
+            if (method == NULL) {
+                throw RuntimeError("Static method '"+methodName+"' does not exist", FATAL);
+            }
         } else {
-            //cout << "DYNAMIC FUNCTION CALL" << endl;
+            //Get the method name and variable
+            string methodName = this->currentNode->right->left->operation.word;
+            a = *((*this->variables)[this->currentNode->right->right->operation.word]);
+
+            //Is the variable an object?
+            if (a->getType() != 'o') {
+                throw RuntimeError("Cannot call method on "+a->getTypeString(), FATAL);
+            }
+
+            //Get the method if it exists
+            method = a->getMethod(methodName);
+            if (method == NULL) {
+                throw RuntimeError("Dynamic method '"+methodName+"' does not exist", FATAL);
+            }
         }
 
-        //Get the result
-        result = new Variable(TEMP);
+        Scope scope = Scope();
+        scope.instructionPointer = this->instructionPointer - 1;
+        scope.method = this->currentMethod;
+        scope.variables = this->variables;
+        scope.registerVariables = this->registerVariables;
+        scope.currentNode = this->currentNode;
+        this->scopeStack.push(scope);
+
+        this->instructionPointer = 0;
+        this->currentMethod = method;
+        this->registerVariables = new stack<Variable*>();
+        this->variables = new map<string, Variable**>();
+
+        throw FunctionCall();
+
+        return;
 
     } else {
 
@@ -1198,7 +1357,7 @@ void Executor::call() {
 
     }
 
-    this->registerVariables.push(result);
+    this->registerVariables->push(result);
 }
 
 
@@ -1223,7 +1382,7 @@ void Executor::staticVar() {
         throw RuntimeError("Cannot access private variable from outside class",ERROR);
     }
 
-    this->registerVariables.push(result);
+    this->registerVariables->push(result);
 }
 
 
@@ -1231,13 +1390,21 @@ void Executor::staticVar() {
  *
  ****************************************************************************************/
 void Executor::dynamicVar() {
+    Variable** aP;
     Variable* a;
     Variable* result;
 
     //Get the class
-    this->executeInstruction(this->currentNode->right);
-    a = this->registerVariables.top();
-    this->registerVariables.pop();
+    aP = (*this->variables)[this->currentNode->right->operation.word];
+    if (aP == NULL) {
+        throw RuntimeError("Cannot get property of undefined", ERROR);
+    }
+
+    a = *aP;
+
+    if (a->getType() != 'o') {
+        throw RuntimeError("Cannot get property of "+a->getTypeString(), ERROR);
+    }
 
     //Compute result
     this->executeLeft = false;
@@ -1247,7 +1414,7 @@ void Executor::dynamicVar() {
         throw RuntimeError("Cannot access private variable from outside class",ERROR);
     }
 
-    this->registerVariables.push(result);
+    this->registerVariables->push(result);
 }
 
 
@@ -1258,8 +1425,8 @@ void Executor::iff() {
     Variable* a;
 
     //Get operand values
-    a = this->registerVariables.top();
-    this->registerVariables.pop();
+    a = this->registerVariables->top();
+    this->registerVariables->pop();
 
     //Compute result
     if (!this->lastValue) { //If not true, take the jump
@@ -1280,8 +1447,8 @@ void Executor::jmp() {
     Variable* a;
 
     //Get operand values
-    a = this->registerVariables.top();
-    this->registerVariables.pop();
+    a = this->registerVariables->top();
+    this->registerVariables->pop();
 
     //Compute result
     this->instructionPointer = a->getNumberValue();
@@ -1300,8 +1467,8 @@ void Executor::ternary() {
     Variable* a;
 
     //Get operand values
-    a = this->registerVariables.top();
-    this->registerVariables.pop();
+    a = this->registerVariables->top();
+    this->registerVariables->pop();
 
     //Compute result
     this->ternaryLeft = !(a->getBooleanValue());
@@ -1322,10 +1489,10 @@ void Executor::arrayIndex() {
     Variable* result;
 
     //Get operand values
-    a = this->registerVariables.top();
-    this->registerVariables.pop();
-    b = this->registerVariables.top();
-    this->registerVariables.pop();
+    a = this->registerVariables->top();
+    this->registerVariables->pop();
+    b = this->registerVariables->top();
+    this->registerVariables->pop();
 
     //Compute result
     if (a->getType() != 'a') {
@@ -1345,5 +1512,5 @@ void Executor::arrayIndex() {
     }
 
     //Push on result
-    this->registerVariables.push(result);
+    this->registerVariables->push(result);
 }

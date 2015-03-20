@@ -80,7 +80,7 @@ void Test::testExecutor() {
             ),
             TestIO(
                     "main { bar->foo; }",
-                    "FATAL ERROR: Cannot get property of 'undefined' (line 1)\n"
+                    "ERROR: Cannot get property of undefined (line 1)\n"
             ),
             TestIO(
                     "main { random::foo; }",
