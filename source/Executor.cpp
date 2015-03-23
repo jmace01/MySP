@@ -76,7 +76,7 @@ Executor::~Executor() {
 void Executor::initializeOperationMap() {
     operationMap["print"]  = &Executor::print;
     operationMap["echo"]   = &Executor::print;
-    //operationMap["return"] = &Executor::print;
+    operationMap["return"] = &Executor::ret;
     //operationMap["break"]  = &Executor::print;
     //operationMap["continue"]  = &Executor::print;
     operationMap["="]      = &Executor::assignment;
@@ -156,12 +156,26 @@ void Executor::run(map<string, ClassDefinition* >* classes) {
                 this->currentMethod = scope.method;
                 this->currentNode = scope.currentNode;
                 recover = this->recoverPosition(this->currentMethod->getInstruction(this->instructionPointer), '0');
+                //Does the line execution need to be finished?
                 if (recover != "" && recover != "0") {
-                    this->registerVariables->push(new Variable(TEMP));
-                } else {
+                    //Put the return value in the register
+                    if (this->returnVariable != NULL) {
+                        this->registerVariables->push(this->returnVariable);
+                    }
+                    //Default return value
+                    else {
+                        this->registerVariables->push(new Nil(TEMP));
+                    }
+                }
+                //The last line was finished, move on
+                else {
+                    if (this->returnVariable != NULL) {
+                        delete this->returnVariable;
+                    }
                     this->instructionPointer++;
                 }
             }
+            this->returnVariable = NULL;
             this->scopeStack.pop();
             continue;
         }
@@ -182,57 +196,6 @@ void Executor::run(map<string, ClassDefinition* >* classes) {
         recover = "";
     }
 }
-
-
-/****************************************************************************************
- *
- ****************************************************************************************
-void Executor::executeInstruction(OperationNode* op) throw (RuntimeError) {
-    OperationNode* lastNode;
-    OperationNode* next;
-
-    bool shorted = false;
-    bool goLeft = true;
-    this->executeLeft = true;
-
-    while (!this->nodeStack.empty() || op != NULL) {
-        if (op != NULL && (op->operation.word == "::" || op->operation.word == "->")) {
-            try {
-                this->currentNode = op;
-                this->executeOperator(op);
-            } catch (RuntimeError &e) {
-                e.line = op->operation.line;
-                throw e;
-            }
-            lastNode = op;
-            op = NULL;
-            shorted = true;
-        } else if (op != NULL && goLeft) {
-            this->nodeStack.push(op);
-            op = op->left;
-        } else if (this->nodeStack.top()->right != NULL && lastNode != this->nodeStack.top()->right) {
-            op = this->nodeStack.top()->right;
-        } else {
-            //Execute no terminating operations
-            next = this->nodeStack.top();
-            if (next->operation.type != 'o') {
-                this->loadValue(this->nodeStack.top());
-            } else {
-                try {
-                    this->currentNode = next;
-                    this->executeOperator(next);
-                } catch (RuntimeError &e) {
-                    e.line = next->operation.line;
-                    throw e;
-                }
-            }
-            lastNode = next;
-            this->nodeStack.pop();
-        }
-        goLeft = !shorted;
-        shorted = false;
-    }
-}*/
 
 
 /****************************************************************************************
@@ -303,6 +266,13 @@ void Executor::executeInstruction(OperationNode* op, string recover) throw (Runt
 
     //Execute terminating operations like && and ||
     if (op->operation.isTerminating) {
+        //Ignore : on recover
+        if (op->operation.word == ":") return;
+
+        //Ignore ? if its already been executed
+        if (recoverLeft && !recoverRight && op->operation.word == "?") {
+            return;
+        }
 
         //Don't execute go down :: and -> nodes
         bool dontDescend = op->operation.word == "::" || op->operation.word == "->";
@@ -315,15 +285,18 @@ void Executor::executeInstruction(OperationNode* op, string recover) throw (Runt
         }
 
         //Execute conditional
-        try {
-            this->executeOperator(op);
-        } catch (RuntimeError &e) {
-            e.line = op->operation.line;
-            throw e;
+        //Avoid executing it twice by checking if on side was already executed
+        if (!recoverLeft || recoverRight) {
+            try {
+                this->executeOperator(op);
+            } catch (RuntimeError &e) {
+                e.line = op->operation.line;
+                throw e;
+            }
         }
 
         //Execute left if needed
-        if (op->left != NULL && this->executeLeft && !dontDescend && op->operation.word != "C" && !recoverLeft) {
+        if (op->left != NULL && this->executeLeft && !dontDescend && op->operation.word != "C" && (recoverRight || !recoverLeft)) {
             if (op->operation.word == "?") {
                 if (this->ternaryLeft) {
                     this->executeInstruction(op->left->left, recover);
@@ -331,15 +304,13 @@ void Executor::executeInstruction(OperationNode* op, string recover) throw (Runt
                     this->executeInstruction(op->left->right, recover);
                 }
             } else {
-                this->executeInstruction(op->left, recover);
+                this->executeInstruction(op->left, "");
             }
         }
-
     }
 
     //Normal operation-- traverse left, then right, then execute
     else {
-
         //Get left node
         if (op->left != NULL && !recoverLeft) {
             this->executeInstruction(op->left, recover);
@@ -460,6 +431,23 @@ void Executor::print() {
     }
 
     this->registerVariables->pop();
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Executor::ret() {
+    Variable* v = NULL;
+
+    //Is there a return value?
+    if (this->registerVariables->size() > 0) {
+        v = this->registerVariables->top();
+        this->registerVariables->pop();
+    }
+
+    this->returnVariable = v;
+    this->instructionPointer = this->currentMethod->getInstructionSize() + 1;
 }
 
 

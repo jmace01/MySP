@@ -32,6 +32,11 @@ class demo inherits d {
         print n * d;
         return 2;
     }
+    
+    public static test() {
+        print "\nTESTING\n";
+        return true;
+    }
 
 }
 
@@ -189,4 +194,9 @@ main {
     //METHODS CALLS
     print d->foo();
     print demo::bar();
+    print demo::test() && demo::test();
+    print "-----------\n\n";
+    print 1 ? demo::test() : demo::test();
+    print 0 ? demo::test() : demo::test();
+    print demo::test() ? 'YES' : 'NO';
 }

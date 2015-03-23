@@ -66,6 +66,7 @@ class Executor {
 
         //Operators
         void print();
+        void ret();
         void assignment();
         void variableEquals();
         void typeEquals();
