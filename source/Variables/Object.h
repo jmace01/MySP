@@ -23,6 +23,7 @@ class Object: public Variable {
         virtual bool getBooleanValue();
         virtual Variable* getProperty(std::string index);
         virtual Method* getMethod(std::string index);
+        ClassDefinition* getClass();
 };
 
 #endif

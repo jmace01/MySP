@@ -7,6 +7,7 @@
 #include "OperationNode.h"
 #include "Variables/Variable.h"
 
+
 class Method {
     private:
         Visibility visibility;
@@ -24,7 +25,12 @@ class Method {
         void addInstruction(OperationNode* op);
         OperationNode* getInstruction(unsigned long iNum);
         void addParameter(std::string &name);
+        int getParameterSize();
+        std::string getParameter(int i);
         void addDefault(Token &t);
+        Variable* getDefaultParameter(int index);
+        int getMaxParameters();
+        int getMinParameters();
 };
 
 #endif

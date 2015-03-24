@@ -6,7 +6,7 @@
 
 
 //Visibility types
-enum Visibility {PRIVATE, PUBLIC, PROTECTED, TEMP, CONST};
+enum Visibility {PRIVATE, PUBLIC, PROTECTED, TEMP, CONST, PARAMETER};
 
 
 //This is an unfortunate circular reference

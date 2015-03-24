@@ -17,12 +17,16 @@
 #include "Variables/Variable.h"
 
 
+//Used to throw in order to break out of a recursive traversal of an expression tree
 struct FunctionCall{};
 
 
+//Used to hold scope information
 struct Scope {
         unsigned long instructionPointer;
         Method* method;
+        Variable* currentObject;
+        ClassDefinition* currentClass;
         std::map<std::string, Variable**>* variables;
         std::stack<Variable*>* registerVariables;
         OperationNode* currentNode;
@@ -30,15 +34,19 @@ struct Scope {
 
 
 class Executor {
+    public:
+        static std::map<std::string, Variable*> constants;
+
     private:
         bool deleteClasses;
         unsigned long instructionPointer;
         Method* currentMethod;
+        Variable* currentObject;
+        ClassDefinition* currentClass;
         std::stack<Scope> scopeStack;
         std::stack<Variable*>* registerVariables;
-        std::stack<OperationNode*> nodeStack;
+        std::stack<Variable*> parameterStack;
         std::map<std::string, Variable**>* variables;
-        std::map<std::string, Variable*> constants;
         std::map<std::string, ClassDefinition* >* classes;
         static std::map<std::string, void (Executor::*)(void)> operationMap;
         Variable* returnVariable;
@@ -90,6 +98,8 @@ class Executor {
         void inc();
         void dec();
         void negate();
+        void parameter();
+        void loadMethodParameters();
         void call();
         void iff();
         void jmp();

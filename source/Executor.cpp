@@ -13,14 +13,14 @@ Executor::Executor() {
     this->instructionPointer = 0;   //What instruction are we executing?
     this->deleteClasses = true;     //Should classes be deleted when destructor is called?
     this->currentMethod = NULL;     //The current method being executed
+    this->currentObject = NULL;     //Saves object for "this" variable
     this->classes = NULL;           //The class definitions from the Parser
 
     //Scope variables
     this->scopeStack = stack<Scope>();                //The scope for function calls
-    this->nodeStack = stack<OperationNode*>();
     this->registerVariables = new stack<Variable*>(); //The temporary values for expressions
+    this->parameterStack = stack<Variable*>();        //Parameters for method calls
     this->variables = new map<string, Variable**>();  //The variables to be stored
-    this->constants = map<string, Variable*>();
 
     this->initializeConstants();
 
@@ -41,6 +41,9 @@ Executor::Executor() {
 
 //Create the operation-to-method map
 map<string, void (Executor::*)(void)> Executor::operationMap = map<string, void (Executor::*)(void)>();
+
+//Create constants map
+map<string, Variable*> Executor::constants = map<string, Variable*>();
 
 
 /****************************************************************************************
@@ -112,7 +115,7 @@ void Executor::initializeOperationMap() {
     //operationMap["&"]      = &Executor::print;
     operationMap["->"]     = &Executor::dynamicVar;
     operationMap["::"]     = &Executor::staticVar;
-    //operationMap["P"]      = &Executor::print;
+    operationMap["P"]      = &Executor::parameter;
     operationMap["C"]      = &Executor::call;
     operationMap["jmp"]    = &Executor::jmp;
     operationMap["if"]     = &Executor::iff;
@@ -154,6 +157,7 @@ void Executor::run(map<string, ClassDefinition* >* classes) {
                 this->variables = scope.variables;
                 this->registerVariables = scope.registerVariables;
                 this->currentMethod = scope.method;
+                this->currentObject = scope.currentObject;
                 this->currentNode = scope.currentNode;
                 recover = this->recoverPosition(this->currentMethod->getInstruction(this->instructionPointer), '0');
                 //Does the line execution need to be finished?
@@ -1262,9 +1266,69 @@ void Executor::negate() {
 /****************************************************************************************
  *
  ****************************************************************************************/
+void Executor::parameter() {
+    Variable* a;
+
+    //Get operand values
+    a = this->registerVariables->top();
+    this->registerVariables->pop();
+
+    this->parameterStack.push(a);
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Executor::loadMethodParameters() {
+    OperationNode* node = this->currentNode->left;
+
+    int i; //How many parameters do we need have?
+    //See how many "P" nodes are left of the call
+    for(i = 0; node; i++, node = node->left);
+
+    //Are there enough parameters?
+    if (i < this->currentMethod->getMinParameters()) {
+        throw RuntimeError("Not enough parameters", FATAL);
+    }
+
+    //Are there too many parameters?
+    else if (i > this->currentMethod->getMaxParameters()) {
+        throw RuntimeError("Too many parameters", FATAL);
+    }
+
+    //Put parameters in scope
+    string pName;
+    Variable* value;
+    Variable** vPointer;
+
+    for (int j = 0; j < this->currentMethod->getParameterSize(); j++) {
+        //Get the parameter name
+        pName = this->currentMethod->getParameter(j);
+        //Is the parameter value on the stack?
+        if (j < i) {
+            value = this->parameterStack.top();
+            this->parameterStack.pop();
+        }
+        //If not, get the default value
+        else {
+            value = this->currentMethod->getDefaultParameter(j);
+        }
+        value = this->makeVariableCopy(value, PUBLIC);
+        vPointer = new Variable*;
+        *vPointer = value;
+        value->setPointer(vPointer);
+        (*this->variables)[pName] = vPointer;
+    }
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
 void Executor::call() {
     OperationNode* nextOp;
-    Variable* a;
+    Variable* a = NULL;
     Variable* result;
 
     //Compute result
@@ -1277,6 +1341,7 @@ void Executor::call() {
     //Is this a method call?
     if (isStatic || isDynamic) {
         Method* method;
+        ClassDefinition* newClass;
 
         //Call static function
         if (isStatic) {
@@ -1289,8 +1354,8 @@ void Executor::call() {
                 throw RuntimeError("Unknown class '"+className+"'",FATAL);
             }
 
-            ClassDefinition* classDef = (*this->classes)[className];
-            method = classDef->getMethod(methodName);
+            newClass = (*this->classes)[className];
+            method = newClass->getMethod(methodName);
             if (method == NULL) {
                 throw RuntimeError("Static method '"+methodName+"' does not exist", FATAL);
             }
@@ -1306,6 +1371,7 @@ void Executor::call() {
 
             //Get the method if it exists
             method = a->getMethod(methodName);
+            newClass = ((Object*) a)->getClass();
             if (method == NULL) {
                 throw RuntimeError("Dynamic method '"+methodName+"' does not exist", FATAL);
             }
@@ -1313,16 +1379,22 @@ void Executor::call() {
 
         Scope scope = Scope();
         scope.instructionPointer = this->instructionPointer - 1;
-        scope.method = this->currentMethod;
-        scope.variables = this->variables;
-        scope.registerVariables = this->registerVariables;
-        scope.currentNode = this->currentNode;
+        scope.method             = this->currentMethod;
+        scope.currentObject      = this->currentObject;
+        scope.currentClass       = this->currentClass;
+        scope.variables          = this->variables;
+        scope.registerVariables  = this->registerVariables;
+        scope.currentNode        = this->currentNode;
         this->scopeStack.push(scope);
 
         this->instructionPointer = 0;
-        this->currentMethod = method;
-        this->registerVariables = new stack<Variable*>();
+        this->currentMethod      = method;
+        this->currentObject      = a;
+        this->currentClass       = newClass;
+        this->registerVariables  = new stack<Variable*>();
         this->variables = new map<string, Variable**>();
+
+        this->loadMethodParameters();
 
         throw FunctionCall();
 

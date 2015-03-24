@@ -33,8 +33,8 @@ class demo inherits d {
         return 2;
     }
     
-    public static test() {
-        print "\nTESTING\n";
+    public static test(a = "YES") {
+        print a;
         return true;
     }
 
@@ -198,5 +198,9 @@ main {
     print "-----------\n\n";
     print 1 ? demo::test() : demo::test();
     print 0 ? demo::test() : demo::test();
-    print demo::test() ? 'YES' : 'NO';
+    print demo::test(1) ? 'YES' : 'NO';
+    
+    print "\n\n\n";
+    
+    print demo::test();
 }

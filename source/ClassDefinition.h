@@ -9,6 +9,7 @@
 #include "ExpressionTreeBuilder.h"
 #include "Variables/Variable.h"
 
+
 class ClassDefinition {
     private:
         ClassDefinition* inheritedClass;
