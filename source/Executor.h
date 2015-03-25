@@ -30,6 +30,7 @@ struct Scope {
         std::map<std::string, Variable**>* variables;
         std::stack<Variable*>* registerVariables;
         OperationNode* currentNode;
+        bool isConstructor;
 };
 
 
@@ -71,6 +72,7 @@ class Executor {
         std::string recoverPosition(OperationNode* op, char direction);
         void clearRegisters();
         void displayError(RuntimeError &e);
+        void initMethodCall(Method* method, Variable* object, ClassDefinition* classDef, bool isStatic, bool isConstructor, std::string &methodName);
 
         //Operators
         void print();

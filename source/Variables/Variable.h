@@ -29,6 +29,7 @@ struct RuntimeError {
 //Variable class definition
 class Variable {
     protected:
+        Visibility preConstVisibility;
         Visibility visibility;
         Variable** pointer;
 
@@ -38,6 +39,8 @@ class Variable {
         Visibility getVisibility();
         void setPointer(Variable** pointer);
         Variable** getPointer();
+        void makeConstant();
+        void makeNonConstant();
 
         virtual char getType();
         virtual std::string getTypeString();

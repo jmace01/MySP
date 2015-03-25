@@ -106,7 +106,12 @@ Method* ClassDefinition::getMethod(string &name) {
     if (this->methods.find(name) == this->methods.end()) {
         //There is an inherited class, check in it
         if (this->inheritedClass != NULL) {
-            return this->inheritedClass->getMethod(name);
+            Method* method = this->inheritedClass->getMethod(name);
+            //Only return public and protected methods
+            if (method != NULL && method->getVisibility() == PRIVATE) {
+                return NULL;
+            }
+            return method;
         }
         //There is no inherited class, return NULL
         else {
@@ -120,6 +125,9 @@ Method* ClassDefinition::getMethod(string &name) {
 }
 
 
+/****************************************************************************************
+ *
+ ****************************************************************************************/
 map<string, Variable> ClassDefinition::getProperties() {
     return this->properties;
 }

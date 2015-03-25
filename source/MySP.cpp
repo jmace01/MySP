@@ -16,7 +16,7 @@ int main() {
     clock_t timer = clock();
     //string s = "main { a = 0 ? '1' : '2'; print a; }";
     //istringstream* s = new istringstream("main { print 5; }");
-    istream* s = new ifstream("./test.mysp");
+    istream* s = new ifstream("./test2.mysp");
 
     Parser sp = Parser();
     Executor ex = Executor();

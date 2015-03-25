@@ -1,0 +1,24 @@
+class a {
+
+    public dynamic a() {
+        print "CONSTRUCTED\n";
+    }
+
+    public dynamic foo() {
+        return this->bar();
+    }
+    
+    private dynamic bar() {
+        return 2;
+    }
+
+}
+
+main {
+    
+    print "Hello world!\n";
+    v = a();
+    print v->foo() . "\n";
+    print v->bar() . "\n";
+    
+}

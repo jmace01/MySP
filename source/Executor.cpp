@@ -152,31 +152,36 @@ void Executor::run(map<string, ClassDefinition* >* classes) {
         //If the method end has been reached, pop off the method and get the previous one
         if (instructionPointer >= this->currentMethod->getInstructionSize()) {
             if (this->scopeStack.size() > 1) {
+                if (this->currentObject != NULL) {
+                    this->currentObject->makeNonConstant();
+                }
                 Scope scope = this->scopeStack.top();
                 this->instructionPointer = scope.instructionPointer;
                 this->variables = scope.variables;
                 this->registerVariables = scope.registerVariables;
                 this->currentMethod = scope.method;
                 this->currentObject = scope.currentObject;
+                this->currentClass  = scope.currentClass;
                 this->currentNode = scope.currentNode;
                 recover = this->recoverPosition(this->currentMethod->getInstruction(this->instructionPointer), '0');
                 //Does the line execution need to be finished?
                 if (recover != "" && recover != "0") {
                     //Put the return value in the register
-                    if (this->returnVariable != NULL) {
-                        this->registerVariables->push(this->returnVariable);
-                    }
-                    //Default return value
-                    else {
-                        this->registerVariables->push(new Nil(TEMP));
+                    if (!scope.isConstructor) {
+                        if (this->returnVariable != NULL) {
+                            this->registerVariables->push(this->returnVariable);
+                        }
+                        //Default return value
+                        else {
+                            this->registerVariables->push(new Nil(TEMP));
+                        }
                     }
                 }
                 //The last line was finished, move on
                 else {
-                    if (this->returnVariable != NULL) {
+                    if (this->returnVariable != NULL && !scope.isConstructor) {
                         delete this->returnVariable;
                     }
-                    this->instructionPointer++;
                 }
             }
             this->returnVariable = NULL;
@@ -419,6 +424,60 @@ void Executor::displayError(RuntimeError &e) {
  ****************************************************************************************/
 void Executor::preserveClasses(bool preserve) {
     this->deleteClasses = !preserve;
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+inline void Executor::initMethodCall(
+        Method* method, Variable* object, ClassDefinition* classDef,
+        bool isStatic, bool isConstructor, string &methodName )
+{
+    //Can the method be called legally?
+    string constructorError = isConstructor ? "constructor " : "";
+    if (method->getVisibility() != PUBLIC &&
+            (
+                (!isStatic && object != this->currentObject)
+                ||
+                (isStatic && this->currentClass != classDef)
+            )
+        )
+    {
+        throw RuntimeError("Permission denied to call "+constructorError+"'"+methodName+"'", FATAL);
+    } else if (!isStatic && method->getIsStatic()) {
+        throw RuntimeError("Cannot call static method "+constructorError+"'"+methodName+"' in dynamic way", FATAL);
+    } else if (isStatic && !method->getIsStatic()) {
+        throw RuntimeError("Cannot call dynamic method "+constructorError+"'"+methodName+"' in static way", FATAL);
+    }
+
+    Scope scope = Scope();
+    scope.instructionPointer = this->instructionPointer - 1;
+    scope.method             = this->currentMethod;
+    scope.currentObject      = this->currentObject;
+    scope.currentClass       = this->currentClass;
+    scope.variables          = this->variables;
+    scope.registerVariables  = this->registerVariables;
+    scope.currentNode        = this->currentNode;
+    scope.isConstructor      = isConstructor;
+    this->scopeStack.push(scope);
+
+    this->instructionPointer = 0;
+    this->currentMethod      = method;
+    this->currentObject      = object;
+    this->currentClass       = classDef;
+    this->registerVariables  = new stack<Variable*>();
+    this->variables = new map<string, Variable**>();
+
+    //Create "this" object
+    if (this->currentObject != NULL) {
+        (*this->variables)["this"] = this->currentObject->getPointer();
+        this->currentObject->makeConstant();
+    }
+
+    this->loadMethodParameters();
+
+    throw FunctionCall();
 }
 
 
@@ -1342,11 +1401,12 @@ void Executor::call() {
     if (isStatic || isDynamic) {
         Method* method;
         ClassDefinition* newClass;
+        string methodName;
 
-        //Call static function
+        //Get the method information
         if (isStatic) {
             //Get method and class names
-            string methodName = this->currentNode->right->left->operation.word;
+            methodName = this->currentNode->right->left->operation.word;
             string className = this->currentNode->right->right->operation.word;
 
             //Does the class exist?
@@ -1361,7 +1421,17 @@ void Executor::call() {
             }
         } else {
             //Get the method name and variable
-            string methodName = this->currentNode->right->left->operation.word;
+            methodName = this->currentNode->right->left->operation.word;
+
+            //Get variable pointer
+            Variable** vPointer = (*this->variables)[this->currentNode->right->right->operation.word];
+
+            //Does the variable exist?
+            if (vPointer == NULL) {
+                throw RuntimeError("Cannot call method on undefined", FATAL);
+            }
+
+            //Get the variable
             a = *((*this->variables)[this->currentNode->right->right->operation.word]);
 
             //Is the variable an object?
@@ -1377,27 +1447,10 @@ void Executor::call() {
             }
         }
 
-        Scope scope = Scope();
-        scope.instructionPointer = this->instructionPointer - 1;
-        scope.method             = this->currentMethod;
-        scope.currentObject      = this->currentObject;
-        scope.currentClass       = this->currentClass;
-        scope.variables          = this->variables;
-        scope.registerVariables  = this->registerVariables;
-        scope.currentNode        = this->currentNode;
-        this->scopeStack.push(scope);
+        //Change scope and properties for new method call
+        this->initMethodCall(method, a, newClass, isStatic, false, methodName);
 
-        this->instructionPointer = 0;
-        this->currentMethod      = method;
-        this->currentObject      = a;
-        this->currentClass       = newClass;
-        this->registerVariables  = new stack<Variable*>();
-        this->variables = new map<string, Variable**>();
-
-        this->loadMethodParameters();
-
-        throw FunctionCall();
-
+        //Leave function
         return;
 
     } else {
@@ -1409,10 +1462,19 @@ void Executor::call() {
 
         //Create a new class instance
         else {
-            if ((*this->classes).find(this->currentNode->right->operation.word) == this->classes->end()) {
+            string methodName = this->currentNode->right->operation.word;
+            if ((*this->classes).find(methodName) == this->classes->end()) {
                 throw RuntimeError("No class found", FATAL);
             }
-            result = new Object(TEMP, (*this->classes)[this->currentNode->right->operation.word]);
+            result = new Object(TEMP, (*this->classes)[methodName]);
+            ClassDefinition* classDef = ((Object*) result)->getClass();
+
+            Method* constructor = classDef->getMethod(methodName);
+            if (constructor != NULL) {
+                this->registerVariables->push(result);
+                this->initMethodCall(constructor, result, classDef, false, true, methodName);
+                return;
+            }
         }
 
     }

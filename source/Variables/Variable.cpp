@@ -10,8 +10,9 @@ using namespace std;
  *
  ****************************************************************************************/
 Variable::Variable(Visibility visibility) {
-    this->visibility = visibility;
-    this->pointer    = NULL;
+    this->preConstVisibility = visibility;
+    this->visibility         = visibility;
+    this->pointer            = NULL;
 }
 
 
@@ -44,6 +45,25 @@ void Variable::setPointer(Variable** pointer) {
  ****************************************************************************************/
 Variable** Variable::getPointer() {
     return this->pointer;
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Variable::makeConstant() {
+    if (this->preConstVisibility != CONST) {
+        this->preConstVisibility = this->visibility;
+    }
+    this->visibility = CONST;
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Variable::makeNonConstant() {
+    this->visibility = this->preConstVisibility;
 }
 
 

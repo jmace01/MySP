@@ -29,6 +29,7 @@ Object::Object(Visibility visibility, ClassDefinition* cd)
     while (c != NULL) {
         vars = c->getProperties();
         for (it = vars.begin(); it != vars.end(); it++) {
+            //Don't include private properties
             if (c != cd && it->second.getVisibility() == PRIVATE) {
                 continue;
             }
