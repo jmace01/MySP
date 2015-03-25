@@ -52,7 +52,7 @@ void Test::testExTreeBldr() {
             )
             , TestIO( //Ternary statement
                     "x = A + ((true == false) ? 1 + 1 : 2 * 2) + B",
-                    "B 2 2 * 1 1 + : + false true == ? A + x ="
+                    "B 2 2 * 1 1 + : false true == ? + A + x ="
             )
             , TestIO( //Ternary Error
                     "4 ? 4",
@@ -173,6 +173,18 @@ void Test::testExTreeBldr() {
             , TestIO( //Static member variable assignment
                     "a::b = c",
                     "c b a :: ="
+            )
+            , TestIO(
+                    "print (1 == 1) ? 1 : 2",
+                    "2 1 : 1 1 == ? print"
+            )
+            , TestIO(
+                    "print ((1 == 1) ? 1 : 2)",
+                    "2 1 : 1 1 == ? print"
+            )
+            , TestIO(
+                    "print ((1 == 1) ? 1 : 2) . 'Yes'",
+                    "'Yes' 2 1 : 1 1 == ? . print"
             )
             , TestIO("","")
     };

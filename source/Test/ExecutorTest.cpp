@@ -107,8 +107,30 @@ void Test::testExecutor() {
                     "ERROR: Cannot increment a constant (line 1)\n"
             ),
             TestIO(
-                    "",
-                    ""
+                    " class b {                      \n" \
+                    "    private dynamic blah() {    \n" \
+                    "       return 1;                \n" \
+                    "    }                           \n" \
+                    " }                              \n" \
+                    " class a inherits b {           \n" \
+                    "    public dynamic a() {        \n" \
+                    "       print \"CONSTRUCTED\n\"; \n" \
+                    "    }                           \n" \
+                    "    public dynamic foo() {      \n" \
+                    "       this->blah();            \n" \
+                    "       return this->bar();      \n" \
+                    "    }                           \n" \
+                    "    private dynamic bar() {     \n" \
+                    "       return 2;                \n" \
+                    "    }                           \n" \
+                    " }                              \n" \
+                    " main {                         \n" \
+                    "    print \"Hello world!\n\";   \n" \
+                    "    v = a();                    \n" \
+                    "    print v->foo() . \"\n\";    \n" \
+                    "    print v->bar() . \"\n\";    \n" \
+                    " }                              ",
+                    "Hello world!\nCONSTRUCTED\nFATAL ERROR: Method 'blah' of class does not exist (line 0)\n2\nFATAL ERROR: Permission denied to call 'bar' (line 0)\n"
             ),
             TestIO(
                     "",

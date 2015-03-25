@@ -14,6 +14,7 @@ Executor::Executor() {
     this->deleteClasses = true;     //Should classes be deleted when destructor is called?
     this->currentMethod = NULL;     //The current method being executed
     this->currentObject = NULL;     //Saves object for "this" variable
+    this->currentClass  = NULL;     //Class currently executing method
     this->classes = NULL;           //The class definitions from the Parser
 
     //Scope variables
@@ -175,6 +176,9 @@ void Executor::run(map<string, ClassDefinition* >* classes) {
                         else {
                             this->registerVariables->push(new Nil(TEMP));
                         }
+                    } else {
+                        //Remove temporary pointer
+                        delete (*this->variables)["this"];
                     }
                 }
                 //The last line was finished, move on
@@ -322,13 +326,12 @@ void Executor::executeInstruction(OperationNode* op, string recover) throw (Runt
     else {
         //Get left node
         if (op->left != NULL && !recoverLeft) {
-            this->executeInstruction(op->left, recover);
+            this->executeInstruction(op->left, "");
         }
-
 
         //Get right node
         if (op->right != NULL && !recoverRight) {
-            this->executeInstruction(op->right, recover);
+            this->executeInstruction(op->right, "");
         }
 
         //Execute no terminating operations
@@ -471,7 +474,14 @@ inline void Executor::initMethodCall(
 
     //Create "this" object
     if (this->currentObject != NULL) {
-        (*this->variables)["this"] = this->currentObject->getPointer();
+        if (!isConstructor) {
+            (*this->variables)["this"] = this->currentObject->getPointer();
+        } else {
+            Variable** vPointer = new Variable*;
+            *vPointer = this->currentObject;
+            this->currentObject->setPointer(vPointer);
+            (*this->variables)["this"] = vPointer;
+        }
         this->currentObject->makeConstant();
     }
 
@@ -1391,7 +1401,7 @@ void Executor::call() {
     Variable* result;
 
     //Compute result
-    this->executeLeft = false;
+    //this->executeLeft = false;
     nextOp = this->currentNode->right;
 
     bool isStatic = nextOp->operation.word == "::";
@@ -1493,14 +1503,14 @@ void Executor::staticVar() {
     string className = this->currentNode->right->operation.word;
 
     //Compute result
-    this->executeLeft = false;
+    //this->executeLeft = false;
     if ((*this->classes).find(className) == (*this->classes).end()) {
         throw RuntimeError("Unknown class '"+className+"'",ERROR);
     }
     ClassDefinition* cls = (*this->classes)[className];
     result = cls->getStaticProperty(this->currentNode->left->operation.word);
 
-    if (result->getVisibility() != PUBLIC) {
+    if (result->getVisibility() != PUBLIC && cls != this->currentClass) {
         throw RuntimeError("Cannot access private variable from outside class",ERROR);
     }
 
@@ -1529,10 +1539,10 @@ void Executor::dynamicVar() {
     }
 
     //Compute result
-    this->executeLeft = false;
+    //this->executeLeft = false;
     result = a->getProperty(this->currentNode->left->operation.word);
 
-    if (result->getVisibility() != PUBLIC) {
+    if (result->getVisibility() != PUBLIC && this->currentObject != a) {
         throw RuntimeError("Cannot access private variable from outside class",ERROR);
     }
 

@@ -215,7 +215,7 @@ map< string, ClassDefinition* >* Parser::parseTokens(queue<Token> &intoks) {
             this->errors.push(PostfixError("Inherited class '"+it->first+"' not found", t));
             continue;
         }
-        (*this->classes)[it->first]->setInheritance((*this->classes)[it->second]);
+        (*this->classes)[it->second]->setInheritance((*this->classes)[it->first]);
     }
 
     return this->classes;

@@ -83,7 +83,7 @@ OperationNode* ExpressionTreeBuilder::getExpressionTree(queue<Token> &toks) thro
         //Normal operators
         } else if (t.type == 'o') {
             while (t.word != "(" && t.word != "["
-                    && operators.size() != 0 && operators.top().word != "?"
+                    && operators.size() != 0
                     && this->getOperatorHeirchy(operators.top().word) > 0
                     && this->getOperatorHeirchy(t.word) < this->getOperatorHeirchy(operators.top().word)) {
                 if (operands.size() < 2) {
@@ -160,7 +160,8 @@ OperationNode* ExpressionTreeBuilder::getExpressionTree(queue<Token> &toks) thro
                 operands.size() >= 2 || (
                     operands.size() == 1 && (
                         this->isControlWord(operators.top().word) ||
-                        this->isPreUnary(operators.top().word)
+                        this->isPreUnary(operators.top().word) ||
+                        this->operators.top().word == "("
                     )
                 )
             )

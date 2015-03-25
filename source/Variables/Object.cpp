@@ -4,6 +4,7 @@
 #include "Object.h"
 #include "String.h"
 #include "../Executor.h"
+#include <iostream>
 
 
 using namespace std;
@@ -26,6 +27,7 @@ Object::Object(Visibility visibility, ClassDefinition* cd)
     Variable* var;
 
     ClassDefinition* c = cd;
+
     while (c != NULL) {
         vars = c->getProperties();
         for (it = vars.begin(); it != vars.end(); it++) {
@@ -36,6 +38,7 @@ Object::Object(Visibility visibility, ClassDefinition* cd)
             var = new Variable(it->second.getVisibility());
             vPointer = new Variable*;
             *vPointer = var;
+            var->setPointer(vPointer);
             this->properties[it->first] = vPointer;
         }
         c = c->getInheritedClass();

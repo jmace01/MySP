@@ -1,24 +1,38 @@
-class a {
+class Person {
 
-    public dynamic a() {
-        print "CONSTRUCTED\n";
-    }
-
-    public dynamic foo() {
-        return this->bar();
+    protected dynamic name;
+    protected dynamic age;
+    protected dynamic gender;
+    
+    public dynamic getAge() {
+        return this->age;
     }
     
-    private dynamic bar() {
-        return 2;
+    public dynamic getGender() {
+        return (this->gender == 'f') ? 'female' : 'male';
+    }
+    
+    public dynamic getName() {
+        return this->name;
+    }
+
+}
+
+class Nichole inherits Person {
+    
+    public dynamic Nichole() {
+        print "Hello\n";
+        this->name = "Nichole";
+        this->age = 24;
+        this->gender = 'f';
     }
 
 }
 
 main {
-    
-    print "Hello world!\n";
-    v = a();
-    print v->foo() . "\n";
-    print v->bar() . "\n";
-    
+    n = Nichole();
+    print n->getName() . " is " . n->getAge() . "!\n";
+    print n->getName() . " is " . n->getGender() . "!\n";
+    print (1 == 1) ? 1 : 2;
+    print ((1 == 1) ? 1 : 2) . 'Yes';
 }
