@@ -18,6 +18,7 @@ class Person {
     }
 }
 
+
 class JaneDoe inherits Person {
     public dynamic JaneDoe() {
         print "Hello\n";
@@ -27,9 +28,12 @@ class JaneDoe inherits Person {
     }
 }
 
+
 class a {
     public dynamic var;
+    public dynamic foo(){ print "YES!"; }
 }
+
 
 main {
     p = JaneDoe();
@@ -45,6 +49,5 @@ main {
     
     Person::v2->var = 2;
     print Person::v2->var . "\n";
-    
-    n->age; //Error
+    p->v1->foo();
 }

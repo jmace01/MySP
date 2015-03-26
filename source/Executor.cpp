@@ -1434,15 +1434,28 @@ void Executor::call() {
             methodName = this->currentNode->right->left->operation.word;
 
             //Get variable pointer
-            Variable** vPointer = (*this->variables)[this->currentNode->right->right->operation.word];
+            Variable** vPointer;
 
-            //Does the variable exist?
-            if (vPointer == NULL) {
-                throw RuntimeError("Cannot call method on undefined", FATAL);
+            if (this->currentNode->right->right->operation.word == "->") {
+                OperationNode* oldCurrent = this->currentNode;
+                this->currentNode = this->currentNode->right->right;
+                dynamicVar();
+                a = this->registerVariables->top();
+                this->registerVariables->pop();
+                this->currentNode = oldCurrent;
             }
+            else {
+                //Get the variable pointer
+                vPointer = (*this->variables)[this->currentNode->right->right->operation.word];
 
-            //Get the variable
-            a = *((*this->variables)[this->currentNode->right->right->operation.word]);
+                //Does the variable exist?
+                if (vPointer == NULL) {
+                    throw RuntimeError("Cannot call method on undefined", FATAL);
+                }
+
+                //Get the variable
+                a = *((*this->variables)[this->currentNode->right->right->operation.word]);
+            }
 
             //Is the variable an object?
             if (a->getType() != 'o') {

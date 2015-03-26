@@ -198,6 +198,10 @@ void Test::testExTreeBldr() {
                     "Person::v2->var = 1",
                     "1 var v2 Person :: -> ="
             )
+            , TestIO (
+                    "",
+                    ""
+            )
             , TestIO("","")
     };
 
