@@ -141,6 +141,48 @@ void Test::testExecutor() {
                     "1Yes"
             ),
             TestIO(
+                    "class Person {                                                \n" \
+                    "    protected dynamic name;                                   \n" \
+                    "    protected dynamic age;                                    \n" \
+                    "    protected dynamic gender;                                 \n" \
+                    "    public    dynamic v1;                                     \n" \
+                    "    public    static  v2;                                     \n" \
+                    "    public dynamic getAge() {                                 \n" \
+                    "        return this->age;                                     \n" \
+                    "    }                                                         \n" \
+                    "    public dynamic getGender() {                              \n" \
+                    "        return ((this->gender == 'f') ? 'fe' : '') . 'male';  \n" \
+                    "    }                                                         \n" \
+                    "    public dynamic getName() {                                \n" \
+                    "        return this->name;                                    \n" \
+                    "    }                                                         \n" \
+                    "}                                                             \n" \
+                    "class JaneDoe inherits Person {                               \n" \
+                    "    public dynamic JaneDoe() {                                \n" \
+                    "        print \"Hello\n\";                                    \n" \
+                    "        this->name = \"Jane\";                                \n" \
+                    "        this->age = 99;                                       \n" \
+                    "        this->gender = 'f';                                   \n" \
+                    "    }                                                         \n" \
+                    "}                                                             \n" \
+                    "class a {                                                     \n" \
+                    "    public dynamic var;                                       \n" \
+                    "}                                                             \n" \
+                    "main {                                                        \n" \
+                    "    p = JaneDoe();                                            \n" \
+                    "    print p->getName() . \" is \" . p->getAge() . \".\n\";    \n" \
+                    "    print p->getName() . \" is \" . p->getGender() . \".\n\"; \n" \
+                    "    p->v1      = a();                                         \n" \
+                    "    Person::v2 = a();                                         \n" \
+                    "    p->v1->var = 1;                                           \n" \
+                    "    print p->v1->var . \"\n\";                                \n" \
+                    "    Person::v2->var = 2;                                      \n" \
+                    "    print Person::v2->var . \"\n\";                           \n" \
+                    "    n->age; //Error                                           \n" \
+                    "}                                                             \n",
+                    "Hello\nJane is 99.\nJane is female.\n1\n2\nERROR: Cannot get property of undefined (line 38)\n"
+            ),
+            TestIO(
                     "",
                     ""
             )

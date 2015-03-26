@@ -85,7 +85,12 @@ OperationNode* ExpressionTreeBuilder::getExpressionTree(queue<Token> &toks) thro
             while (t.word != "(" && t.word != "["
                     && operators.size() != 0
                     && this->getOperatorHeirchy(operators.top().word) > 0
-                    && this->getOperatorHeirchy(t.word) < this->getOperatorHeirchy(operators.top().word)) {
+                    && (
+                            this->getOperatorHeirchy(t.word) < this->getOperatorHeirchy(operators.top().word) ||
+                            (t.word == "->" && operators.top().word == "->") || //Allow chaining of -> operator
+                            (t.word == "->" && operators.top().word == "::") //Allow chaining of -> operator
+                        )
+                    ) {
                 if (operands.size() < 2) {
                     cout << "ERROR not enough operands " << t.word << endl;
                     break;

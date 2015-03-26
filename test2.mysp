@@ -1,8 +1,9 @@
 class Person {
-
     protected dynamic name;
     protected dynamic age;
     protected dynamic gender;
+    public    dynamic v1;
+    public    static  v2;
     
     public dynamic getAge() {
         return this->age;
@@ -15,28 +16,35 @@ class Person {
     public dynamic getName() {
         return this->name;
     }
-
 }
 
-class Nichole inherits Person {
-    
-    public dynamic Nichole() {
+class JaneDoe inherits Person {
+    public dynamic JaneDoe() {
         print "Hello\n";
-        this->name = "Nichole";
-        this->age = 24;
+        this->name = "Jane";
+        this->age = 99;
         this->gender = 'f';
     }
-    
-    public dynamic _Nichole() {
-        print "Goodbye!\n";
-    }
+}
 
+class a {
+    public dynamic var;
 }
 
 main {
-    n = Nichole();
-    print n->getName() . " is " . n->getAge() . ".\n";
-    print n->getName() . " is " . n->getGender() . ".\n";
-    print (1 == 1) ? 1 : 2;
-    print ((1 == 1) ? 1 : 2) . 'Yes';
+    p = JaneDoe();
+    
+    print p->getName() . " is " . p->getAge() . ".\n";
+    print p->getName() . " is " . p->getGender() . ".\n";
+    
+    p->v1      = a();
+    Person::v2 = a();
+    
+    p->v1->var = 1;
+    print p->v1->var . "\n";
+    
+    Person::v2->var = 2;
+    print Person::v2->var . "\n";
+    
+    n->age; //Error
 }

@@ -190,9 +190,13 @@ void Test::testExTreeBldr() {
                     "this->gender == 'f' ? 'fe' : ''",
                     "'' 'fe' : 'f' gender this -> == ?"
             )
+            , TestIO ( //Chaining -> operator
+                    "this->a->b",
+                    "b a this -> ->"
+            )
             , TestIO (
-                    "",
-                    ""
+                    "Person::v2->var = 1",
+                    "1 var v2 Person :: -> ="
             )
             , TestIO("","")
     };

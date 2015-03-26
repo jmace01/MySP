@@ -1526,13 +1526,31 @@ void Executor::dynamicVar() {
     Variable* a;
     Variable* result;
 
-    //Get the class
-    aP = (*this->variables)[this->currentNode->right->operation.word];
-    if (aP == NULL) {
-        throw RuntimeError("Cannot get property of undefined", ERROR);
+    //Get the object
+    //Chained -> with -> or ::
+    if (this->currentNode->right->operation.word == "->" || this->currentNode->right->operation.word == "::") {
+        bool isDynamic = (this->currentNode->right->operation.word == "->");
+        OperationNode* oldCurrent = this->currentNode;
+        this->currentNode = this->currentNode->right;
+        if (isDynamic) {
+            dynamicVar();
+        }
+        else {
+            staticVar();
+        }
+        a = this->registerVariables->top();
+        this->registerVariables->pop();
+        this->currentNode = oldCurrent;
     }
+    //Variable
+    else {
+        aP = (*this->variables)[this->currentNode->right->operation.word];
+        if (aP == NULL) {
+            throw RuntimeError("Cannot get property of undefined", ERROR);
+        }
 
-    a = *aP;
+        a = *aP;
+    }
 
     if (a->getType() != 'o') {
         throw RuntimeError("Cannot get property of "+a->getTypeString(), ERROR);
