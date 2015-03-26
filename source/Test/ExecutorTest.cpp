@@ -130,15 +130,15 @@ void Test::testExecutor() {
                     "    print v->foo() . \"\n\";    \n" \
                     "    print v->bar() . \"\n\";    \n" \
                     " }                              ",
-                    "Hello world!\nCONSTRUCTED\nFATAL ERROR: Method 'blah' of class does not exist (line 0)\n2\nFATAL ERROR: Permission denied to call 'bar' (line 0)\n"
+                    "Hello world!\nCONSTRUCTED\nFATAL ERROR: Method 'blah' of class does not exist (line 11)\n2\nFATAL ERROR: Permission denied to call 'bar' (line 22)\n"
             ),
             TestIO(
-                    "",
-                    ""
+                    "main { print (1 == 1) ? 1 : 2; }",
+                    "1"
             ),
             TestIO(
-                    "",
-                    ""
+                    "main { print ((1 == 1) ? 1 : 2) . 'Yes'; }",
+                    "1Yes"
             ),
             TestIO(
                     "",

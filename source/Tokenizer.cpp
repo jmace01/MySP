@@ -190,7 +190,7 @@ Token Tokenizer::getNext(bool &wasOp) {
 
 
     //Get Word
-    else if (isalpha(this->infix[i])) {
+    else if (isalpha(this->infix[i]) || this->infix[i] == '_') {
         type = 'w';
         while ((isalnum(this->infix[i]) || this->infix[i] == '_') &&  i <  this->infix.size())
             word += this->infix[i++];
@@ -449,7 +449,7 @@ Token Tokenizer::getNextToken(bool &wasOp, char &currentChar) {
 
 
     //Get Word
-    else if (isalpha(currentChar)) {
+    else if (isalpha(currentChar) || currentChar == '_') {
         type = 'w';
         while ((isalnum(currentChar) || currentChar == '_') &&  input->good()) {
             word += currentChar;

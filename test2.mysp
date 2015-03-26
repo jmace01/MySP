@@ -9,7 +9,7 @@ class Person {
     }
     
     public dynamic getGender() {
-        return (this->gender == 'f') ? 'female' : 'male';
+        return ((this->gender == 'f') ? 'fe' : '') . 'male';
     }
     
     public dynamic getName() {
@@ -26,13 +26,17 @@ class Nichole inherits Person {
         this->age = 24;
         this->gender = 'f';
     }
+    
+    public dynamic _Nichole() {
+        print "Goodbye!\n";
+    }
 
 }
 
 main {
     n = Nichole();
-    print n->getName() . " is " . n->getAge() . "!\n";
-    print n->getName() . " is " . n->getGender() . "!\n";
+    print n->getName() . " is " . n->getAge() . ".\n";
+    print n->getName() . " is " . n->getGender() . ".\n";
     print (1 == 1) ? 1 : 2;
     print ((1 == 1) ? 1 : 2) . 'Yes';
 }

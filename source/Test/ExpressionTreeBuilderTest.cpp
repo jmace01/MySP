@@ -186,6 +186,14 @@ void Test::testExTreeBldr() {
                     "print ((1 == 1) ? 1 : 2) . 'Yes'",
                     "'Yes' 2 1 : 1 1 == ? . print"
             )
+            , TestIO (
+                    "this->gender == 'f' ? 'fe' : ''",
+                    "'' 'fe' : 'f' gender this -> == ?"
+            )
+            , TestIO (
+                    "",
+                    ""
+            )
             , TestIO("","")
     };
 

@@ -40,6 +40,7 @@ map< string, ClassDefinition* >* Parser::parseTokens(queue<Token> &intoks) {
     this->currentClass = NULL;
     this->currentMethod = NULL;
     this->isMain = false;
+    this->inheritance = map<string, string>();
 
     this->toks = intoks;
     this->statementQueue = queue<Token>();

@@ -47,7 +47,7 @@ class ExpressionTreeBuilder {
         void addOperation(bool isUnary);
         void makeParameter();
         void chainParameter();
-        void addFunctionCall();
+        void addFunctionCall(int line);
         void validateStatement(std::queue<Token> toks) throw (PostfixError);
         void static initializeHierarchy();
 

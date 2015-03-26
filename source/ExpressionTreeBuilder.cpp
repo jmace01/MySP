@@ -120,7 +120,7 @@ OperationNode* ExpressionTreeBuilder::getExpressionTree(queue<Token> &toks) thro
                             this->chainParameter();
                         }
                         //Add the function call
-                        this->addFunctionCall();
+                        this->addFunctionCall(operators.top().line);
                         operators.pop();
                     } else if (t.word == ")") {
                         int i = functionParenth.top();
@@ -302,20 +302,20 @@ void ExpressionTreeBuilder::initializeHierarchy() {
     opHierarchy["/="] = 2;
     opHierarchy["%="] = 2;
     opHierarchy["^="] = 2;
-    opHierarchy["===="] = 3;
-    opHierarchy["==="]  = 3;
-    opHierarchy["=="]   = 3;
-    opHierarchy["!==="] = 3;
-    opHierarchy["!=="]  = 3;
-    opHierarchy["!="]   = 3;
-    opHierarchy["<"]    = 3;
-    opHierarchy["<="]   = 3;
-    opHierarchy[">"]    = 3;
-    opHierarchy[">="]   = 3;
-    opHierarchy["&&"] = 4;
-    opHierarchy["||"] = 5;
-    opHierarchy["?"] = 6;
-    opHierarchy[":"] = 7;
+    opHierarchy["?"] = 3;
+    opHierarchy[":"] = 4;
+    opHierarchy["===="] = 5;
+    opHierarchy["==="]  = 5;
+    opHierarchy["=="]   = 5;
+    opHierarchy["!==="] = 5;
+    opHierarchy["!=="]  = 5;
+    opHierarchy["!="]   = 5;
+    opHierarchy["<"]    = 5;
+    opHierarchy["<="]   = 5;
+    opHierarchy[">"]    = 5;
+    opHierarchy[">="]   = 5;
+    opHierarchy["&&"] = 6;
+    opHierarchy["||"] = 7;
     opHierarchy["."] = 8;
     opHierarchy["-"] = 9;
     opHierarchy["+"] = 9;
@@ -372,7 +372,7 @@ bool ExpressionTreeBuilder::isPreUnary(string op) {
  ****************************************************************************************/
 bool ExpressionTreeBuilder::isTerminating(string op) {
     short h = ExpressionTreeBuilder::getOperatorHeirchy(op);
-    return ((h >= 4 && h <= 7) || h == 14);
+    return (h == 3 || h == 4 || h == 6 || h == 7 || h == 14);
 }
 
 
@@ -482,16 +482,16 @@ void inline ExpressionTreeBuilder::chainParameter() {
 
 /****************************************************************************************
  *
- * Function call        Method call
- * foo(bar)             foo->bar(a)
+ * Constructor call      Method call
+ * foo(bar)              foo->bar(a)
  *
- *     C                    C
- *   /   \               /     \
- * P       foo         P         ->
- *   \                   \      /  \
- *    bar                 a   foo   bar
+ *     C                      C
+ *   /   \                 /     \
+ * P       foo           P         ->
+ *   \                     \      /  \
+ *    bar                   a   foo   bar
  ****************************************************************************************/
-void inline ExpressionTreeBuilder::addFunctionCall() {
+void inline ExpressionTreeBuilder::addFunctionCall(int line) {
     //Create the call node
     Token t;
     OperationNode* temp = new OperationNode();
@@ -500,6 +500,7 @@ void inline ExpressionTreeBuilder::addFunctionCall() {
     temp->operation = Token();
     temp->operation.type = 'o';
     temp->operation.word = "C";
+    temp->operation.line = line;
     temp->operation.isTerminating = true;
 
     //If there are parameters, add them to the left
