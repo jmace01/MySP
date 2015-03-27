@@ -117,7 +117,6 @@ void Test::testExecutor() {
                     "       print \"CONSTRUCTED\n\"; \n" \
                     "    }                           \n" \
                     "    public dynamic foo() {      \n" \
-                    "       this->blah();            \n" \
                     "       return this->bar();      \n" \
                     "    }                           \n" \
                     "    private dynamic bar() {     \n" \
@@ -130,7 +129,7 @@ void Test::testExecutor() {
                     "    print v->foo() . \"\n\";    \n" \
                     "    print v->bar() . \"\n\";    \n" \
                     " }                              ",
-                    "Hello world!\nCONSTRUCTED\nFATAL ERROR: Method 'blah' of class does not exist (line 11)\n2\nFATAL ERROR: Permission denied to call 'bar' (line 22)\n"
+                    "Hello world!\nCONSTRUCTED\n2\nFATAL ERROR: Permission denied to call 'bar' (line 21)\n"
             ),
             TestIO(
                     "main { print (1 == 1) ? 1 : 2; }",

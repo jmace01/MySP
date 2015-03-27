@@ -72,8 +72,7 @@ OperationNode* ExpressionTreeBuilder::getExpressionTree(queue<Token> &toks) thro
         //Post Unary Operators, such as ++ or --
         } else if (t.type == 'o' && this->isPostUnary(t.word)) {
             if (operands.size() == 0) {
-                cout << "ERROR not enough operands " << t.word << endl;
-                continue;
+                throw PostfixError("Not enough operands", t);
             }
 
             bool isNotTernary = (t.word != "?");
@@ -82,8 +81,8 @@ OperationNode* ExpressionTreeBuilder::getExpressionTree(queue<Token> &toks) thro
 
         //Normal operators
         } else if (t.type == 'o') {
-            while (t.word != "(" && t.word != "["
-                    && operators.size() != 0
+            while (operators.size() != 0 &&
+                    t.word != "(" && (t.word != "[" || operators.top().word == "->" || operators.top().word == "::")
                     && this->getOperatorHeirchy(operators.top().word) > 0
                     && (
                             this->getOperatorHeirchy(t.word) < this->getOperatorHeirchy(operators.top().word) ||
@@ -91,9 +90,9 @@ OperationNode* ExpressionTreeBuilder::getExpressionTree(queue<Token> &toks) thro
                             (t.word == "->" && operators.top().word == "::") //Allow chaining of -> operator
                         )
                     ) {
-                if (operands.size() < 2) {
-                    cout << "ERROR not enough operands " << t.word << endl;
-                    break;
+                //This situation should not happen
+                if (operands.size() < 1 || (operands.size() == 1 && !this->isPreUnary(operators.top().word))) {
+                    throw PostfixError("Not enough operands", t);
                 }
                 bool isUnary = this->isPreUnary(operators.top().word);
                 this->addOperation(isUnary);

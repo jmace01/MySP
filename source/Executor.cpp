@@ -140,22 +140,32 @@ void Executor::initializeConstants() {
  *
  ****************************************************************************************/
 void Executor::run(map<string, ClassDefinition* >* classes) {
+    //Set up the instruction pointer to the first instruction
     this->instructionPointer = 0;
+    //Save classes to member variable
     this->classes = classes;
 
+    //Set up initial method call to entry point (main)
     string startMethod = "main";
     this->currentMethod = (*this->classes)["~"]->getMethod(startMethod);
     this->scopeStack.push(Scope());
 
+    //Used for recovering recursion after method call
     string recover = "";
 
+    //Begin executing instructions
     while (!scopeStack.empty()) {
         //If the method end has been reached, pop off the method and get the previous one
         if (instructionPointer >= this->currentMethod->getInstructionSize()) {
+            //There are methods to return to
             if (this->scopeStack.size() > 1) {
+                //Remove old variables
+                this->clearVariables();
+                //If this was a dynamic method call, reset "this" as a normal variable
                 if (this->currentObject != NULL) {
                     this->currentObject->makeNonConstant();
                 }
+                //Get previous scope
                 Scope scope = this->scopeStack.top();
                 this->instructionPointer = scope.instructionPointer;
                 this->variables = scope.variables;
@@ -164,6 +174,7 @@ void Executor::run(map<string, ClassDefinition* >* classes) {
                 this->currentObject = scope.currentObject;
                 this->currentClass  = scope.currentClass;
                 this->currentNode = scope.currentNode;
+                //Get previous position in recursion
                 recover = this->recoverPosition(this->currentMethod->getInstruction(this->instructionPointer), '0');
                 //Does the line execution need to be finished?
                 if (recover != "" && recover != "0") {
@@ -201,12 +212,38 @@ void Executor::run(map<string, ClassDefinition* >* classes) {
                 this->lastValue = this->registerVariables->top()->getNumberValue();
                 this->clearRegisters();
             }
-        } catch (RuntimeError &e) {
+        }
+        //There was a runtime error
+        catch (RuntimeError &e) {
             this->displayError(e);
             this->clearRegisters();
-        } catch (FunctionCall &e) {}
+            if (e.level == FATAL) {
+                while (!scopeStack.empty()) {
+                    this->variables = this->scopeStack.top().variables;
+                    this->clearVariables();
+                    scopeStack.pop();
+                }
+                return;
+            }
+        }
+        //Function calls are thrown to break out of recursion
+        catch (FunctionCall &e) {}
 
         recover = "";
+    }
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void Executor::clearVariables() {
+    map<string, Variable**>::iterator it;
+    for (it = this->variables->begin(); it != this->variables->end(); it++) {
+        if ((*it->second)->getVisibility() != CONST) {
+            delete (*it->second);
+            delete it->second;
+        }
     }
 }
 
@@ -454,6 +491,7 @@ inline void Executor::initMethodCall(
         throw RuntimeError("Cannot call dynamic method "+constructorError+"'"+methodName+"' in static way", FATAL);
     }
 
+    //Save the current scope
     Scope scope = Scope();
     scope.instructionPointer = this->instructionPointer - 1;
     scope.method             = this->currentMethod;
@@ -465,6 +503,7 @@ inline void Executor::initMethodCall(
     scope.isConstructor      = isConstructor;
     this->scopeStack.push(scope);
 
+    //Set up new scope
     this->instructionPointer = 0;
     this->currentMethod      = method;
     this->currentObject      = object;
@@ -485,8 +524,10 @@ inline void Executor::initMethodCall(
         this->currentObject->makeConstant();
     }
 
+    //Get parameters for method
     this->loadMethodParameters();
 
+    //Start the new method by breaking out of recursion with a thrown object
     throw FunctionCall();
 }
 
@@ -536,7 +577,7 @@ Variable* Executor::makeVariableCopy(Variable* v, Visibility visibility) {
         string s = v->getStringValue();
         result = new String(visibility, s);
     } else if (v->getType() == 'a') {
-        result = new Array(visibility);
+        result = new Array(visibility, (Array*) v);
     } else if (v->getType() == 'o') {
         result = new Object(visibility, (Object*) v);
     } else if (v->getType() == '0') {
@@ -1371,7 +1412,7 @@ void Executor::loadMethodParameters() {
     Variable* value;
     Variable** vPointer;
 
-    for (int j = 0; j < this->currentMethod->getParameterSize(); j++) {
+    for (int j = this->currentMethod->getParameterSize() - 1; j >= 0; j--) {
         //Get the parameter name
         pName = this->currentMethod->getParameter(j);
         //Is the parameter value on the stack?

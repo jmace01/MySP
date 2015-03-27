@@ -73,6 +73,7 @@ class Executor {
         void clearRegisters();
         void displayError(RuntimeError &e);
         void initMethodCall(Method* method, Variable* object, ClassDefinition* classDef, bool isStatic, bool isConstructor, std::string &methodName);
+        void clearVariables();
 
         //Operators
         void print();

@@ -17,7 +17,7 @@ int main() {
 
     //string s = "main { a = 0 ? '1' : '2'; print a; }";
     //istringstream* s = new istringstream("main { print 5; }");
-    istream* s = new ifstream("./test2.mysp");
+    istream* s = new ifstream("./final.mysp");
 
     Parser sp = Parser();
     Executor ex = Executor();

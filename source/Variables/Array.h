@@ -2,6 +2,7 @@
 #define SOURCE_VARIABLES_ARRAY_H_
 
 #include <map>
+#include "../Executor.h"
 #include "Variable.h"
 
 class Array: public Variable {
@@ -10,6 +11,7 @@ class Array: public Variable {
 
     public:
         Array(Visibility visibility);
+        Array(Visibility visibility, Array* array);
         ~Array();
         char getType();
         std::string getTypeString();
@@ -17,6 +19,7 @@ class Array: public Variable {
         virtual std::string getStringValue();
         virtual bool getBooleanValue();
         virtual Variable* getArrayValue(std::string index);
+        std::map<std::string, Variable**> getArrayValueMap();
 };
 
 #endif

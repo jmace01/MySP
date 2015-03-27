@@ -199,8 +199,8 @@ void Test::testExTreeBldr() {
                     "1 var v2 Person :: -> ="
             )
             , TestIO (
-                    "",
-                    ""
+                    "a->b[c]",
+                    "c b a -> ["
             )
             , TestIO("","")
     };

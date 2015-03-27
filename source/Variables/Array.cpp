@@ -17,6 +17,27 @@ Array::Array(Visibility visibility)
 /****************************************************************************************
  *
  ****************************************************************************************/
+Array::Array(Visibility visibility, Array* array)
+    : Variable(visibility)
+{
+    Variable** vPointer;
+    Variable* var;
+    this->values = map<string, Variable**>();
+    map<string, Variable**> aMap = array->getArrayValueMap();
+    map<string, Variable**>::iterator it;
+    for (it = aMap.begin(); it != aMap.end(); it++) {
+        vPointer = new Variable*;
+        var = Executor::makeVariableCopy((*it->second), (*it->second)->getVisibility());
+        *vPointer = var;
+        var->setPointer(vPointer);
+        this->values[it->first] = vPointer;
+    }
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
 Array::~Array() {
     map<string, Variable**>::iterator it;
     for (it = this->values.begin(); it != this->values.end(); it++) {
@@ -82,4 +103,12 @@ Variable* Array::getArrayValue(string index) {
     }
 
     return *(this->values[index]);
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+std::map<std::string, Variable**> Array::getArrayValueMap() {
+    return this->values;
 }
