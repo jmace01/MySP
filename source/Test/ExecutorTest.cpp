@@ -199,9 +199,6 @@ void Test::testExecutor() {
     streambuf*     oldbuf  = cout.rdbuf(outputStream.rdbuf());
 
 
-
-
-
     Parser sp = Parser();
     Executor ex = Executor();
     queue<PostfixError> pe;

@@ -6,7 +6,14 @@ using namespace std;
 
 
 /****************************************************************************************
- * Executor Constructor
+ * Executor::Executor()
+ *
+ * Description:
+ *     Executor Constructor
+ *
+ * Inputs: None
+ *
+ * Outputs: None
  ****************************************************************************************/
 Executor::Executor() {
     //Execution and clean up
@@ -21,7 +28,7 @@ Executor::Executor() {
     this->scopeStack = stack<Scope>();                //The scope for function calls
     this->registerVariables = new stack<Variable*>(); //The temporary values for expressions
     this->parameterStack = stack<Variable*>();        //Parameters for method calls
-    this->variables = new map<string, Variable**>();  //The variables to be stored
+    this->variables = NULL;                           //The variables to be stored
 
     this->initializeConstants();
 
@@ -144,6 +151,8 @@ void Executor::run(map<string, ClassDefinition* >* classes) {
     this->instructionPointer = 0;
     //Save classes to member variable
     this->classes = classes;
+    //Set up initial variable map
+    this->variables = new map<string, Variable**>();
 
     //Set up initial method call to entry point (main)
     string startMethod = "main";
@@ -216,13 +225,15 @@ void Executor::run(map<string, ClassDefinition* >* classes) {
         //There was a runtime error
         catch (RuntimeError &e) {
             this->displayError(e);
+            //Avoid memory leaks in registers
             this->clearRegisters();
             if (e.level == FATAL) {
-                while (!scopeStack.empty()) {
+                //Avoid memory leaks in variable memory
+                do {
                     this->variables = this->scopeStack.top().variables;
                     this->clearVariables();
                     scopeStack.pop();
-                }
+                } while (!this->scopeStack.empty());
                 return;
             }
         }
@@ -238,6 +249,12 @@ void Executor::run(map<string, ClassDefinition* >* classes) {
  *
  ****************************************************************************************/
 void Executor::clearVariables() {
+    //Nothing to do -- this case should never happen but is here as a precaution
+    if (this->variables == NULL) {
+        return;
+    }
+
+    //Delete map contents
     map<string, Variable**>::iterator it;
     for (it = this->variables->begin(); it != this->variables->end(); it++) {
         if ((*it->second)->getVisibility() != CONST) {
@@ -245,6 +262,9 @@ void Executor::clearVariables() {
             delete it->second;
         }
     }
+
+    //Delete map
+    delete this->variables;
 }
 
 
