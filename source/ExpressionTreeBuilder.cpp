@@ -1,3 +1,22 @@
+/*/////////////////////////////////////// !! ////////////////////////////////////////////
+ *
+ * FILE:
+ *     ExpressionTreeBuilder.cpp
+ *
+ * DESCRIPTION:
+ *
+ *     This file takes an infix expression (without a terminating semicolon!) and
+ *     creates a binary expression tree from it.
+ *
+ * AUTHOR:
+ *     Jason Mace
+ *
+ *
+ * Copyright 2015 by Jason Mace
+ *
+ */////////////////////////////////////// !! ////////////////////////////////////////////
+
+
 #include "OperationNode.h"
 #include <iostream>
 #include <ctype.h>
@@ -9,7 +28,17 @@ using namespace std;
 
 
 /****************************************************************************************
+ * ExpressionTreeBuilder::ExpressionTreeBuilder
  *
+ * Description:
+ *     Constructor.
+ *     If this is the first instance, sets up the operation hierarchy map.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 ExpressionTreeBuilder::ExpressionTreeBuilder() {
     if (ExpressionTreeBuilder::opHierarchy.empty()) {
@@ -22,14 +51,32 @@ map<string, short> ExpressionTreeBuilder::opHierarchy = map<string, short>();
 
 
 /****************************************************************************************
+ * ExpressionTreeBuilder::~ExpressionTreeBuilder
  *
+ * Description:
+ *     Destructor. Does not need to do anything.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 ExpressionTreeBuilder::~ExpressionTreeBuilder() {
 }
 
 
 /****************************************************************************************
+ * ExpressionTreeBuilder::getExpressionTree
  *
+ * Description:
+ *     Takes an infix epxression and returns an binary expression tree.
+ *
+ * Inputs:
+ *     queue<Token> &toks : The tokens for the infix expression
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 OperationNode* ExpressionTreeBuilder::getExpressionTree(queue<Token> &toks) throw (PostfixError) {
     //re-initialize class variables
@@ -194,18 +241,28 @@ OperationNode* ExpressionTreeBuilder::getExpressionTree(queue<Token> &toks) thro
 
 
 /****************************************************************************************
+ * ExpressionTreeBuilder::validateStatement
  *
+ * Description:
+ *     Checks for syntax errors in the infix expression.
+ *
+ * Inputs:
+ *     queue<Token> toks : The tokens for the infix expression
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void ExpressionTreeBuilder::validateStatement(queue<Token> toks) throw (PostfixError) {
 	stack<char> parenths      = stack<char>(); //Parenthesis that are still open
 	bool expectingOperator    = false;         //Is it time for an operator?
 	bool wasWord              = false;         //Was the last a word? Needed for function calls
-	bool wasFunctionOpenning  = false;
+	bool wasFunctionOpenning  = false;         //Is this the start of a function?
+	                                           //   (allows for foo() instead of only foo(1))
 	bool wasClosingBacket     = false;
 	bool wasClosingParenth    = false;
 	bool isFirst              = true;
 	bool wasKeyword           = false;
-	stack<int> functParenth   = stack<int>();
+	stack<int> functParenth   = stack<int>();  //Track function parenthesis
 	stack<int> ternaryParenth = stack<int>();  //Track ? and :
 
 	Token t;
@@ -291,7 +348,21 @@ void ExpressionTreeBuilder::validateStatement(queue<Token> toks) throw (PostfixE
 
 
 /****************************************************************************************
+ * ExpressionTreeBuilder::initializeHierarchy
  *
+ * Description:
+ *     Sets up the hierarchy of operations. For example, * has a higher value that +,
+ *     so it will be evaluated first.
+ *
+ * Note:
+ *     This is vital to the algorithm used in ExpressionTreeBuilder::getExpressionTree
+ *     and the order is NOT arbitrary.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void ExpressionTreeBuilder::initializeHierarchy() {
     opHierarchy["print"]    = 1;
@@ -299,54 +370,67 @@ void ExpressionTreeBuilder::initializeHierarchy() {
     opHierarchy["return"]   = 1;
     opHierarchy["break"]    = 1;
     opHierarchy["continue"] = 1;
-    opHierarchy["="]  = 2;
-    opHierarchy["+="] = 2;
-    opHierarchy["-="] = 2;
-    opHierarchy["*="] = 2;
-    opHierarchy["/="] = 2;
-    opHierarchy["%="] = 2;
-    opHierarchy["^="] = 2;
-    opHierarchy["?"] = 3;
-    opHierarchy[":"] = 4;
-    opHierarchy["===="] = 5;
-    opHierarchy["==="]  = 5;
-    opHierarchy["=="]   = 5;
-    opHierarchy["!==="] = 5;
-    opHierarchy["!=="]  = 5;
-    opHierarchy["!="]   = 5;
-    opHierarchy["<"]    = 5;
-    opHierarchy["<="]   = 5;
-    opHierarchy[">"]    = 5;
-    opHierarchy[">="]   = 5;
-    opHierarchy["&&"] = 6;
-    opHierarchy["||"] = 7;
-    opHierarchy["."] = 8;
-    opHierarchy["-"] = 9;
-    opHierarchy["+"] = 9;
-    opHierarchy["*"] = 10;
-    opHierarchy["/"] = 10;
-    opHierarchy["%"] = 10;
-    opHierarchy["^"] = 11;
-    opHierarchy["++"] = 12;
-    opHierarchy["--"] = 12;
-    opHierarchy["!"] = 13;
-    opHierarchy["~"] = 13;
-    opHierarchy["&"] = 13;
-    opHierarchy["->"] = 14;
-    opHierarchy["::"] = 14;
-    opHierarchy["("] = -1;
-    opHierarchy[")"] = -1;
-    opHierarchy["["] = -1;
-    opHierarchy["]"] = -1;
-    opHierarchy["{"] = -1;
-    opHierarchy["}"] = -1;
-    opHierarchy[","] = -1;
-    opHierarchy[";"] = -2;
+    opHierarchy["="]        = 2;
+    opHierarchy["+="]       = 2;
+    opHierarchy["-="]       = 2;
+    opHierarchy["*="]       = 2;
+    opHierarchy["/="]       = 2;
+    opHierarchy["%="]       = 2;
+    opHierarchy["^="]       = 2;
+    opHierarchy["?"]        = 3;
+    opHierarchy[":"]        = 4;
+    opHierarchy["===="]     = 5;
+    opHierarchy["==="]      = 5;
+    opHierarchy["=="]       = 5;
+    opHierarchy["!==="]     = 5;
+    opHierarchy["!=="]      = 5;
+    opHierarchy["!="]       = 5;
+    opHierarchy["<"]        = 5;
+    opHierarchy["<="]       = 5;
+    opHierarchy[">"]        = 5;
+    opHierarchy[">="]       = 5;
+    opHierarchy["&&"]       = 6;
+    opHierarchy["||"]       = 7;
+    opHierarchy["."]        = 8;
+    opHierarchy["-"]        = 9;
+    opHierarchy["+"]        = 9;
+    opHierarchy["*"]        = 10;
+    opHierarchy["/"]        = 10;
+    opHierarchy["%"]        = 10;
+    opHierarchy["^"]        = 11;
+    opHierarchy["++"]       = 12;
+    opHierarchy["--"]       = 12;
+    opHierarchy["!"]        = 13;
+    opHierarchy["~"]        = 13;
+    opHierarchy["&"]        = 13;
+    opHierarchy["->"]       = 14;
+    opHierarchy["::"]       = 14;
+    opHierarchy["("]        = -1;
+    opHierarchy[")"]        = -1;
+    opHierarchy["["]        = -1;
+    opHierarchy["]"]        = -1;
+    opHierarchy["{"]        = -1;
+    opHierarchy["}"]        = -1;
+    opHierarchy[","]        = -1;
+    opHierarchy[";"]        = -2; //Needed in Parser class
 }
 
 
 /****************************************************************************************
+ * ExpressionTreeBuilder::getOperatorHeirchy
  *
+ * Description:
+ *     Gets the hierarchy value of an operation.
+ *
+ * Note:
+ *     This is vital to the algorithm used in ExpressionTreeBuilder::getExpressionTree
+ *     and the order is NOT arbitrary.
+ *
+ * Inputs:
+ *     string op : The operation to check
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 short ExpressionTreeBuilder::getOperatorHeirchy(string op) {
     return ExpressionTreeBuilder::opHierarchy[op];
@@ -354,7 +438,16 @@ short ExpressionTreeBuilder::getOperatorHeirchy(string op) {
 
 
 /****************************************************************************************
+ * ExpressionTreeBuilder::isPostUnary
  *
+ * Description:
+ *     Checks is the input operation is post-unary, such as ++ or --.
+ *
+ * Inputs:
+ *     string op : The operation to check
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 bool ExpressionTreeBuilder::isPostUnary(string op) {
     short h = ExpressionTreeBuilder::getOperatorHeirchy(op);
@@ -363,7 +456,16 @@ bool ExpressionTreeBuilder::isPostUnary(string op) {
 
 
 /****************************************************************************************
+ * ExpressionTreeBuilder::isPreUnary
  *
+ * Description:
+ *     Checks is the input operation is pre-unary, such as !.
+ *
+ * Inputs:
+ *     string op : The operation to check
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 bool ExpressionTreeBuilder::isPreUnary(string op) {
     short h = ExpressionTreeBuilder::getOperatorHeirchy(op);
@@ -372,7 +474,16 @@ bool ExpressionTreeBuilder::isPreUnary(string op) {
 
 
 /****************************************************************************************
+ * ExpressionTreeBuilder::isTerminating
  *
+ * Description:
+ *     Checks is the input operation is a terminating operation, such as && and ||.
+ *
+ * Inputs:
+ *     string op : The operation to check
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 bool ExpressionTreeBuilder::isTerminating(string op) {
     short h = ExpressionTreeBuilder::getOperatorHeirchy(op);
@@ -381,7 +492,16 @@ bool ExpressionTreeBuilder::isTerminating(string op) {
 
 
 /****************************************************************************************
+ * ExpressionTreeBuilder::isControlWord
  *
+ * Description:
+ *     Checks is the input operation is a control word.
+ *
+ * Inputs:
+ *     string op : The operation to check
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 bool ExpressionTreeBuilder::isControlWord(string op) {
     short h = ExpressionTreeBuilder::getOperatorHeirchy(op);
@@ -390,13 +510,22 @@ bool ExpressionTreeBuilder::isControlWord(string op) {
 
 
 /****************************************************************************************
- * Attaches operands to an operator and puts the result on the
- * operand stack
+ * ExpressionTreeBuilder::addOperation
  *
- * Binary a + b      Unary c++
- *       +               ++
- *     /   \            /
- *   b       a        c
+ * Description:
+ *     Attaches operands to an operator and puts the result on the
+ *     operand stack
+ *
+ *     Binary a + b      Unary c++
+ *           +               ++
+ *         /   \            /
+ *       b       a        c
+ *
+ * Inputs:
+ *     bool isUnary : If the operation is unary (has one operand) or binary (has two).
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void ExpressionTreeBuilder::addOperation(bool isUnary) {
     OperationNode* temp = new OperationNode();
@@ -417,12 +546,21 @@ void ExpressionTreeBuilder::addOperation(bool isUnary) {
 
 
 /****************************************************************************************
- * Marks an operand as a parameter
+ * ExpressionTreeBuilder::makeParameter
  *
- * foo(bar)
- * P
- *   \
- *     bar
+ * Description:
+ *     Marks an operand as a parameter
+ *
+ *     foo(bar)
+ *     P
+ *       \
+ *         bar
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void inline ExpressionTreeBuilder::makeParameter() {
     //Create new node
@@ -449,17 +587,26 @@ void inline ExpressionTreeBuilder::makeParameter() {
 
 
 /****************************************************************************************
- * Chains multiple function parameters together
- * The first parameter in the list will be the lowest on the tree
+ * ExpressionTreeBuilder::chainParameter
  *
- * Example: foo(a, b, c)
- *         P
+ * Description:
+ *     Chains multiple function parameters together
+ *     The first parameter in the list will be the lowest on the tree
+ *
+ *     Example: foo(a, b, c)
+ *             P
+ *           /   \
+ *         P      c
  *       /   \
- *     P      c
- *   /   \
- * P       b
- *   \
- *     a
+ *     P       b
+ *       \
+ *         a
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void inline ExpressionTreeBuilder::chainParameter() {
     //Get the first operand
@@ -485,15 +632,24 @@ void inline ExpressionTreeBuilder::chainParameter() {
 
 
 /****************************************************************************************
+ * ExpressionTreeBuilder::addFunctionCall
  *
- * Constructor call      Method call
- * foo(bar)              foo->bar(a)
+ * Description:
+ *     Constructor call      Method call
+ *     foo(bar)              foo->bar(a)
  *
- *     C                      C
- *   /   \                 /     \
- * P       foo           P         ->
- *   \                     \      /  \
- *    bar                   a   foo   bar
+ *         C                      C
+ *       /   \                 /     \
+ *     P       foo           P         ->
+ *       \                     \      /  \
+ *        bar                   a   foo   bar
+ *
+ * Inputs:
+ *     int line : The line number of the function call, used to create a "C" node and
+ *         seen if there is a runtime error on that function call.
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void inline ExpressionTreeBuilder::addFunctionCall(int line) {
     //Create the call node

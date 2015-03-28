@@ -1,3 +1,21 @@
+/*/////////////////////////////////////// !! ////////////////////////////////////////////
+ *
+ * FILE:
+ *     Parser.cpp
+ *
+ * DESCRIPTION:
+ *     Parses tokens from the Tokenizer class and creates ClassDefinitions that can be
+ *     executed by the Executor class.
+ *
+ * AUTHOR:
+ *     Jason Mace
+ *
+ *
+ * Copyright 2015 by Jason Mace
+ *
+ */////////////////////////////////////// !! ////////////////////////////////////////////
+
+
 #include "Parser.h"
 #include <iostream>
 
@@ -6,7 +24,16 @@ using namespace std;
 
 
 /****************************************************************************************
+ * Parser::Parser
  *
+ * Description:
+ *     Constructor. Initialize member variables.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 Parser::Parser() {
     this->expTreeBuilder = ExpressionTreeBuilder();
@@ -21,7 +48,16 @@ map<string, short> Parser::keywords = map<string, short>();
 
 
 /****************************************************************************************
+ * Parser::~Parser
  *
+ * Description:
+ *     Destructor. Nothing needs to be freed.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 Parser::~Parser() {
     //Nothing to be freed
@@ -29,29 +65,45 @@ Parser::~Parser() {
 
 
 /****************************************************************************************
+ * Parser::parseTokens
  *
- * The starting point for the script is the method "main" inside the class "~"
- * The reason the class is called "~" is to avoid having the user declare a class with
- * the same name as the script entry point.
+ * Description:
+ *     This method takes the input tokens and returns the binary expression tree for the
+ *     statement. After calling this method, the Parser::getErrors method should be
+ *     called to check if any error were found during the parsing of the input tokens.
  *
+ * Note:
+ *     The starting point for the script execution is the method "main" inside the class
+ *     "~" The reason the class is called "~" is to avoid having the user declare a class
+ *     with the same name as the script entry point.
+ *
+ * Inputs:
+ *     queue<Token> &intoks : The tokens to parse. This should come from the Tokenizer
+ *         class.
+ *
+ * Outputs:
+ *     map< string, ClassDefinition* >* : The class definitions generated from the input
+ *         tokens.
  ****************************************************************************************/
 map< string, ClassDefinition* >* Parser::parseTokens(queue<Token> &intoks) {
+    //This is the return value, which is the class definition created from the tokens.
     this->classes = new map<string, ClassDefinition*>();
-    this->currentClass = NULL;
-    this->currentMethod = NULL;
-    this->isMain = false;
-    this->inheritance = map<string, string>();
 
-    this->toks = intoks;
-    this->statementQueue = queue<Token>();
+    this->currentClass = NULL; //The class currently being defined with tokens
+    this->currentMethod = NULL; //The method currently being defined with tokens
+    this->isMain = false; //Is the current method main?
+    this->inheritance = map<string, string>(); //The inheritance for classes
 
-    Token t;
-    Token temp;
+    this->toks = intoks; //The input tokens to use
+    this->statementQueue = queue<Token>(); //Holds tokens to pass to ExpressionTreeBuilder
+
+    Token t; //Current token from toks
+    Token temp; //Temporary token holder
     OperationNode* op;
-    string lowercaseWord;
+    string lowercaseWord; //For case insensitive keywords
     string className;
-    this->controlStack = stack<OperationNode*>();
-    upcomingElse = false;
+    this->controlStack = stack<OperationNode*>(); //Control word stack
+    upcomingElse = false; //Check if an ELSE is follow an IF
 
     //Only show one invalid property message
     bool invalidProperty = false;
@@ -224,7 +276,18 @@ map< string, ClassDefinition* >* Parser::parseTokens(queue<Token> &intoks) {
 
 
 /****************************************************************************************
+ * Parser::startMain
  *
+ * Description:
+ *     Start the main method.
+ *     This is a special case because main is not defined like the other classes.
+ *
+ * Inputs:
+ *     Token &t : The token that starts main. This is needed for error messages in case
+ *         of syntax errors.
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Parser::startMain(Token &t) {
     string className  = "~";
@@ -243,7 +306,19 @@ void Parser::startMain(Token &t) {
 
 
 /****************************************************************************************
+ * Parser::startClass
  *
+ * Description:
+ *     The method created a new class in the classDefinition map and points currentClass
+ *     to it so the class can be defined and returned when parsing finished.
+ *
+ * Inputs:
+ *     string &name : The name of the new class to start
+ *     Token &t : The token that starts the class. This is needed for error messages in
+ *         case of syntax errors.
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Parser::startClass(string &name, Token &t) {
     if (this->classes->find(name) != this->classes->end()) {
@@ -255,7 +330,22 @@ void Parser::startClass(string &name, Token &t) {
 
 
 /****************************************************************************************
+ * Parser::startMethod
  *
+ * Description:
+ *     Creates a new Method instance in the current class definition and sets
+ *     currentMethod to point to it.
+ *
+ * Inputs:
+ *     string &name : The name of the method to begin.
+ *     Visibility visibility : The visibility of the new method
+ *         (public, private, protected)
+ *     bool isStatic : If true, the method will be marked as static
+ *     Token &t : The token that starts the method. This is needed for error messages in
+ *         case of syntax errors.
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Parser::startMethod(string &name, Visibility visibility, bool isStatic, Token &t) {
     this->currentMethod = new Method(visibility, isStatic);
@@ -264,7 +354,22 @@ void Parser::startMethod(string &name, Visibility visibility, bool isStatic, Tok
 
 
 /****************************************************************************************
+ * Parser::startProperty
  *
+ * Description:
+ *     Gets a property or a method of a class. The property should be in the form:
+ *     [public|private|protected] [static|dynamic] [{name}];     //Member variable
+ *     [public|private|protected] [static|dynamic] [{name}]() {} //Method
+ *     Example:
+ *         private dynamic foo;
+ *         public static bar() { / *. . .* / }
+ *
+ * Inputs:
+ *     Token &t : The first keyword of a property, which should be 'public', 'private',
+ *         or protected.
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void inline Parser::startProperty(Token &t) {
     Visibility visibility;
@@ -323,7 +428,16 @@ void inline Parser::startProperty(Token &t) {
 
 
 /****************************************************************************************
+ * Parser::endClass
  *
+ * Description:
+ *     Ends the definition of a class so that another can be started.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Parser::endClass() {
     this->currentClass  = NULL;
@@ -332,7 +446,17 @@ void Parser::endClass() {
 
 
 /****************************************************************************************
+ * endMethod
  *
+ * Description:
+ *     Ends a method definition so that another class attribute can be started.
+ *     If the current method is main, it ends the class as well.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Parser::endMethod() {
     this->currentMethod = NULL;
@@ -344,7 +468,20 @@ void Parser::endMethod() {
 
 
 /****************************************************************************************
+ * Parser::addToken
  *
+ * Description:
+ *     Creates a new operation node from a token and adds it to the controlStack. If
+ *     pushOnFunction is true, the operation is added to the method definition.
+ *
+ *     This is used for control structure keywords such as IF, ELSE, FOR, WHILE, etc.
+ *
+ * Inputs:
+ *     Token &t : The token to create an operation node from.
+ *     bool pushOnFunction : If true, the operation will be added to currentMethod.
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 inline void Parser::addToken(Token &t, bool pushOnFunction) {
     OperationNode* op = new OperationNode();
@@ -363,7 +500,20 @@ inline void Parser::addToken(Token &t, bool pushOnFunction) {
 
 
 /****************************************************************************************
+ * Parser::getStatement
  *
+ * Description:
+ *     Gets an infix statement of tokens to pass to the ExpressionTreeBuilder to generate
+ *     a binary expression tree. FOR loops are a special case as the last statement ends
+ *     with a ")" instead of a ";".
+ *
+ * Inputs:
+ *     Token &t : The first token of the statement
+ *     bool isFor : If true, a ")" will be expected to terminate the statement.
+ *         Otherwise, a ";" will be expected.
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Parser::getStatement(Token &t, bool isFor) {
     statementQueue = queue<Token>();
@@ -398,7 +548,19 @@ void Parser::getStatement(Token &t, bool isFor) {
 
 
 /****************************************************************************************
+ * Parser::addStatement
  *
+ * Description:
+ *     Passes the statementQueue to the ExpressionTreeBuilder to get the binary
+ *     expression tree.
+ *
+ * Inputs:
+ *     bool toFunction : If true, the resulting tree will be put on the currentMethod.
+ *         Otherwise, the resulting tree will be put on the controlStack.
+ *     Token t : The current token, used for error messages.
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Parser::addStatement(bool toFunction, Token t) {
     OperationNode* op;
@@ -422,8 +584,19 @@ void Parser::addStatement(bool toFunction, Token t) {
 
 
 /****************************************************************************************
- * Add the conditional part of a construct.
- * while (xxxx), if (xxxx)
+ * Parser::addCondition
+ *
+ * Description:
+ *     Adds the conditional part of a construct.
+ *     while (xxxx), if (xxxx)
+ *
+ * Inputs:
+ *     bool toFunction : If true, the resulting tree will be put on the currentMethod.
+ *         Otherwise, the resulting tree will be put on the controlStack.
+ *     Token t : The current token, used for error messages.
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Parser::addCondition(bool toFunction, Token t) {
     unsigned int parenths = 1;
@@ -468,8 +641,17 @@ void Parser::addCondition(bool toFunction, Token t) {
 
 
 /****************************************************************************************
- * Add the parameters for a method definition
- * public static foo (xxxxxxxxx) {}
+ * Parser::addMethodParameters
+ *
+ * Description:
+ *     Add the parameters for a method definition
+ *     public static foo (xxxxxxxxx) {}
+ *
+ * Inputs:
+ *     Token &t : The current token, used for error messages.
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Parser::addMethodParameters(Token &t) {
     //Remove first parenth
@@ -526,7 +708,18 @@ void Parser::addMethodParameters(Token &t) {
 
 
 /****************************************************************************************
+ * Parser::markScoped
  *
+ * Description:
+ *     Marks whether a construct is scoped or not based on if the next token is a "{".
+ *     while(xxxx) ; is not scoped.
+ *     while(xxxx) { ... } is scoped
+ *
+ * Inputs:
+ *     OperationNode* op : The operation to mark
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Parser::markScoped(OperationNode* op) {
     //Check if there is a curly brace next
@@ -539,7 +732,20 @@ void Parser::markScoped(OperationNode* op) {
 
 
 /****************************************************************************************
+ * Parser::endScope
  *
+ * Description:
+ *     Ends appropriate constructs when needed.
+ *     For example, WHILE (xxxx) { ... } on the last "}" the construct should be finished
+ *     and jumps and conditions dealt with and put on the currentMethod.
+ *
+ * Inputs:
+ *     bool setFirst : If the operation is scoped (has "{" and "}") this should be true.
+ *         This allows the first scoped construct to be closed. Otherwise only non-
+ *         scoped constructs will be closed.
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Parser::endScope(bool setFirst) {
     char num[30];
@@ -592,27 +798,34 @@ void Parser::endScope(bool setFirst) {
 
 
 /****************************************************************************************
+ * Parser::endWhile
  *
+ * Description:
+ *     For the while loop:
+ *     WHILE (A) {
+ *         B;
+ *     }
  *
- * For the while loop:
- * WHILE (A) {
- *     B;
- * }
+ *     Currently on the controlStack would be the values
+ *     jmp-1
+ *     A
+ *     jmp-
+ *     while-
  *
- * Currently on the controlStack would be the values
- * jmp-1
- * A
- * jmp-
- * while-
+ *     Becomes:
+ *      ______________________________
+ *     |   0   | 1 | 2 |   3  |  4    |
+ *     |=======|===|===|======|=======|
+ *     | jmp   |   |   | if   | jmp   |
+ *     |    \  | B | A |   \  |    \  |
+ *     |     2 |   |   |    5 |     1 |
+ *      ------------------------------
  *
- * Becomes:
- *  ______________________________
- * |   0   | 1 | 2 |   3  |  4    |
- * |=======|===|===|======|=======|
- * | jmp   |   |   | if   | jmp   |
- * |    \  | B | A |   \  |    \  |
- * |     2 |   |   |    5 |     1 |
- *  ------------------------------
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 inline void Parser::endWhile() {
     OperationNode* whl;
@@ -661,25 +874,32 @@ inline void Parser::endWhile() {
 
 
 /****************************************************************************************
+ * Parser::endDoWhile
  *
+ * Description:
+ *     For the do-while loop:
+ *     DO {
+ *         B;
+ *     } WHILE (A);
  *
- * For the do-while loop:
- * DO {
- *     B;
- * } WHILE (A);
+ *     Currently on the controlStack would be the values
+ *     jump-0
+ *     do
  *
- * Currently on the controlStack would be the value
- * jump-0
- * do
+ *     Becomes:
+ *      ______________________
+ *     | 0 | 1 |   2  |  3    |
+ *     |===|===|======|=======|
+ *     |   |   | if   | jmp   |
+ *     | B | A |   \  |    \  |
+ *     |   |   |    4 |     0 |
+ *      ----------------------
  *
- * Becomes:
- *  ______________________
- * | 0 | 1 |   2  |  3    |
- * |===|===|======|=======|
- * |   |   | if   | jmp   |
- * | B | A |   \  |    \  |
- * |   |   |    4 |     0 |
- *  ----------------------
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Parser::endDoWhile() {
     Token t;
@@ -736,7 +956,19 @@ void Parser::endDoWhile() {
 
 
 /****************************************************************************************
+ * Parser::beginFor
  *
+ * Description:
+ *     Begins the FOR statement by preparing the initial part (A), the condition (B) and
+ *     the iteration (C) as well as the initial jump.
+ *     FOR (A; B; C) { ... }
+ *
+ * Inputs:
+ *     Token &t : The current token, used for errors.
+ *     string &lowercaseWord : The lower case "for".
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Parser::beginFor(Token &t, string &lowercaseWord) {
     OperationNode* op;
@@ -803,7 +1035,16 @@ void Parser::beginFor(Token &t, string &lowercaseWord) {
 
 
 /****************************************************************************************
+ * Parser::endFor
  *
+ * Description:
+ *     Ends the FOR loop.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Parser::endFor() {
     OperationNode* fr;
@@ -864,7 +1105,17 @@ void Parser::endFor() {
 
 
 /****************************************************************************************
+ * Parser::createJump
  *
+ * Description:
+ *     //
+ *
+ * Inputs:
+ *     unsigned long pos :
+ *     bool includePos :
+ *
+ * Outputs:
+ *     OperationNode* :
  ****************************************************************************************/
 OperationNode* Parser::createJump(unsigned long pos, bool includePos) {
     char num[30];
@@ -886,7 +1137,16 @@ OperationNode* Parser::createJump(unsigned long pos, bool includePos) {
 
 
 /****************************************************************************************
+ * Parser::initKeywords
  *
+ * Description:
+ *     Initializes the keyword map.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Parser::initKeywords() {
     //Constructs
@@ -915,7 +1175,17 @@ void Parser::initKeywords() {
 
 
 /****************************************************************************************
+ * Parser::isKeyWord
  *
+ * Description:
+ *     Returns the value of the input word in the map. If the value is not 0, it is a
+ *     keyword.
+ *
+ * Inputs:
+ *     string word : The word to check.
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 short Parser::isKeyWord(string word) {
     return Parser::keywords[word];
@@ -923,7 +1193,16 @@ short Parser::isKeyWord(string word) {
 
 
 /****************************************************************************************
+ * Parser::getErrors
  *
+ * Description:
+ *     Returns the error message generated from parsing tokens.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     queue<PostfixError> : The error messages from the Parser::parseTokens call.
  ****************************************************************************************/
 queue<PostfixError> Parser::getErrors() {
     return this->errors;
@@ -931,7 +1210,16 @@ queue<PostfixError> Parser::getErrors() {
 
 
 /****************************************************************************************
+ * Parser::clearErrors
  *
+ * Description:
+ *     Removed the error messages so another batch of tokens can be parsed.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Parser::clearErrors() {
     while(!this->errors.empty()) {
