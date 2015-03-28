@@ -1,3 +1,24 @@
+/*/////////////////////////////////////// !! ////////////////////////////////////////////
+ *
+ * FILE:
+ *     Executor.cpp
+ *
+ * DESCRIPTION:
+ *
+ *     This file contains all of the methods needed to execute the binary expression
+ *     tress created by the Parser and BinaryExpressionTreeBuilder classes.
+ *
+ *     This file starts execution (after being constructed) with the Executor::run
+ *     method.
+ *
+ * AUTHOR:
+ *     Jason Mace
+ *
+ *
+ * Copyright 2015 by Jason Mace
+ *
+ */////////////////////////////////////// !! ////////////////////////////////////////////
+
 #include "Executor.h"
 #include <iostream>
 
@@ -9,11 +30,20 @@ using namespace std;
  * Executor::Executor()
  *
  * Description:
- *     Executor Constructor
+ *     Executor Constructor.
+ *     Initializes the member variables for the Executor class.
+ *     Most member variables are initialized with each call to Executor::run.
+ *     See that method for more information.
  *
- * Inputs: None
+ * Notes:
+ *     Many member variables are only initialized here to prevent warning messages
+ *     when the code is compiled.
  *
- * Outputs: None
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 Executor::Executor() {
     //Execution and clean up
@@ -55,7 +85,21 @@ map<string, Variable*> Executor::constants = map<string, Variable*>();
 
 
 /****************************************************************************************
+ * Executor::~Executor
  *
+ * Description:
+ *     Executor Destructor.
+ *     1. Removes classes if specified.
+ *     2. Frees any memory left in the remaining variable map (the rest should have popped
+ *        off with Scope, see Executor::run.
+ *     3. Frees constant variables.
+ *     4. Frees any values that are still in the register stack.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 Executor::~Executor() {
     //Remove classes if set
@@ -82,7 +126,17 @@ Executor::~Executor() {
 
 
 /****************************************************************************************
+ * Executor::initializeOperationMap
  *
+ * Description:
+ *     Creates a map that will translate string containing operations into a pointer to
+ *     the method that will execute that operation.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::initializeOperationMap() {
     operationMap["print"]  = &Executor::print;
@@ -133,7 +187,17 @@ void Executor::initializeOperationMap() {
 
 
 /****************************************************************************************
+ * Executor::initializeConstants
  *
+ * Description:
+ *     Creates a map that takes a string containing a constant keyword and gives a
+ *     variable back with the value of that constant value.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::initializeConstants() {
     this->constants["false"]          = new Number(CONST, 0);
@@ -144,7 +208,25 @@ void Executor::initializeConstants() {
 
 
 /****************************************************************************************
+ * Executor::run
  *
+ * Description:
+ *     The driver for the executor Executor class. This method:
+ *     1. Initialized the running environment for execution.
+ *     2. Begins executing at the main method of the ~ class.
+ *         This is a special class and method created in the Parser class.
+ *     3. While there are still instructions to be executed, the method will execute
+ *         instructions one at a time until:
+ *         I.  There is an error
+ *         II. A function is called
+ *     The Scope and instruction pointer can be set in other methods.
+ *
+ * Inputs:
+ *     map<string, ClassDefinition* >* classes : The classes that will be executed by the
+ *         Executor class.
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::run(map<string, ClassDefinition* >* classes) {
     //Set up the instruction pointer to the first instruction
@@ -246,7 +328,17 @@ void Executor::run(map<string, ClassDefinition* >* classes) {
 
 
 /****************************************************************************************
+ * Executor::clearVariables
  *
+ * Description:
+ *     Frees the memory used by variables in a map. This method is called when returning
+ *     scope after a user method call has ended.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::clearVariables() {
     //Nothing to do -- this case should never happen but is here as a precaution
@@ -269,7 +361,18 @@ void Executor::clearVariables() {
 
 
 /****************************************************************************************
+ * Executor::loadValue
  *
+ * Description:
+ *     Takes an operator node and puts the associated value onto the registerVariables
+ *     stack. The value is based on the operation.type attribute.
+ *
+ * Inputs:
+ *     OperationNode * op : The operation node containing a constant value, variable
+ *         name, string, or number.
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::loadValue(OperationNode * op) {
     Variable* var;
@@ -307,7 +410,27 @@ void Executor::loadValue(OperationNode * op) {
 
 
 /****************************************************************************************
+ * Executor::executeInstruction
  *
+ * Description:
+ *     Recursively executes the instruction in an expression tree by performing a postfix
+ *     depth-first traversal. Special cases are needed when the operation is terminating,
+ *     meaning that one or more branches should only be executed if another branch met a
+ *     specified condition (for example, &&, || and ? operations).
+ *
+ *     The recover string is used for getting back to end continuing execution after a
+ *     method call forces the recursion to abort before completing.
+ *
+ *     The recovery makes the code considerably more obfuscated but was needed because
+ *     the trees are not flattened before execution.
+ *
+ * Inputs:
+ *     OperationNode* op : The operation node traverse from
+ *     string recover : The directions to the starting point if recovering from a method
+ *         call.
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::executeInstruction(OperationNode* op, string recover) throw (RuntimeError, FunctionCall) {
     this->executeLeft = true;
@@ -405,7 +528,19 @@ void Executor::executeInstruction(OperationNode* op, string recover) throw (Runt
 
 
 /****************************************************************************************
+ * Executor::executeOperator
  *
+ * Description:
+ *     Uses the member OperationMap to translate the input operation into a method
+ *     pointer that is then called to execute the operation.
+ *
+ *     Operation that are not found in the map are skipped.
+ *
+ * Inputs:
+ *     OperationNode* op : The operation to execute
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 inline void Executor::executeOperator(OperationNode* op) {
     this->currentNode = op;
@@ -421,6 +556,29 @@ inline void Executor::executeOperator(OperationNode* op) {
 
 
 /****************************************************************************************
+ * Executor::recoverPosition
+ *
+ * Description:
+ *     Searches the expression tree to find the node that was being executed when a
+ *     method was called.
+ *
+ *     The method being searched for is in the currentNode member variable.
+ *
+ *     The directions are in this form:
+ *         0 = Root node
+ *         L = Left child
+ *         R = Right child
+ *
+ *     Examples "0LLR" : Go to left child, left child, right child and begin execution
+ *              "0" : Begin at the root
+ *
+ * Inputs:
+ *     OperationNode* op : The node to traverse down from to search for the currentNode.
+ *     char direction : Begin with "0" for the root node and append letters for the
+ *         direction the node was found at.
+ *
+ * Outputs:
+ *     string : The directions to the node being operated on.
  *
  ****************************************************************************************/
 string Executor::recoverPosition(OperationNode* op, char direction) {
@@ -449,7 +607,16 @@ string Executor::recoverPosition(OperationNode* op, char direction) {
 
 
 /****************************************************************************************
+ * Executor::clearRegisters
  *
+ * Description:
+ *     Frees the memory being used by variables in the registerVariables map.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::clearRegisters() {
     Variable* v;
@@ -464,7 +631,16 @@ void Executor::clearRegisters() {
 
 
 /****************************************************************************************
+ * Executor::displayError
  *
+ * Description:
+ *     Displays an error message.
+ *
+ * Inputs:
+ *     RuntimeError &e : The error message to display
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::displayError(RuntimeError &e) {
     string header;
@@ -480,7 +656,17 @@ void Executor::displayError(RuntimeError &e) {
 
 
 /****************************************************************************************
- * Should the class definitions be freed when the destructor runs?
+ * Executor::preserveClasses
+ *
+ * Description:
+ *     Sets whether or not the destructor should delete the class definitions used in
+ *     the execution of the script.
+ *
+ * Inputs:
+ *     bool preserve : If the classes should kept (in other words, should NOT be deleted).
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::preserveClasses(bool preserve) {
     this->deleteClasses = !preserve;
@@ -488,7 +674,29 @@ void Executor::preserveClasses(bool preserve) {
 
 
 /****************************************************************************************
+ * Executor::initMethodCall
  *
+ * Description:
+ *     Prepares a method call for execution by:
+ *     1. Checking that the method can legally be called.
+ *     2. Saving the current scope.
+ *     3. Creating a new scope.
+ *     4. Adding a "this" member variable to the new scope, if needed.
+ *     5. Adding parameters to the new scope.
+ *     6. Throwing a FunctionCall struct to break recursion.
+ *
+ * Inputs:
+ *     Method* method : The method to call.
+ *     Variable* object : The object to call the method from (if dynamic). Also used to
+ *         moderate scope.
+ *     ClassDefinition* classDef : The class definition to call the method from (if
+ *         static). Also used to moderate scope.
+ *     bool isStatic : Is the method call static or dynamic? If true, static.
+ *     bool isConstructor : Is the method a constructor? If true, yes.
+ *     string &methodName : The name of the method in case of an error.
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 inline void Executor::initMethodCall(
         Method* method, Variable* object, ClassDefinition* classDef,
@@ -553,7 +761,16 @@ inline void Executor::initMethodCall(
 
 
 /****************************************************************************************
+ * Executor::print()
  *
+ * Description:
+ *     Prints out the top value of the registerVarialbes stack.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::print() {
     Variable* v = this->registerVariables->top();
@@ -569,7 +786,19 @@ void Executor::print() {
 
 
 /****************************************************************************************
+ * Executor::ret()
  *
+ * Description:
+ *     Ends a method call by:
+ *     1. If there is a return value, set the returnVariable pointer to point to it.
+ *     2. Set the instruction pointer to one past the last instruction to force the scope
+ *         to change in the Executor::run method.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::ret() {
     Variable* v = NULL;
@@ -586,7 +815,17 @@ void Executor::ret() {
 
 
 /****************************************************************************************
- * Creates a copy of an input variable
+ * Executor::makeVariableCopy
+ *
+ * Description:
+ *     Creates a copy of an input variable with the input visibility.
+ *
+ * Inputs:
+ *     Variable* v : The variable to copy.
+ *     Visibility visibility : The visibility of the new variable copy.
+ *
+ * Outputs:
+ *     Variable* : The copy of the variable that was created.
  ****************************************************************************************/
 Variable* Executor::makeVariableCopy(Variable* v, Visibility visibility) {
     Variable* result;
@@ -611,7 +850,23 @@ Variable* Executor::makeVariableCopy(Variable* v, Visibility visibility) {
 
 
 /****************************************************************************************
+ * Executor::assignment
  *
+ * Description:
+ *     Takes the first two variables ("a" and "b") from the registerVariables stack and
+ *     creates a new variables with the value of b and the visibility of a and saves it
+ *     in place of a in the member map of variables.
+ *
+ *     So for the following code:
+ *         var = 1;
+ *     The value of var (a) is replaced with a new variable created with the value 1 (b)
+ *     with the visibility of the old var (a) to ensure scope remains the same.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::assignment() {
     Variable* a;
@@ -647,7 +902,20 @@ void Executor::assignment() {
 
 
 /****************************************************************************************
+ * Executor::variableEquals
  *
+ * Description:
+ *     Checks that the top two values on the registerVariables stack are the exact same
+ *     variable.
+ *
+ *     Example: a ==== a //true
+ *              a ==== b //false
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::variableEquals() {
     Variable* a;
@@ -686,7 +954,21 @@ void Executor::variableEquals() {
 
 
 /****************************************************************************************
+ * Executor::typeEquals
  *
+ * Description:
+ *     Checks that the top two variables of the registerVariables stack have the same
+ *     value and the same type.
+ *
+ *     Example: 1 === 1   //true
+ *              1 === '1' //false, types are different
+ *              1 === 2   //false, values are different
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::typeEquals() {
     Variable* a;
@@ -725,7 +1007,21 @@ void Executor::typeEquals() {
 
 
 /****************************************************************************************
+ * Executor::equals
  *
+ * Description:
+ *     Checks that the top two variables of the registerVariables stack have the same
+ *     value.
+ *
+ *     Example: 1 == 1   //true
+ *              1 == '1' //true
+ *              1 == 2   //false, values are different
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::equals() {
     Variable* a;
@@ -764,7 +1060,20 @@ void Executor::equals() {
 
 
 /****************************************************************************************
+ * Executor::notVariableEquals
  *
+ * Description:
+ *     Checks that the top two values on the registerVariables stack are not the exact
+ *     same variable.
+ *
+ *     Example: a !=== a //false
+ *              a !=== b //true
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::notVariableEquals() {
     Variable* a;
@@ -803,7 +1112,21 @@ void Executor::notVariableEquals() {
 
 
 /****************************************************************************************
+ * Executor::notTypeEquals
  *
+ * Description:
+ *     Checks that the top two variables of the registerVariables stack do not have the
+ *     same value or the same type.
+ *
+ *     Example: 1 !== 1   //false
+ *              1 !== '1' //true, types are different
+ *              1 !== 2   //true, values are different
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::notTypeEquals() {
     Variable* a;
@@ -842,7 +1165,21 @@ void Executor::notTypeEquals() {
 
 
 /****************************************************************************************
+ * Executor::notEquals
  *
+ * Description:
+ *     Checks that the top two variables of the registerVariables stack do not have the
+ *     same value.
+ *
+ *     Example: 1 != 1   //false
+ *              1 != '1' //false
+ *              1 != 2   //true, values are different
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::notEquals() {
     Variable* a;
@@ -881,7 +1218,22 @@ void Executor::notEquals() {
 
 
 /****************************************************************************************
+ * Executor::lessThan
  *
+ * Description:
+ *     Checks that the top variable (a) of the registerVariables stack has a lower value
+ *     than the second variable (b) of the registerVariables stack.
+ *
+ *     Example: 1 < 1    //false
+ *              1 < 2    //true
+ *              NULL < 1 //true
+ *              1 < NULL //false
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::lessThan() {
     Variable* a;
@@ -920,7 +1272,22 @@ void Executor::lessThan() {
 
 
 /****************************************************************************************
+ * Executor::lessThanEqual
  *
+ * Description:
+ *      Checks that the top variable (a) of the registerVariables stack has a lower or
+ *      equal value to the second variable (b) of the registerVariables stack.
+ *
+ *     Example: 1 <= 1    //true
+ *              1 <= 2    //true
+ *              NULL <= 1 //true
+ *              1 <= NULL //false
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::lessThanEqual() {
     Variable* a;
@@ -959,7 +1326,22 @@ void Executor::lessThanEqual() {
 
 
 /****************************************************************************************
+ * Executor::greaterThan
  *
+ * Description:
+ *      Checks that the top variable (a) of the registerVariables stack has a higher
+ *      value than the second variable (b) of the registerVariables stack.
+ *
+ *     Example: 2 > 1    //true
+ *              2 > 2    //false
+ *              NULL > 1 //false
+ *              1 > NULL //true
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::greaterThan() {
     Variable* a;
@@ -998,7 +1380,22 @@ void Executor::greaterThan() {
 
 
 /****************************************************************************************
+ * Executor::greaterThanEqual
  *
+ * Description:
+ *     Checks that the top variable (a) of the registerVariables stack has a higher
+ *     equal value to the second variable (b) of the registerVariables stack.
+ *
+ *     Example: 2 >= 1    //true
+ *              2 >= 2    //true
+ *              NULL >= 1 //false
+ *              1 >= NULL //true
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::greaterThanEqual() {
     Variable* a;
@@ -1037,7 +1434,23 @@ void Executor::greaterThanEqual() {
 
 
 /****************************************************************************************
+ * Executor::andd
  *
+ * Description:
+ *     Checks that the top variable (a) of the registerVariables stack is true. If it is
+ *     true, the other side of the branch is permitted to be executed. If not, the branch
+ *     short circuits.
+ *
+ *     Example: 0 && 0    //false, short circuit
+ *              0 && 1    //false, short circuit
+ *              1 && 0    //true, execute other side
+ *              1 && 1    //true, execute other side
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::andd() {
     Variable* a;
@@ -1059,7 +1472,23 @@ void Executor::andd() {
 
 
 /****************************************************************************************
+ * Executor::orr
  *
+ * Description:
+ *     Checks that the top variable (a) of the registerVariables stack is true. If it is
+ *     false, the other side of the branch is permitted to be executed. If not, the branch
+ *     short circuits.
+ *
+ *     Example: 0 || 0    //true, execute other side
+ *              0 || 1    //true, execute other side
+ *              1 || 0    //false, short circuit (but return true)
+ *              1 || 1    //false, short circuit (but return true)
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::orr() {
     Variable* a;
@@ -1081,7 +1510,18 @@ void Executor::orr() {
 
 
 /****************************************************************************************
+ * Executor::add
  *
+ * Description:
+ *     Adds the second variable (b) on the registerVariables stack to the first variable
+ *     (a) on the registerVaraibles stack and puts the result on the registerVaraibles
+ *     stack.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::add() {
     Variable* a;
@@ -1113,7 +1553,18 @@ void Executor::add() {
 
 
 /****************************************************************************************
+ * Executor::sub
  *
+ * Description:
+ *     Subtracts the second variable (b) on the registerVariables stack from the first
+ *     variable (a) on the registerVaraibles stack and puts the result on the
+ *     registerVaraibles stack.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::sub() {
     Variable* a;
@@ -1145,7 +1596,18 @@ void Executor::sub() {
 
 
 /****************************************************************************************
+ * Executor::mul
  *
+ * Description:
+ *     Multiplies the second variable (b) on the registerVariables stack with the first
+ *     variable (a) on the registerVaraibles stack and puts the result on the
+ *     registerVaraibles stack.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::mul() {
     Variable* a;
@@ -1177,7 +1639,18 @@ void Executor::mul() {
 
 
 /****************************************************************************************
+ * Executor::div
  *
+ * Description:
+ *     Divides the first variable (a) on the registerVariables stack by the second
+ *     variable (b) on the registerVaraibles stack and puts the result on the
+ *     registerVaraibles stack.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::div() {
     Variable* a;
@@ -1209,7 +1682,18 @@ void Executor::div() {
 
 
 /****************************************************************************************
+ * Executor::mod
  *
+ * Description:
+ *     Modulo's the first variable (a) on the registerVariables stack by the second
+ *     variable (b) on the registerVaraibles stack and puts the result on the
+ *     registerVaraibles stack.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::mod() {
     Variable* a;
@@ -1241,7 +1725,18 @@ void Executor::mod() {
 
 
 /****************************************************************************************
+ * Executor::pow
  *
+ * Description:
+ *     Raises the first variable (a) on the registerVariables stack to the power of the
+ *     second variable (b) on the registerVaraibles stack and puts the result on the
+ *     registerVaraibles stack.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::pow() {
     Variable* a;
@@ -1273,7 +1768,18 @@ void Executor::pow() {
 
 
 /****************************************************************************************
+ * Executor::cat
  *
+ * Description:
+ *     Concatenates the second variable (b) on the registerVariables stack to the end of
+ *     the first variable (a) on the registerVaraibles stack and puts the result on the
+ *     registerVaraibles stack.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::cat() {
     Variable* a;
@@ -1314,7 +1820,17 @@ void Executor::cat() {
 
 
 /****************************************************************************************
+ * Executor::inc
  *
+ * Description:
+ *     Increments the first variable (a) on the registerVariables stack and puts the old
+ *     value onto the registerVariables stack.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::inc() {
     Variable* a;
@@ -1342,7 +1858,17 @@ void Executor::inc() {
 
 
 /****************************************************************************************
+ * Executor::dec
  *
+ * Description:
+ *     Decrements the first variable (a) on the registerVariables stack and puts the old
+ *     value onto the registerVariables stack.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::dec() {
     Variable* a;
@@ -1370,7 +1896,17 @@ void Executor::dec() {
 
 
 /****************************************************************************************
+ * Executor::negate
  *
+ * Description:
+ *     Performs a boolean not on the first variable (a) of the registerVariables stack
+ *     and puts the result on the registerVariables stack.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::negate() {
     Variable* a;
@@ -1394,7 +1930,17 @@ void Executor::negate() {
 
 
 /****************************************************************************************
+ * Executor::parameter
  *
+ * Description:
+ *     Takes the top variable (a) of the registerVariables stack and puts in on the
+ *     parameter stack.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::parameter() {
     Variable* a;
@@ -1408,7 +1954,18 @@ void Executor::parameter() {
 
 
 /****************************************************************************************
+ * Executor::loadMethodParameters
  *
+ * Description:
+ *     Loads the parameters and default parameter values into the current scope by taking
+ *     and provided values on the parameterStack and merging them with default values
+ *     provided with the currentMethod.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::loadMethodParameters() {
     OperationNode* node = this->currentNode->left;
@@ -1454,7 +2011,20 @@ void Executor::loadMethodParameters() {
 
 
 /****************************************************************************************
+ * Executor::call
  *
+ * Description:
+ *     Handles method calls and constructors. Cases are:
+ *     1. A static method call (foo::bar())
+ *     2. A dynamic method call (foo->bar())
+ *     3. An array constructor (array())
+ *     4. A object constructor (foo())
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::call() {
     OperationNode* nextOp;
@@ -1568,7 +2138,18 @@ void Executor::call() {
 
 
 /****************************************************************************************
+ * Executor::staticVar
  *
+ * Description:
+ *     Gets a static variable by getting the class from the right child node and the
+ *     property from the left child node. The result is put on the registerVariables
+ *     stack.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::staticVar() {
     Variable* result;
@@ -1593,7 +2174,18 @@ void Executor::staticVar() {
 
 
 /****************************************************************************************
+ * Executor::dynamicVar
  *
+ * Description:
+ *     Gets a dynamic variable by getting the object from the right child node and the
+ *     property from the left child node. The result is put on the registerVariables
+ *     stack.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::dynamicVar() {
     Variable** aP;
@@ -1643,7 +2235,18 @@ void Executor::dynamicVar() {
 
 
 /****************************************************************************************
+ * Executor::iff
  *
+ * Description:
+ *     Conditionally jumps to a line. If the value of lastValue (which was the final
+ *     value of the previous expression tree that was executed) is false, jump to the
+ *     top value of the registerVariables stack.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::iff() {
     Variable* a;
@@ -1665,7 +2268,16 @@ void Executor::iff() {
 
 
 /****************************************************************************************
+ * Executor::jmp
  *
+ * Description:
+ *     An unconditional jump. Jumps to the top value of the registerVariables stack.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::jmp() {
     Variable* a;
@@ -1685,7 +2297,16 @@ void Executor::jmp() {
 
 
 /****************************************************************************************
+ * Executor::ternary
  *
+ * Description:
+ *     Decided which part of a ternary expression to execute.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::ternary() {
     Variable* a;
@@ -1705,7 +2326,17 @@ void Executor::ternary() {
 
 
 /****************************************************************************************
+ * Executor::arrayIndex
  *
+ * Description:
+ *     Gets the value of an array index and puts it unto the registerVariables stack.
+ *     The top value (a) is the array and the second value (b) is the index.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
  ****************************************************************************************/
 void Executor::arrayIndex() {
     Variable* a;
