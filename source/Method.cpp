@@ -1,3 +1,20 @@
+/*/////////////////////////////////////// !! ////////////////////////////////////////////
+ *
+ * FILE:
+ *     Method.cpp
+ *
+ * DESCRIPTION:
+ *     Holds the method instructions and parameters are defined by the user.
+ *
+ * AUTHOR:
+ *     Jason Mace
+ *
+ *
+ * Copyright 2015 by Jason Mace
+ *
+ */////////////////////////////////////// !! ////////////////////////////////////////////
+
+
 #include "Executor.h"
 #include "Method.h"
 #include "Variables/Array.h"

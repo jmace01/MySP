@@ -1,3 +1,20 @@
+/*/////////////////////////////////////// !! ////////////////////////////////////////////
+ *
+ * FILE:
+ *     Tokenizer.cpp
+ *
+ * DESCRIPTION:
+ *     Breaks a string or a stream into a queue of tokens that can be analyzed.
+ *
+ * AUTHOR:
+ *     Jason Mace
+ *
+ *
+ * Copyright 2015 by Jason Mace
+ *
+ */////////////////////////////////////// !! ////////////////////////////////////////////
+
+
 #include <queue>
 #include "ExpressionTreeBuilder.h"
 #include "Tokenizer.h"

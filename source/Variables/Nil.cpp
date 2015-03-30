@@ -1,3 +1,20 @@
+/*/////////////////////////////////////// !! ////////////////////////////////////////////
+ *
+ * FILE:
+ *     Nil.cpp
+ *
+ * DESCRIPTION:
+ *     Null variable type (Nil is used because Null is a reserve word).
+ *
+ * AUTHOR:
+ *     Jason Mace
+ *
+ *
+ * Copyright 2015 by Jason Mace
+ *
+ */////////////////////////////////////// !! ////////////////////////////////////////////
+
+
 #include "Nil.h"
 
 

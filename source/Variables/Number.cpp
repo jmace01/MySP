@@ -1,3 +1,20 @@
+/*/////////////////////////////////////// !! ////////////////////////////////////////////
+ *
+ * FILE:
+ *     Number.cpp
+ *
+ * DESCRIPTION:
+ *     The number variable type.
+ *
+ * AUTHOR:
+ *     Jason Mace
+ *
+ *
+ * Copyright 2015 by Jason Mace
+ *
+ */////////////////////////////////////// !! ////////////////////////////////////////////
+
+
 #include "Number.h"
 #include <math.h>
 

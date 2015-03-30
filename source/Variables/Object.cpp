@@ -25,6 +25,7 @@ Object::Object(Visibility visibility, ClassDefinition* cd)
     map<string, Variable>::iterator it;
     Variable** vPointer = NULL;
     Variable* var;
+    Visibility vis;
 
     ClassDefinition* c = cd;
 
@@ -33,9 +34,11 @@ Object::Object(Visibility visibility, ClassDefinition* cd)
         for (it = vars.begin(); it != vars.end(); it++) {
             //Don't include private properties
             if (c != cd && it->second.getVisibility() == PRIVATE) {
-                continue;
+                vis = INHERIT_PRIVATE;
+            } else {
+                vis = it->second.getVisibility();
             }
-            var = new Variable(it->second.getVisibility());
+            var = new Variable(vis);
             vPointer = new Variable*;
             *vPointer = var;
             var->setPointer(vPointer);
@@ -98,6 +101,22 @@ string Object::getTypeString() {
     return "object";
 }
 
+/*/////////////////////////////////////// !! ////////////////////////////////////////////
+ *
+ * FILE:
+ *     Object.cpp
+ *
+ * DESCRIPTION:
+ *     Object variable type
+ *
+ * AUTHOR:
+ *     Jason Mace
+ *
+ *
+ * Copyright 2015 by Jason Mace
+ *
+ */////////////////////////////////////// !! ////////////////////////////////////////////
+
 
 /****************************************************************************************
  *
@@ -129,6 +148,8 @@ bool Object::getBooleanValue() {
 Variable* Object::getProperty(string index) {
     if (this->properties.find(index) == this->properties.end()) {
         throw RuntimeError("Dynamic property '"+index+"' of class does not exist", ERROR);
+    } else if ((*this->properties[index])->getVisibility() == INHERIT_PRIVATE) {
+        throw RuntimeError("Dynamic property '"+index+"' of class is privately owned by parent", ERROR);
     }
 
     return *(this->properties[index]);

@@ -1,3 +1,20 @@
+/*/////////////////////////////////////// !! ////////////////////////////////////////////
+ *
+ * FILE:
+ *     ClassDefinition.cpp
+ *
+ * DESCRIPTION:
+ *     Holds the class methods and properties as defined by the user.
+ *
+ * AUTHOR:
+ *     Jason Mace
+ *
+ *
+ * Copyright 2015 by Jason Mace
+ *
+ */////////////////////////////////////// !! ////////////////////////////////////////////
+
+
 #include "ClassDefinition.h"
 #include <iostream>
 

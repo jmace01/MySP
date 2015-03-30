@@ -1,3 +1,20 @@
+/*/////////////////////////////////////// !! ////////////////////////////////////////////
+ *
+ * FILE:
+ *     MySP.cpp
+ *
+ * DESCRIPTION:
+ *     The main execution file
+ *
+ * AUTHOR:
+ *     Jason Mace
+ *
+ *
+ * Copyright 2015 by Jason Mace
+ *
+ */////////////////////////////////////// !! ////////////////////////////////////////////
+
+
 #include <iostream>
 #include <map>
 #include "Executor.h"
@@ -13,10 +30,16 @@ using namespace std;
 
 int main() {
 
+    //Do we want to display the time it took to process?
+    bool timed = true;
+    //Do we want to execute unit tests?
+    bool test  = true;
+
+    //Start time
     clock_t timer = clock();
 
-    //string s = "main { a = 0 ? '1' : '2'; print a; }";
-    //istringstream* s = new istringstream("main { print 5; }");
+    //string s = "";
+    //istringstream* s = new istringstream("");
     istream* s = new ifstream("./final.mysp");
 
     Parser sp = Parser();
@@ -40,9 +63,14 @@ int main() {
         cout << e.msg << " (line " << e.t.line << ")" << endl;
     }
 
-    cout << endl << endl;
-    cout << ((float)(clock() - timer) / CLOCKS_PER_SEC) << endl;
+    //End time
+    if (timed) {
+        cout << endl << endl;
+        cout << ((float)(clock() - timer) / CLOCKS_PER_SEC) << endl;
+    }
 
     //Unit test
-	Test();
+	if(test) {
+	    Test();
+	}
 }

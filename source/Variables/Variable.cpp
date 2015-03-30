@@ -1,3 +1,20 @@
+/*/////////////////////////////////////// !! ////////////////////////////////////////////
+ *
+ * FILE:
+ *     Variable.cpp
+ *
+ * DESCRIPTION:
+ *     The parent class for Variables as well as the undefined variable type.
+ *
+ * AUTHOR:
+ *     Jason Mace
+ *
+ *
+ * Copyright 2015 by Jason Mace
+ *
+ */////////////////////////////////////// !! ////////////////////////////////////////////
+
+
 #include <string>
 #include "Variable.h"
 #include <iostream>

@@ -1,3 +1,20 @@
+/*/////////////////////////////////////// !! ////////////////////////////////////////////
+ *
+ * FILE:
+ *     OperationNode.cpp
+ *
+ * DESCRIPTION:
+ *     The fundamental unit of an Binary Expression Tree.
+ *
+ * AUTHOR:
+ *     Jason Mace
+ *
+ *
+ * Copyright 2015 by Jason Mace
+ *
+ */////////////////////////////////////// !! ////////////////////////////////////////////
+
+
 #include "OperationNode.h"
 #include <iostream>
 #include <string>
@@ -7,7 +24,7 @@ using namespace std;
 
 
 /****************************************************************************************
- *
+ * Constructor
  ****************************************************************************************/
 OperationNode::OperationNode() {
     this->left = NULL;
@@ -16,7 +33,7 @@ OperationNode::OperationNode() {
 
 
 /****************************************************************************************
- *
+ * Destructor -- Deletes children
  ****************************************************************************************/
 OperationNode::~OperationNode() {
     if (left != NULL) {
@@ -29,7 +46,7 @@ OperationNode::~OperationNode() {
 
 
 /****************************************************************************************
- *
+ * Used for debugging purposes
  ****************************************************************************************/
 string OperationNode::getTreePlot(int level) {
     string result = "";
@@ -55,7 +72,7 @@ string OperationNode::getTreePlot(int level) {
 
 
 /****************************************************************************************
- *
+ * Used for unit testing
  ****************************************************************************************/
 string OperationNode::getPostfix() {
     string result;
