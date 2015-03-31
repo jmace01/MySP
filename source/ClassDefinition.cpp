@@ -43,7 +43,7 @@ ClassDefinition::~ClassDefinition() {
     }
     //Remove static variables
     map<string, Variable**>::iterator sit;
-    for (sit = staticProperties.begin(); sit != staticProperties.end(); it++) {
+    for (sit = staticProperties.begin(); sit != staticProperties.end(); sit++) {
         delete (*sit->second);
         delete sit->second;
     }
@@ -77,7 +77,7 @@ void ClassDefinition::addStaticProperty(string &name, Variable &v, Token &t) {
     if (this->properties.find(name) != this->properties.end()) {
             throw PostfixError("Redefinition of property '"+name+"'", t);
     } else if (this->staticProperties.find(name) != this->staticProperties.end()) {
-        throw PostfixError("Redefinition of property '"+name+"'", t);
+            throw PostfixError("Redefinition of property '"+name+"'", t);
     }
 
     //Create the method

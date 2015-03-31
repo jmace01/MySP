@@ -1,0 +1,11 @@
+class a {
+    private dynamic a;
+    
+    public dynamic a() {
+        print "Hello world!";
+    }
+}
+
+main {
+    a = a();
+}

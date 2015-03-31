@@ -60,8 +60,6 @@ Executor::Executor() {
     this->parameterStack = stack<Variable*>();        //Parameters for method calls
     this->variables = NULL;                           //The variables to be stored
 
-    this->initializeConstants();
-
     //Special case variables (Used in special circumstance operations)
     this->returnVariable = NULL;    //The return value of a function
     this->currentNode = NULL;       //The current node being executed
@@ -103,23 +101,20 @@ map<string, Variable*> Executor::constants = map<string, Variable*>();
  ****************************************************************************************/
 Executor::~Executor() {
     //Remove classes if set
-    if (this->deleteClasses) {
+    if (this->deleteClasses && this->classes != NULL) {
         map<string, ClassDefinition* >::iterator it;
         for (it = this->classes->begin(); it != this->classes->end(); it++) {
             delete it->second;
         }
     }
-    //Remove variables
-    map<string, Variable**>::iterator it;
-    for (it = this->variables->begin(); it != this->variables->end(); it++) {
-        delete (*it->second);
-        delete it->second;
-    }
+
     //Remove constants
     map<string, Variable*>::iterator cit;
     for (cit = this->constants.begin(); cit != this->constants.end(); cit++) {
         delete cit->second;
     }
+    Executor::constants = map<string, Variable*>();
+
     //Remove register data
     this->clearRegisters();
 }
@@ -229,6 +224,11 @@ void Executor::initializeConstants() {
  *     None
  ****************************************************************************************/
 void Executor::run(map<string, ClassDefinition* >* classes) {
+    //If constants do not exist, initialize them
+    if (this->constants.empty()) {
+        this->initializeConstants();
+    }
+
     //Set up the instruction pointer to the first instruction
     this->instructionPointer = 0;
     //Save classes to member variable
@@ -388,8 +388,8 @@ void Executor::loadValue(OperationNode * op) {
     }
     //Variables or constants
     else if (op->operation.type == 'w') {
-        var = this->constants[op->operation.word];
-        if (var != NULL) {
+        if (Executor::constants.find(op->operation.word) != Executor::constants.end()) {
+            var = Executor::constants[op->operation.word];
             this->registerVariables->push(var);
             return;
         }

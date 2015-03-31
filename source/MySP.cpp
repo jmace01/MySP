@@ -28,19 +28,32 @@
 using namespace std;
 
 
-int main() {
+int main(int argc, char ** argv) {
+
+    istream* s;
+    if (argc < 2) {
+        cout << "You must specify a filename" << endl;
+        return 1;
+    } else {
+        s = new ifstream(argv[1]);
+        if (!s->good()) {
+            cout << "The file cannot be run!" << endl;
+            return 1;
+        }
+    }
+
+    //For testing purposes
+    //string s = "";
+    //istringstream* s = new istringstream("");
+    //istream* s = new ifstream("./final.mysp");
 
     //Do we want to display the time it took to process?
-    bool timed = true;
+    bool timed = (argc > 2);
     //Do we want to execute unit tests?
-    bool test  = true;
+    bool test  = (argc > 3);
 
     //Start time
     clock_t timer = clock();
-
-    //string s = "";
-    //istringstream* s = new istringstream("");
-    istream* s = new ifstream("./final.mysp");
 
     Parser sp = Parser();
     Executor ex = Executor();
@@ -65,7 +78,7 @@ int main() {
 
     //End time
     if (timed) {
-        cout << endl << endl;
+        cout << endl << "RAN IN : ";
         cout << ((float)(clock() - timer) / CLOCKS_PER_SEC) << endl;
     }
 
@@ -73,4 +86,9 @@ int main() {
 	if(test) {
 	    Test();
 	}
+
+	//Ensure all data was output to the console
+	cout.flush();
+
+	return 0;
 }

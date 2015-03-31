@@ -60,11 +60,11 @@ main {
     a[0]  = 5;              //5
     a[1]  = 1;              //1
     a[2]  = 6  + 7;         //13
-    a[3]  = 31 - 10;        //9
+    a[3]  = 31 - 10;        //21
     a[4]  = 3 * 5 * 2 + 4;  //34
     a[5]  = 12 / 4;         //3
     a[6]  = 2;              //2
-    a[7]  = (1 == 1) + 7;   //7
+    a[7]  = (1 == 1) + 7;   //8
     a[8]  = 1;              //1
 
     //Instantiate BubbleSort class object
@@ -107,4 +107,5 @@ main {
     print "\n\nLess than 13 : " . lessThan13;
     print "\nMore than 13 : " . greaterThan13;
     print "\nEqual to  13 : " . equalTo13;
+    print "\n";
 }
