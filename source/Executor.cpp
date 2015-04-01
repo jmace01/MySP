@@ -347,11 +347,16 @@ void Executor::clearVariables() {
     }
 
     //Delete map contents
-    map<string, Variable**>::iterator it;
-    for (it = this->variables->begin(); it != this->variables->end(); it++) {
-        if ((*it->second)->getVisibility() != CONST) {
-            delete (*it->second);
-            delete it->second;
+    if (!this->variables->empty()) {
+        map<string, Variable**>::iterator it;
+        for (it = this->variables->begin(); it != this->variables->end(); it++) {
+            if (it->first == "this") {
+                continue;
+            }
+            if ((*it->second)->getVisibility() != CONST) {
+                delete (*it->second);
+                delete it->second;
+            }
         }
     }
 
@@ -2064,9 +2069,6 @@ void Executor::call() {
             //Get the method name and variable
             methodName = this->currentNode->right->left->operation.word;
 
-            //Get variable pointer
-            Variable** vPointer;
-
             if (this->currentNode->right->right->operation.word == "->") {
                 OperationNode* oldCurrent = this->currentNode;
                 this->currentNode = this->currentNode->right->right;
@@ -2077,10 +2079,7 @@ void Executor::call() {
             }
             else {
                 //Get the variable pointer
-                vPointer = (*this->variables)[this->currentNode->right->right->operation.word];
-
-                //Does the variable exist?
-                if (vPointer == NULL) {
+                if (this->variables->find(this->currentNode->right->right->operation.word) == this->variables->end()) {
                     throw RuntimeError("Cannot call method on undefined", FATAL);
                 }
 
@@ -2210,11 +2209,11 @@ void Executor::dynamicVar() {
     }
     //Variable
     else {
-        aP = (*this->variables)[this->currentNode->right->operation.word];
-        if (aP == NULL) {
+        if (this->variables->find(this->currentNode->right->operation.word) == this->variables->end()) {
             throw RuntimeError("Cannot get property of undefined", ERROR);
         }
 
+        aP = (*this->variables)[this->currentNode->right->operation.word];
         a = *aP;
     }
 

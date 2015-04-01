@@ -30,11 +30,15 @@ using namespace std;
 
 int main(int argc, char ** argv) {
 
+    //Get the file to run
     istream* s;
+    //Was a file fiven?
     if (argc < 2) {
         cout << "You must specify a filename" << endl;
         return 1;
-    } else {
+    }
+    //Can the file be run?
+    else {
         s = new ifstream(argv[1]);
         if (!s->good()) {
             cout << "The file cannot be run!" << endl;
@@ -43,9 +47,11 @@ int main(int argc, char ** argv) {
     }
 
     //For testing purposes
+    //----------------------------------------------
     //string s = "";
     //istringstream* s = new istringstream("");
     //istream* s = new ifstream("./final.mysp");
+    //----------------------------------------------
 
     //Do we want to display the time it took to process?
     bool timed = (argc > 2);
