@@ -13,7 +13,7 @@ class Sorter {
     public dynamic getArray() {
         return this->vArray;
     }
-    
+
 }
 
 
