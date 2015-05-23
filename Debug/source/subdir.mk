@@ -7,6 +7,7 @@ CPP_SRCS += \
 ../source/ClassDefinition.cpp \
 ../source/Executor.cpp \
 ../source/ExpressionTreeBuilder.cpp \
+../source/ExpressionTreeFlattener.cpp \
 ../source/Method.cpp \
 ../source/MySP.cpp \
 ../source/OperationNode.cpp \
@@ -17,6 +18,7 @@ OBJS += \
 ./source/ClassDefinition.o \
 ./source/Executor.o \
 ./source/ExpressionTreeBuilder.o \
+./source/ExpressionTreeFlattener.o \
 ./source/Method.o \
 ./source/MySP.o \
 ./source/OperationNode.o \
@@ -27,6 +29,7 @@ CPP_DEPS += \
 ./source/ClassDefinition.d \
 ./source/Executor.d \
 ./source/ExpressionTreeBuilder.d \
+./source/ExpressionTreeFlattener.d \
 ./source/Method.d \
 ./source/MySP.d \
 ./source/OperationNode.d \

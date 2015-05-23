@@ -24,11 +24,37 @@
 #include <sstream>
 #include <fstream>
 
+#include "ExpressionTreeBuilder.h"
+#include "ExpressionTreeFlattener.h"
+#include "OperationNode.h"
+
 
 using namespace std;
 
 
 int main(int argc, char ** argv) {
+
+    //////////////////////////////////
+    //////////////////////////////////
+    //////////////////////////////////
+    queue<Token> tks = queue<Token>();
+    string sin = "a = b + c";
+    Tokenizer t;
+    ExpressionTreeBuilder eb;
+    ExpressionTreeFlattener ef;
+    OperationNode* root;
+    try {
+        t.getTokens(sin, tks);
+        root = eb.getExpressionTree(tks);
+        ef.flattenTree(root);
+    } catch (PostfixError &e) {
+        cout << e.msg << endl;
+    }
+    //////////////////////////////////
+    //////////////////////////////////
+    //////////////////////////////////
+
+
 
     //Get the file to run
     istream* s;
