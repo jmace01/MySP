@@ -6,7 +6,7 @@ source/MySP.d: ../source/MySP.cpp ../source/Executor.h \
   ../source/Variables/Nil.h ../source/Variables/Number.h \
   ../source/Variables/Object.h ../source/Variables/String.h \
   ../source/Parser.h ../source/./Test/Test.h ../source/Tokenizer.h \
-  ../source/ExpressionTreeFlattener.h
+  ../source/ExpressionTreeFlattener.h ../source/Instruction.h
 
 ../source/Executor.h:
 
@@ -41,3 +41,5 @@ source/MySP.d: ../source/MySP.cpp ../source/Executor.h \
 ../source/Tokenizer.h:
 
 ../source/ExpressionTreeFlattener.h:
+
+../source/Instruction.h:

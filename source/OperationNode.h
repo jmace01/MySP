@@ -14,6 +14,7 @@ class OperationNode {
         OperationNode();
         ~OperationNode();
 
+        bool isLeafNode();
         std::string getTreePlot(int level);
         std::string getPostfix();
 };

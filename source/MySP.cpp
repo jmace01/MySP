@@ -38,7 +38,7 @@ int main(int argc, char ** argv) {
     //////////////////////////////////
     //////////////////////////////////
     queue<Token> tks = queue<Token>();
-    string sin = "a = b + c";
+    string sin = "a = b + c * 10";
     Tokenizer t;
     ExpressionTreeBuilder eb;
     ExpressionTreeFlattener ef;
