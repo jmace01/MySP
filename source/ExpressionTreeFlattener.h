@@ -19,6 +19,7 @@
 
 #include <string>
 #include <map>
+#include <vector>
 #include "OperationNode.h"
 #include "Instruction.h"
 #include <iostream>
@@ -35,8 +36,9 @@ class ExpressionTreeFlattener {
     public:
         ExpressionTreeFlattener();
         virtual ~ExpressionTreeFlattener();
-        void flattenTree(OperationNode* root);
+        void flattenTree(OperationNode* root, std::vector<Instruction> &instructionVector, unsigned long lastCount);
         static InstructionCode getMachineCode(std::string s);
+        void addOperand(OperationNode* node, Instruction &inst, bool sideA);
 
     private:
         static void initialize();

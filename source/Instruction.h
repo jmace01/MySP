@@ -18,6 +18,7 @@
 #define SOURCE_INSTRUCTION_H_
 
 #include <string>
+#include "Executor.h"
 
 enum InstructionCode {
       UNKNOWN               // << For unknown operators >>
@@ -61,18 +62,65 @@ enum InstructionCode {
     , FUNCTION_PARAMETER    // P
     , FUNCTION_CALL         // C
     , JUMP                  // jmp
-    , IFF                   // iff
+    , JUMP_TRUE             //
+    , JUMP_NOT_TRUE         //
     , ARRAY_INDEX           // [
-    , TERNARY               // ?
+    , LOAD                  // << Used in ternary statements for end values that have no operations >>
 };
 
 
 
 
 struct Instruction {
+    Instruction() :
+        line(0),
+        opFunction(NULL),
+        instruction(UNKNOWN),
+        operandAs("@"),
+        operandBs("@"),
+        operandAd(0),
+        operandBd(0),
+        aType('w'),
+        bType('w') {}
+
+    int line;
+    void (Executor::*opFunction)(void);
+
     InstructionCode instruction;
-    std::string operandA;
-    std::string operandB;
+
+    //Strings
+    std::string operandAs;
+    std::string operandBs;
+    //Numbers
+    double operandAd;
+    double operandBd;
+    //Types
+    char aType;
+    char bType;
+
+    /**
+     * Functions
+     */
+
+    bool isTerminating() {
+        return (
+                instruction == AND ||
+                instruction == OR
+        );
+    }
+
+    void convertToJump() {
+        switch (instruction) {
+            case AND:
+                instruction = JUMP_NOT_TRUE;
+            break;
+            case OR:
+                instruction = JUMP_TRUE;
+            break;
+            default:
+                return;
+        }
+    }
 };
 
 #endif
