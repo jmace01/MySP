@@ -24,11 +24,14 @@
 #include <sstream>
 #include <fstream>
 
+
+// For testing //
 #include "ExpressionTreeBuilder.h"
 #include "ExpressionTreeFlattener.h"
 #include "OperationNode.h"
 #include <vector>
 #include <iomanip>
+// For testing //
 
 
 using namespace std;
@@ -43,7 +46,7 @@ int main(int argc, char ** argv) {
 
     //string sin = "a() && b()";
     //string sin = "1 && 1";
-    string sin = "a = b ? 1 : 2";
+    string sin = "a = b ? 1 : 1";
 
     Tokenizer t;
     ExpressionTreeBuilder eb;
@@ -71,10 +74,10 @@ int main(int argc, char ** argv) {
                  << left
                  << it->instruction << "| ";
             if (it->aType == 'n') cout << setw(12) << left << it->operandAd;
-            else cout << setw(12) << left << (it->operandAs == "@" ? "<REG>" : it->operandAs);
+            else cout << setw(12) << left << (it->aType == 'r' ? "<REG>" : it->operandAs);
             cout << "| ";
             if (it->bType == 'n') cout << setw(12) << left << it->operandBd;
-            else cout << setw(12) << left << (it->operandBs == "@" ? "<REG>" : it->operandBs);
+            else cout << setw(12) << left << (it->bType == 'r' ? "<REG>" : it->operandBs);
             cout << "| " << it->aType << "    |"
                  << " " << it->bType << "    |" << endl;
         }

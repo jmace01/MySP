@@ -98,7 +98,7 @@ InstructionCode ExpressionTreeFlattener::getMachineCode(string s) {
 
 
 /****************************************************************************************
- *
+ * NOT BEING USED - hopefully will be at some point to make variables faster to reference
  ****************************************************************************************/
 int ExpressionTreeFlattener::hashVariable(string s) {
     if (variableNames.find(s) == variableNames.end()) {
@@ -155,36 +155,41 @@ void ExpressionTreeFlattener::flattenTree(OperationNode* root, vector<Instructio
 
     //Deal with ternary branch
     if (root->operation.word == ":") {
-        //Is the first side a leaf node? If so, create a LOAD instruction for it
+        //Is the first side a leaf node? If so, assign the value to a register
         if (firstSide->isLeafNode()) {
-            inst.instruction = LOAD;
-            this->addOperand(firstSide, inst, true);
+            inst.instruction = ASSIGNMENT;
+            this->addOperand(firstSide, inst, false);
             instructionVector.push_back(inst);
-        }
-        //Not a leaf node, traverse it
-        else {
+        } else {
+            //Not a leaf node, traverse it
             flattenTree(firstSide, instructionVector, currentInst);
         }
+
         //Add jump statement to the end of the statement to go over alternate branch
+        inst = Instruction();
         inst.instruction = JUMP;
         inst.aType    = 'n'; //location of jump added later
         currentInst = instructionVector.size();
         instructionVector.push_back(inst);
+        inst = Instruction();
+
         //Fix the conditional jump from parent node (ie, the "?" node)
         instructionVector[lastCount].operandBd = instructionVector.size();
         instructionVector[lastCount].bType = 'n';
-        //Is the second side a leaf node? If so, create a LOAD instruction for it
+
+        //Is the second side a leaf node? If so, assign the value to a register
         if (secondSide->isLeafNode()) {
-            inst.instruction = LOAD;
-            this->addOperand(secondSide, inst, true);
+            inst.instruction = ASSIGNMENT;
+            this->addOperand(secondSide, inst, false);
             instructionVector.push_back(inst);
-        }
-        //Not a leaf node, traverse it
-        else {
+        } else {
+            //Not a leaf node, traverse it
             flattenTree(secondSide, instructionVector, currentInst);
         }
+
         //Fix jump that was previously added
         instructionVector[currentInst].operandAd = instructionVector.size();
+
         return;
     }
 
@@ -280,8 +285,8 @@ void ExpressionTreeFlattener::flattenTree(OperationNode* root, vector<Instructio
 //        /   \
 //       1     2
 //
-// 0 | JUMP_TRUE    b, 3
-// 1 | LOAD         2, -
-// 2 | JUMP         4, -
-// 3 | LOAD         1, -
-// 4 | ASSIGNMENT   a, <REG>
+// 0 | JUMP_TRUE    b    , 3
+// 1 | ASSIGMENT    <REG>, 2
+// 2 | JUMP         4    , -
+// 3 | ASSIGNMENT   <REG>, 1
+// 4 | ASSIGNMENT   a    , <REG>

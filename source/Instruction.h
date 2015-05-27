@@ -65,7 +65,6 @@ enum InstructionCode {
     , JUMP_TRUE             //
     , JUMP_NOT_TRUE         //
     , ARRAY_INDEX           // [
-    , LOAD                  // << Used in ternary statements for end values that have no operations >>
 };
 
 
@@ -76,12 +75,10 @@ struct Instruction {
         line(0),
         opFunction(NULL),
         instruction(UNKNOWN),
-        operandAs("@"),
-        operandBs("@"),
         operandAd(0),
         operandBd(0),
-        aType('w'),
-        bType('w') {}
+        aType('r'),
+        bType('r') {}
 
     int line;
     void (Executor::*opFunction)(void);
