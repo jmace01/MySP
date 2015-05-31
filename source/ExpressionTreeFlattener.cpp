@@ -86,6 +86,7 @@ void ExpressionTreeFlattener::initialize() {
     ExpressionTreeFlattener::machineCodeMap["if"]       = JUMP_NOT_TRUE;
     ExpressionTreeFlattener::machineCodeMap["["]        = ARRAY_INDEX;
     ExpressionTreeFlattener::machineCodeMap["?"]        = JUMP_TRUE;
+    ExpressionTreeFlattener::machineCodeMap["&"]        = REFERENCE;
 }
 
 
@@ -113,7 +114,11 @@ int ExpressionTreeFlattener::hashVariable(string s) {
 /****************************************************************************************
  *
  ****************************************************************************************/
-void ExpressionTreeFlattener::addOperand(OperationNode* node, Instruction &inst, bool sideA) {
+void ExpressionTreeFlattener::addOperand(OperationNode* node, Instruction &inst, bool sideA, bool hash) {
+    //Can set
+    //hash = false;
+    //to stop hashing
+
     if (node->operation.type == 'n') {
         double dval = stod(node->operation.word);
         if (sideA) {
@@ -121,6 +126,15 @@ void ExpressionTreeFlattener::addOperand(OperationNode* node, Instruction &inst,
             inst.operandAd = dval;
         } else {
             inst.bType = 'n';
+            inst.operandBd = dval;
+        }
+    } else if (node->operation.type == 'w' && hash && node->operation.word != "true" && node->operation.word != "false") {
+        double dval = this->hashVariable(node->operation.word);
+        if (sideA) {
+            inst.aType = 'h'; //hash
+            inst.operandAd = dval;
+        } else {
+            inst.bType = 'h'; //hash
             inst.operandBd = dval;
         }
     } else {
@@ -158,7 +172,7 @@ void ExpressionTreeFlattener::flattenTree(OperationNode* root, vector<Instructio
         //Is the first side a leaf node? If so, assign the value to a register
         if (firstSide->isLeafNode()) {
             inst.instruction = ASSIGNMENT;
-            this->addOperand(firstSide, inst, false);
+            this->addOperand(firstSide, inst, false, true);
             instructionVector.push_back(inst);
         } else {
             //Not a leaf node, traverse it
@@ -180,7 +194,7 @@ void ExpressionTreeFlattener::flattenTree(OperationNode* root, vector<Instructio
         //Is the second side a leaf node? If so, assign the value to a register
         if (secondSide->isLeafNode()) {
             inst.instruction = ASSIGNMENT;
-            this->addOperand(secondSide, inst, false);
+            this->addOperand(secondSide, inst, false, true);
             instructionVector.push_back(inst);
         } else {
             //Not a leaf node, traverse it
@@ -199,7 +213,9 @@ void ExpressionTreeFlattener::flattenTree(OperationNode* root, vector<Instructio
         //operation instead of going down it
         if (firstSide->isLeafNode()) {
             //Assign the operand
-            this->addOperand(firstSide, inst, (root->operation.isUnary || root->operation.word == "?"));
+            bool canHash = (root->operation.word != "->" && root->operation.word != "::" && root->operation.word != "C");
+            bool sideA   = (root->operation.isUnary || root->operation.word == "?");
+            this->addOperand(firstSide, inst, sideA, canHash);
         } else {
             //Not a leaf node below, recurse down it
             flattenTree(firstSide, instructionVector, currentInst);
@@ -217,11 +233,17 @@ void ExpressionTreeFlattener::flattenTree(OperationNode* root, vector<Instructio
         //If the side is a leaf node, put its value as an operand on the current
         //operation instead of going down it
         if (secondSide->isLeafNode()) {
-            this->addOperand(secondSide, inst, true);
+            bool canHash = (root->operation.word != "C");
+            this->addOperand(secondSide, inst, true, canHash);
         } else {
             //Not a leaf node below, recurse down it
             flattenTree(secondSide, instructionVector, currentInst);
         }
+    }
+
+    if (inst.instruction == UNKNOWN && root->isLeafNode()) {
+        inst.instruction = ASSIGNMENT;
+        this->addOperand(root, inst, true, true);
     }
 
     //If the instruction is not terminating, put it here
@@ -236,42 +258,103 @@ void ExpressionTreeFlattener::flattenTree(OperationNode* root, vector<Instructio
     }
 }
 
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void ExpressionTreeFlattener::flattenMethod(Method &method, vector<Instruction> &instructionVector) {
+    //Map tree root nodes to vector indexes for jump conversions
+    map<unsigned long, unsigned long> treeMap = map<unsigned long, unsigned long>();
+    //Pointer to root node of tree
+    OperationNode* op;
+    //Insturction for creating jumps
+    Instruction inst;
+    //For holding positions
+    unsigned long x;
+
+    //Keep track of jumps that need to be corrected
+    stack<unsigned long> jumps = stack<unsigned long>();
+
+    //Begin flattening trees
+    for (unsigned long i = 0; i < method.getInstructionSize(); i++) {
+        //Save root node position in new vector
+        treeMap[i] = instructionVector.size() - 1;
+        //Get root node
+        op = method.getInstruction(i);
+
+        //Is this a jump? If so, add a new jump instruction
+        if (op->operation.word == "jmp" || op->operation.word == "if") {
+            x = stol(op->right->operation.word);
+            inst.instruction = (op->operation.word == "jmp") ? JUMP : JUMP_NOT_TRUE;
+            inst.aType       = 'n';
+            inst.operandAd   = x;
+            instructionVector.push_back(inst);
+            jumps.push(instructionVector.size() - 1);
+        } else {
+            //Not a jump, send to flatten tree method
+            this->flattenTree(op, instructionVector, 0);
+        }
+    }
+
+    //Correct jumps now that we have all the instructions
+    unsigned long val;
+    while (!jumps.empty()) {
+        //Get the original value of the jump location
+        x = instructionVector[jumps.top()].operandAd;
+        //Translate the old location to the new location
+        if (treeMap.find(x) != treeMap.end()) {
+            //The old location is in the vector
+            val = treeMap[x] + (instructionVector[jumps.top()].instruction != JUMP);
+        } else {
+            //The old location is at the end of the vector
+            val = instructionVector.size();
+        }
+        //Update the instruction
+        instructionVector[jumps.top()].operandAd = val;
+        jumps.pop();
+    }
+}
+
+
 // Examples given as follows:
 //
 // Title
 // Code
 // Binary Expression Tree
+// Hashed/mapped variable codes
 // MySP Instruction Code
 //
-// ---------------------------------------------
+// -----------------------------------------------
 //
 // Non-Short Circuiting (s.c. not needed)
 //
-// 1 || 1              1 && 1
+// 1 || 1                1 && 1
 //
-//   ||                  &&
-//  /  \                /  \
-// 1    1              1    1
+//   ||                    &&
+//  /  \                  /  \
+// 1    1                1    1
 //
-// OR 1, 1             AND 1, 1
+// OR 1, 1               AND 1, 1
 //
-// ---------------------------------------------
+// -----------------------------------------------
 //
 // Short circuiting
 //
-// a() || b()          a() && b()
+// a() || b()            a() && b()
 //
-//     ||                 &&
-//    /  \               /  \
-//  C      C           C      C
-//   \      \           \      \
-//    a      b           a      b
+//     ||                   &&
+//    /  \                 /  \
+//  C      C             C      C
+//   \      \             \      \
+//    a      b             a      b
 //
-// CALL       a, -     CALL           a     , -
-// JUMP_TRUE  @, 3     JUMP_NOT_TRUE  <REG> , 3
-// CALL       b, -     CALL           b     , -
+// a = #0, b = #1
 //
-// ---------------------------------------------
+// CALL       #0   , -   CALL           #0    , -
+// JUMP_TRUE  <REG>, 3   JUMP_NOT_TRUE  <REG> , 3
+// CALL       #1   , -   CALL           #1    , -
+//
+// -----------------------------------------------
 //
 // Ternary Statements
 //
@@ -285,8 +368,10 @@ void ExpressionTreeFlattener::flattenTree(OperationNode* root, vector<Instructio
 //        /   \
 //       1     2
 //
-// 0 | JUMP_TRUE    b    , 3
+// b = #0, a = #1
+//
+// 0 | JUMP_TRUE    #0   , 3
 // 1 | ASSIGMENT    <REG>, 2
 // 2 | JUMP         4    , -
 // 3 | ASSIGNMENT   <REG>, 1
-// 4 | ASSIGNMENT   a    , <REG>
+// 4 | ASSIGNMENT   #1   , <REG>

@@ -65,6 +65,7 @@ enum InstructionCode {
     , JUMP_TRUE             //
     , JUMP_NOT_TRUE         //
     , ARRAY_INDEX           // [
+    , REFERENCE             // &
 };
 
 
@@ -102,7 +103,8 @@ struct Instruction {
     bool isTerminating() {
         return (
                 instruction == AND ||
-                instruction == OR
+                instruction == OR  ||
+                instruction == PRINT
         );
     }
 

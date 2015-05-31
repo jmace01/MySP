@@ -20,6 +20,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include "method.h"
 #include "OperationNode.h"
 #include "Instruction.h"
 #include <iostream>
@@ -38,7 +39,8 @@ class ExpressionTreeFlattener {
         virtual ~ExpressionTreeFlattener();
         void flattenTree(OperationNode* root, std::vector<Instruction> &instructionVector, unsigned long lastCount);
         static InstructionCode getMachineCode(std::string s);
-        void addOperand(OperationNode* node, Instruction &inst, bool sideA);
+        void addOperand(OperationNode* node, Instruction &inst, bool sideA, bool hash);
+        void flattenMethod(Method &method, std::vector<Instruction> &instructionVector);
 
     private:
         static void initialize();

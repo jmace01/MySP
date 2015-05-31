@@ -184,7 +184,7 @@ OperationNode* ExpressionTreeBuilder::getExpressionTree(queue<Token> &toks) thro
                     operators.pop();
                 }
             }
-            if (t.word != "(" && operators.size() > 0 && (this->isPreUnary(operators.top().word) || t.word == "]")) {
+            if (t.word != "(" && operators.size() > 0 && t.word == "]") {
                 bool isNotBracket = (t.word != "]");
                 if (operands.size() > 1 || isNotBracket) {
                     this->addOperation(isNotBracket);
@@ -309,7 +309,7 @@ void ExpressionTreeBuilder::validateStatement(queue<Token> toks) throw (PostfixE
 		            throw PostfixError("Unexpected ':', expecting ')'", t);
 		        }
 		        ternaryParenth.pop();
-		    } else if (t.word == "&" && (toks.empty() || toks.front().type != 'w')) {
+		    } else if (t.word == "&" && (toks.empty() || (toks.front().type != 'w' && toks.front().word != "("))) {
 		        throw PostfixError("Illegal use of '&' without variable", t);
 		    } else if (isControlWord(t.word)) {
 		        if (!isFirst || (!toks.empty() && t.word != "print" && t.word != "echo" && t.word != "return")) {
