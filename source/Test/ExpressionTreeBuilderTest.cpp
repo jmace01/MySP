@@ -202,6 +202,14 @@ void Test::testExTreeBldr() {
                     "a->b[c]",
                     "c b a -> ["
             )
+            , TestIO (
+                    "&a->b",
+                    "b a -> &"
+            )
+            , TestIO (
+                    "!a + b",
+                    "b a ! +"
+            )
             , TestIO("","")
     };
 
