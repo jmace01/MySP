@@ -173,3 +173,11 @@ int Method::getMaxParameters() {
 int Method::getMinParameters() {
     return (this->parameters.size() - this->defaultParameters.size());
 }
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+vector<Instruction>& Method::getInstructionCodeVector() {
+    return this->instructionCodes;
+}

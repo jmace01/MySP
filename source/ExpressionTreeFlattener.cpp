@@ -78,6 +78,8 @@ void ExpressionTreeFlattener::initialize() {
     ExpressionTreeFlattener::machineCodeMap["++"]       = INCREMENT;
     ExpressionTreeFlattener::machineCodeMap["--"]       = DECREMENT;
     ExpressionTreeFlattener::machineCodeMap["!"]        = NEGATE;
+    ExpressionTreeFlattener::machineCodeMap["&"]        = REFERENCE;
+    ExpressionTreeFlattener::machineCodeMap["~"]        = DELETION;
     ExpressionTreeFlattener::machineCodeMap["->"]       = DYNAMIC_PROPERTY;
     ExpressionTreeFlattener::machineCodeMap["::"]       = STATIC_PROPERTY;
     ExpressionTreeFlattener::machineCodeMap["P"]        = FUNCTION_PARAMETER;
@@ -86,7 +88,6 @@ void ExpressionTreeFlattener::initialize() {
     ExpressionTreeFlattener::machineCodeMap["if"]       = JUMP_NOT_TRUE;
     ExpressionTreeFlattener::machineCodeMap["["]        = ARRAY_INDEX;
     ExpressionTreeFlattener::machineCodeMap["?"]        = JUMP_TRUE;
-    ExpressionTreeFlattener::machineCodeMap["&"]        = REFERENCE;
 }
 
 
@@ -150,6 +151,70 @@ void ExpressionTreeFlattener::addOperand(OperationNode* node, Instruction &inst,
 
 
 /****************************************************************************************
+ * ExpressionTreeFlattener::flattenTree
+ *
+ * Description:
+ *     This method takes a binary expression tree and changes it to pseudo-assembly code
+ *     that, in this program, is simply called an "Instruction" (see the Instruction.h
+ *     file).
+ *
+ * Inputs:
+ *     OperationNode* root : The root of the binary expression tree to flatten
+ *     vector<Instruction> &instructionVector : The vector to put instructions into
+ *     unsigned long lastCount : Used for recursive purposes. Set to 0 initially.
+ *             This value shows the placement of the last node in the instructions
+ *             and is needed for some jumps to map properly.
+ *
+ * Outputs:
+ *     None (see second parameter in inputs)
+ *
+ * Examples:
+ *
+ *     Non-Short Circuiting (jumps not needed)
+ *     a || b                a && b
+ *
+ *       ||                    &&
+ *      /  \                  /  \
+ *     1    1                1    1
+ *
+ *     a = #0, b = #1
+ *     OR #1, #0               AND #1, #0
+ *
+ * --------------------------------------------------------------------------------------
+ *
+ *     Short circuiting
+ *     a() || b()            a() && b()
+ *
+ *         ||                   &&
+ *        /  \                 /  \
+ *      C      C             C      C
+ *       \      \             \      \
+ *        a      b             a      b
+ *
+ *     a = #0, b = #1
+ *     CALL       #0   , -   CALL           #0    , -
+ *     JUMP_TRUE  <REG>, 3   JUMP_NOT_TRUE  <REG> , 3
+ *     CALL       #1   , -   CALL           #1    , -
+ *
+ * --------------------------------------------------------------------------------------
+ *
+ *     Ternary Statements
+ *     a = b ? 1 : 2;
+ *
+ *        =
+ *      /   \
+ *     a     ?
+ *         /   \
+ *       b      :
+ *            /   \
+ *           1     2
+ *
+ *     b = #0, a = #1
+ *     0 | JUMP_TRUE    #0   , 3
+ *     1 | ASSIGMENT    <REG>, 2
+ *     2 | JUMP         4    , -
+ *     3 | ASSIGNMENT   <REG>, 1
+ *     4 | ASSIGNMENT   #1   , <REG>
  *
  ****************************************************************************************/
 void ExpressionTreeFlattener::flattenTree(OperationNode* root, vector<Instruction> &instructionVector, unsigned long lastCount) {
@@ -262,7 +327,10 @@ void ExpressionTreeFlattener::flattenTree(OperationNode* root, vector<Instructio
 /****************************************************************************************
  *
  ****************************************************************************************/
-void ExpressionTreeFlattener::flattenMethod(Method &method, vector<Instruction> &instructionVector) {
+void ExpressionTreeFlattener::flattenMethod(Method &method) {
+    //Get instruction vector
+    vector<Instruction> &instructionVector = method.getInstructionCodeVector();
+
     //Map tree root nodes to vector indexes for jump conversions
     map<unsigned long, unsigned long> treeMap = map<unsigned long, unsigned long>();
     //Pointer to root node of tree
@@ -316,62 +384,14 @@ void ExpressionTreeFlattener::flattenMethod(Method &method, vector<Instruction> 
 }
 
 
-// Examples given as follows:
-//
-// Title
-// Code
-// Binary Expression Tree
-// Hashed/mapped variable codes
-// MySP Instruction Code
-//
-// -----------------------------------------------
-//
-// Non-Short Circuiting (s.c. not needed)
-//
-// 1 || 1                1 && 1
-//
-//   ||                    &&
-//  /  \                  /  \
-// 1    1                1    1
-//
-// OR 1, 1               AND 1, 1
-//
-// -----------------------------------------------
-//
-// Short circuiting
-//
-// a() || b()            a() && b()
-//
-//     ||                   &&
-//    /  \                 /  \
-//  C      C             C      C
-//   \      \             \      \
-//    a      b             a      b
-//
-// a = #0, b = #1
-//
-// CALL       #0   , -   CALL           #0    , -
-// JUMP_TRUE  <REG>, 3   JUMP_NOT_TRUE  <REG> , 3
-// CALL       #1   , -   CALL           #1    , -
-//
-// -----------------------------------------------
-//
-// Ternary Statements
-//
-// a = b ? 1 : 2;
-//
-//    =
-//  /   \
-// a     ?
-//     /   \
-//   b      :
-//        /   \
-//       1     2
-//
-// b = #0, a = #1
-//
-// 0 | JUMP_TRUE    #0   , 3
-// 1 | ASSIGMENT    <REG>, 2
-// 2 | JUMP         4    , -
-// 3 | ASSIGNMENT   <REG>, 1
-// 4 | ASSIGNMENT   #1   , <REG>
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void ExpressionTreeFlattener::flattenClass(ClassDefinition &cls) {
+    map<string, Method*>::iterator it;
+    map<string, Method*> methods = cls.getMethods();
+
+    for (it = methods.begin(); it != methods.end(); it++) {
+        this->flattenMethod(*(it->second));
+    }
+}

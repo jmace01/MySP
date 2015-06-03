@@ -48,13 +48,12 @@ int main(int argc, char ** argv) {
     //string sin = "1 && 1";
     //string sin = "a = b ? 1 : 1";
     //string sin = "a::b->c->d + a::b";
-    //string sin = "main { if (true) { print 'YES'; } else { print 'NO!'; } }";
+    //string sin = "main { if (true) { if (false) { print 'YES'; } else { return; } } else { print 'NO!'; } }";
     string sin = "main {  a = &b->c; }";
 
     Tokenizer t;
     ExpressionTreeBuilder eb;
     ExpressionTreeFlattener ef;
-    vector<Instruction> instructions;
     Parser par = Parser();
     queue<PostfixError> postE;
 
@@ -65,7 +64,7 @@ int main(int argc, char ** argv) {
         //root = eb.getExpressionTree(tks);
         //ef.flattenTree(root, instructions, 0);
         string s = "main";
-        ef.flattenMethod(*(*clss)["~"]->getMethod(s), instructions);
+        ef.flattenClass(*(*clss)["~"]);
 
         //Get any parse errors
         postE = par.getErrors();
@@ -76,6 +75,7 @@ int main(int argc, char ** argv) {
 
         int i=0;
         vector<Instruction>::iterator it;
+        vector<Instruction> instructions = (*clss)["~"]->getMethod(s)->getInstructionCodeVector();
         cout << "+-----+------------+-------------+-------------+------+------+" << endl;
         cout << "|  #  | INST CODE  | OP A        | OP B        | TYPE | TYPE |" << endl;
         cout << "+-----+------------+-------------+-------------+------+------+" << endl;
@@ -113,7 +113,7 @@ int main(int argc, char ** argv) {
 
     //Get the file to run
     istream* s;
-    //Was a file fiven?
+    //Was a file given?
     if (argc < 2) {
         cout << "You must specify a filename" << endl;
         return 1;

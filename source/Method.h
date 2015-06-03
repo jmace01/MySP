@@ -6,6 +6,7 @@
 #include <vector>
 #include "OperationNode.h"
 #include "Variables/Variable.h"
+#include "Instruction.h"
 
 
 class Method {
@@ -15,6 +16,7 @@ class Method {
         std::vector<std::string>    parameters;
         std::vector<Variable*>      defaultParameters;
         std::vector<OperationNode*> instructions;
+        std::vector<Instruction>    instructionCodes;
 
     public:
         Method(Visibility visibility, bool isStatic);
@@ -31,6 +33,7 @@ class Method {
         Variable* getDefaultParameter(int index);
         int getMaxParameters();
         int getMinParameters();
+        std::vector<Instruction>& getInstructionCodeVector();
 };
 
 #endif

@@ -18,7 +18,8 @@
 #define SOURCE_INSTRUCTION_H_
 
 #include <string>
-#include "Executor.h"
+
+class Executor;
 
 enum InstructionCode {
       UNKNOWN               // << For unknown operators >>
@@ -57,6 +58,8 @@ enum InstructionCode {
     , INCREMENT             // ++
     , DECREMENT             // --
     , NEGATE                // !
+    , REFERENCE             // &
+    , DELETION              // ~
     , DYNAMIC_PROPERTY      // ->
     , STATIC_PROPERTY       // ::
     , FUNCTION_PARAMETER    // P
@@ -65,7 +68,6 @@ enum InstructionCode {
     , JUMP_TRUE             //
     , JUMP_NOT_TRUE         //
     , ARRAY_INDEX           // [
-    , REFERENCE             // &
 };
 
 
