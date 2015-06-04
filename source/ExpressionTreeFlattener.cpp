@@ -362,6 +362,9 @@ void ExpressionTreeFlattener::flattenMethod(Method &method) {
             //Not a jump, send to flatten tree method
             this->flattenTree(op, instructionVector, 0);
         }
+
+        //Remove the tree
+        delete op;
     }
 
     //Correct jumps now that we have all the instructions

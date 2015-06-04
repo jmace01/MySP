@@ -48,14 +48,16 @@ int main(int argc, char ** argv) {
     //string sin = "1 && 1";
     //string sin = "a = b ? 1 : 1";
     //string sin = "a::b->c->d + a::b";
-    //string sin = "main { if (true) { if (false) { print 'YES'; } else { return; } } else { print 'NO!'; } }";
-    string sin = "main {  a = &b->c; }";
+    string sin = "main { if (true) { if (false) { print 'YES'; } else { return; } } else { print 'NO!'; } }";
+    //string sin = "main {  a = &b->c; }";
 
     Tokenizer t;
     ExpressionTreeBuilder eb;
     ExpressionTreeFlattener ef;
     Parser par = Parser();
     queue<PostfixError> postE;
+
+    clock_t timered = clock();
 
     try {
         t.getTokens(sin, tks);
@@ -76,6 +78,7 @@ int main(int argc, char ** argv) {
         int i=0;
         vector<Instruction>::iterator it;
         vector<Instruction> instructions = (*clss)["~"]->getMethod(s)->getInstructionCodeVector();
+        cout << sin << endl;
         cout << "+-----+------------+-------------+-------------+------+------+" << endl;
         cout << "|  #  | INST CODE  | OP A        | OP B        | TYPE | TYPE |" << endl;
         cout << "+-----+------------+-------------+-------------+------+------+" << endl;
@@ -103,7 +106,11 @@ int main(int argc, char ** argv) {
     } catch (PostfixError &e) {
         cout << e.msg << endl;
     }
+    cout << endl << "RAN IN : ";
+    cout << ((float)(clock() - timered) / CLOCKS_PER_SEC) << endl;
     Test();
+    cout << endl << "RAN IN : ";
+    cout << ((float)(clock() - timered) / CLOCKS_PER_SEC) << endl;
     return 0;
     //////////////////////////////////
     //////////////////////////////////
