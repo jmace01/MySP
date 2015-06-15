@@ -20,31 +20,31 @@ void Test::testParser() {
         ),
         TestIO( //If/else statement scoped
                 "main { if (x == 1) { x++; y++; } else { z++; } print x + y + z; }",
-                "1 x == | 5 if | x ++ | y ++ | 6 jmp | z ++ | z y + x + print"
+                "1 x == | 5 if | x ++ | y ++ | 6 :jmp | z ++ | z y + x + print"
         ),
         TestIO( //If/else statement unscoped
                 "main { if (x == 1) x++; else y++; }",
-                "1 x == | 4 if | x ++ | 5 jmp | y ++"
+                "1 x == | 4 if | x ++ | 5 :jmp | y ++"
         ),
         TestIO( //If/elseif/else statement unscoped
                 "main { if (x == 1) true; else if (y == 2) false; else A; }",
-                "1 x == | 4 if | true | 9 jmp | 2 y == | 8 if | false | 9 jmp | A"
+                "1 x == | 4 if | true | 9 :jmp | 2 y == | 8 if | false | 9 :jmp | A"
         ),
         TestIO( //If/elseif/else statement scoped
                 "main { if (x == 1) { true; } else if (y == 2) { false; } else { A; } }",
-                "1 x == | 4 if | true | 9 jmp | 2 y == | 8 if | false | 9 jmp | A"
+                "1 x == | 4 if | true | 9 :jmp | 2 y == | 8 if | false | 9 :jmp | A"
         ),
         TestIO( //Nested if unscoped
                 "main { if (true) { if (false) true; else false; } }",
-                "true | 7 if | false | 6 if | true | 7 jmp | false"
+                "true | 7 if | false | 6 if | true | 7 :jmp | false"
         ),
         TestIO( //Nested if scoped
                 "main { if (true) { if (false) { true; } else { false; } } }",
-                "true | 7 if | false | 6 if | true | 7 jmp | false"
+                "true | 7 if | false | 6 if | true | 7 :jmp | false"
         ),
         TestIO( //Nested if/else inside if/else
                 "main { if (true) { if (false) true; else false; } else { return 1; } }",
-                "true | 8 if | false | 6 if | true | 7 jmp | false | 9 jmp | 1 return"
+                "true | 8 if | false | 6 if | true | 7 :jmp | false | 9 :jmp | 1 return"
         ),
         TestIO( //Invalid use of else with scope
                 "main { if (true) { 1; } x++; else { 7; } }",
@@ -60,19 +60,19 @@ void Test::testParser() {
         ),
         TestIO( //While loop with scope
                 "main { while (1) { print '1'; } }",
-                "2 jmp | '1' print | 1 | 5 if | 1 jmp"
+                "2 :jmp | '1' print | 1 | 5 if | 1 :jmp"
         ),
         TestIO( //While loop without scope
                 "main { while (1) print '1'; }",
-                "2 jmp | '1' print | 1 | 5 if | 1 jmp"
+                "2 :jmp | '1' print | 1 | 5 if | 1 :jmp"
         ),
         TestIO( //If inside of while loop
                 "main { while (1) { if (0) print '1'; } }",
-                "4 jmp | 0 | 4 if | '1' print | 1 | 7 if | 1 jmp"
+                "4 :jmp | 0 | 4 if | '1' print | 1 | 7 if | 1 :jmp"
         ),
         TestIO( //Do while loop
                 "main { do { B; } while (A); }",
-                "B | A | 4 if | 0 jmp"
+                "B | A | 4 if | 0 :jmp"
         ),
         TestIO( //Do while loop missing while
                 "main { do { B; } }",
@@ -88,7 +88,7 @@ void Test::testParser() {
         ),
         TestIO(
                 "main { for (x; A; y) { B; } }",
-                "x | 4 jmp | B | y | A | 7 if | 2 jmp"
+                "x | 4 :jmp | B | y | A | 7 if | 2 :jmp"
         ),
         TestIO(
                 "main { for (A) { B; }",
@@ -96,7 +96,7 @@ void Test::testParser() {
         ),
         TestIO(
                 "main { for (;;) b; }",
-                "2 jmp | b | 1 | 5 if | 1 jmp"
+                "2 :jmp | b | 1 | 5 if | 1 :jmp"
         ),
         TestIO(
                 "main { for (a;;;) { B; } }",
@@ -111,20 +111,20 @@ void Test::testParser() {
                 "Use of global statements is forbidden"
         ),
         TestIO(
-                "",
-                ""
+                "main { try { print 1; } catch { print 2; } }",
+                "2 try | 1 print | 4 catch | 2 print"
         ),
         TestIO(
-                "",
-                ""
+                "main { try { print 1; } }",
+                "Expected 'catch' after 'try'"
         ),
         TestIO(
-                "",
-                ""
+                "main { catch { print 2; } }",
+                "Unexpected 'catch'"
         ),
         TestIO(
-                "",
-                ""
+                "main { throw 1; }",
+                "1 throw"
         ),
         TestIO(
                 "",

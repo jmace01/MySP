@@ -15,6 +15,7 @@
 #include "Variables/Object.h"
 #include "Variables/String.h"
 #include "Variables/Variable.h"
+#include "Instruction.h"
 
 
 //Used to throw in order to break out of a recursive traversal of an expression tree
@@ -75,6 +76,7 @@ class Executor {
         void initMethodCall(Method* method, Variable* object, ClassDefinition* classDef, bool isStatic, bool isConstructor, std::string &methodName);
         void clearVariables();
 
+    public:
         //Operators
         void print();
         void ret();

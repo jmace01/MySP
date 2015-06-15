@@ -31,7 +31,11 @@ ExpressionTreeFlattener::ExpressionTreeFlattener() {
     }
 }
 
+//String to Instruction
 map<string, InstructionCode> ExpressionTreeFlattener::machineCodeMap = map<string, InstructionCode>();
+
+//Instruction to operation function
+map<InstructionCode, void (Executor::*)(void)> ExpressionTreeFlattener::functionMap = map<InstructionCode, void (Executor::*)(void)>();
 
 
 /****************************************************************************************
@@ -45,6 +49,7 @@ ExpressionTreeFlattener::~ExpressionTreeFlattener() {
  *
  ****************************************************************************************/
 void ExpressionTreeFlattener::initialize() {
+    //String to code
     ExpressionTreeFlattener::machineCodeMap["print"]    = PRINT;
     ExpressionTreeFlattener::machineCodeMap["return"]   = RETURN;
     ExpressionTreeFlattener::machineCodeMap["break"]    = BREAK;
@@ -83,14 +88,62 @@ void ExpressionTreeFlattener::initialize() {
     ExpressionTreeFlattener::machineCodeMap["~"]        = DELETION;
     ExpressionTreeFlattener::machineCodeMap["->"]       = DYNAMIC_PROPERTY;
     ExpressionTreeFlattener::machineCodeMap["::"]       = STATIC_PROPERTY;
-    ExpressionTreeFlattener::machineCodeMap["P"]        = FUNCTION_PARAMETER;
-    ExpressionTreeFlattener::machineCodeMap["C"]        = FUNCTION_CALL;
-    ExpressionTreeFlattener::machineCodeMap["jmp"]      = JUMP;
+    ExpressionTreeFlattener::machineCodeMap[":P"]       = FUNCTION_PARAMETER;
+    ExpressionTreeFlattener::machineCodeMap[":C"]       = FUNCTION_CALL;
+    ExpressionTreeFlattener::machineCodeMap[":jmp"]     = JUMP;
     ExpressionTreeFlattener::machineCodeMap["if"]       = JUMP_NOT_TRUE;
     ExpressionTreeFlattener::machineCodeMap["["]        = ARRAY_INDEX;
     ExpressionTreeFlattener::machineCodeMap["?"]        = JUMP_TRUE;
     ExpressionTreeFlattener::machineCodeMap["try"]      = TRY;
     ExpressionTreeFlattener::machineCodeMap["catch"]    = CATCH;
+
+    //Code to method
+    ExpressionTreeFlattener::functionMap[PRINT]                 = &Executor::print;
+    ExpressionTreeFlattener::functionMap[RETURN]                = &Executor::ret;
+    ExpressionTreeFlattener::functionMap[BREAK]                 = NULL;
+    ExpressionTreeFlattener::functionMap[CONTINUE]              = NULL;
+    ExpressionTreeFlattener::functionMap[THROW]                 = NULL;
+    ExpressionTreeFlattener::functionMap[ASSIGNMENT]            = &Executor::assignment;
+    ExpressionTreeFlattener::functionMap[ADD_ASSIGN]            = NULL;
+    ExpressionTreeFlattener::functionMap[SUBTRACT_ASSIGN]       = NULL;
+    ExpressionTreeFlattener::functionMap[MULTIPLY_ASSIGN]       = NULL;
+    ExpressionTreeFlattener::functionMap[DIVIDE_ASSIGN]         = NULL;
+    ExpressionTreeFlattener::functionMap[MODULUS_ASSIGN]        = NULL;
+    ExpressionTreeFlattener::functionMap[POWER_ASSIGN]          = NULL;
+    ExpressionTreeFlattener::functionMap[VARIABLE_EQUALS]       = &Executor::variableEquals;
+    ExpressionTreeFlattener::functionMap[TYPE_EQUALS]           = &Executor::typeEquals;
+    ExpressionTreeFlattener::functionMap[EQUALS]                = &Executor::equals;
+    ExpressionTreeFlattener::functionMap[NOT_VARIABLE_EQUAL]    = &Executor::notVariableEquals;
+    ExpressionTreeFlattener::functionMap[NOT_TYPE_EQUAL]        = &Executor::notTypeEquals;
+    ExpressionTreeFlattener::functionMap[NOT_EQUAL]             = &Executor::notEquals;
+    ExpressionTreeFlattener::functionMap[LESS_THAN]             = &Executor::lessThan;
+    ExpressionTreeFlattener::functionMap[LESS_THAN_OR_EQUAL]    = &Executor::lessThanEqual;
+    ExpressionTreeFlattener::functionMap[GREATER_THAN]          = &Executor::greaterThan;
+    ExpressionTreeFlattener::functionMap[GREATER_THAN_OR_EQUAL] = &Executor::greaterThanEqual;
+    ExpressionTreeFlattener::functionMap[AND]                   = &Executor::andd;
+    ExpressionTreeFlattener::functionMap[OR]                    = &Executor::orr;
+    ExpressionTreeFlattener::functionMap[CONCAT]                = &Executor::cat;
+    ExpressionTreeFlattener::functionMap[SUBTRACT]              = &Executor::sub;
+    ExpressionTreeFlattener::functionMap[ADD]                   = &Executor::add;
+    ExpressionTreeFlattener::functionMap[MULTIPLY]              = &Executor::mul;
+    ExpressionTreeFlattener::functionMap[DIVIDE]                = &Executor::div;
+    ExpressionTreeFlattener::functionMap[POWER]                 = &Executor::pow;
+    ExpressionTreeFlattener::functionMap[MODULUS]               = &Executor::mod;
+    ExpressionTreeFlattener::functionMap[INCREMENT]             = &Executor::inc;
+    ExpressionTreeFlattener::functionMap[DECREMENT]             = &Executor::dec;
+    ExpressionTreeFlattener::functionMap[NEGATE]                = &Executor::negate;
+    ExpressionTreeFlattener::functionMap[REFERENCE]             = NULL;
+    ExpressionTreeFlattener::functionMap[DELETION]              = NULL;
+    ExpressionTreeFlattener::functionMap[DYNAMIC_PROPERTY]      = &Executor::dynamicVar;
+    ExpressionTreeFlattener::functionMap[STATIC_PROPERTY]       = &Executor::staticVar;
+    ExpressionTreeFlattener::functionMap[FUNCTION_PARAMETER]    = &Executor::parameter;
+    ExpressionTreeFlattener::functionMap[FUNCTION_CALL]         = &Executor::call;
+    ExpressionTreeFlattener::functionMap[JUMP]                  = &Executor::jmp;
+    ExpressionTreeFlattener::functionMap[JUMP_NOT_TRUE]         = NULL;
+    ExpressionTreeFlattener::functionMap[ARRAY_INDEX]           = NULL;
+    ExpressionTreeFlattener::functionMap[JUMP_TRUE]             = NULL;
+    ExpressionTreeFlattener::functionMap[TRY]                   = NULL;
+    ExpressionTreeFlattener::functionMap[CATCH]                 = NULL;
 }
 
 
@@ -113,6 +166,14 @@ string ExpressionTreeFlattener::lookupCode(int in) {
  ****************************************************************************************/
 InstructionCode ExpressionTreeFlattener::getMachineCode(string s) {
     return ExpressionTreeFlattener::machineCodeMap[s];
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void ExpressionTreeFlattener::setOperationFunction(InstructionCode i, void (Executor::*ptr)(void)) {
+    ptr = ExpressionTreeFlattener::functionMap[i];
 }
 
 
@@ -238,7 +299,7 @@ void ExpressionTreeFlattener::flattenTree(OperationNode* root, vector<Instructio
     // Get instruction data
     Instruction inst;
     inst.instruction = ExpressionTreeFlattener::getMachineCode(root->operation.word);
-    inst.opFunction  = NULL; //Get function to execute
+    ExpressionTreeFlattener::setOperationFunction(inst.instruction, inst.opFunction); //Get function to execute
     inst.line = root->operation.line;
 
     //Save current position of instruction going into vector
@@ -295,7 +356,7 @@ void ExpressionTreeFlattener::flattenTree(OperationNode* root, vector<Instructio
         //operation instead of going down it
         if (firstSide->isLeafNode()) {
             //Assign the operand
-            bool canHash = (root->operation.word != "->" && root->operation.word != "::" && root->operation.word != "C");
+            bool canHash = (root->operation.word != "->" && root->operation.word != "::" && root->operation.word != ":C");
             bool sideA   = (root->operation.isUnary || root->operation.word == "?");
             this->addOperand(firstSide, inst, sideA, canHash);
         } else {
@@ -315,7 +376,7 @@ void ExpressionTreeFlattener::flattenTree(OperationNode* root, vector<Instructio
         //If the side is a leaf node, put its value as an operand on the current
         //operation instead of going down it
         if (secondSide->isLeafNode()) {
-            bool canHash = (root->operation.word != "C");
+            bool canHash = (root->operation.word != ":C");
             this->addOperand(secondSide, inst, true, canHash);
         } else {
             //Not a leaf node below, recurse down it
@@ -368,9 +429,9 @@ void ExpressionTreeFlattener::flattenMethod(Method &method) {
         op = method.getInstruction(i);
 
         //Is this a jump? If so, add a new jump instruction
-        if (op->operation.word == "jmp" || op->operation.word == "if") {
+        if (op->operation.word == ":jmp" || op->operation.word == "if") {
             x = stol(op->right->operation.word);
-            inst.instruction = (op->operation.word == "jmp") ? JUMP : JUMP_NOT_TRUE;
+            inst.instruction = (op->operation.word == ":jmp") ? JUMP : JUMP_NOT_TRUE;
             inst.aType       = 'n';
             inst.operandAd   = x;
             instructionVector.push_back(inst);

@@ -172,9 +172,9 @@ void Executor::initializeOperationMap() {
     //operationMap["&"]      = &Executor::print;
     operationMap["->"]     = &Executor::dynamicVar;
     operationMap["::"]     = &Executor::staticVar;
-    operationMap["P"]      = &Executor::parameter;
-    operationMap["C"]      = &Executor::call;
-    operationMap["jmp"]    = &Executor::jmp;
+    operationMap[":P"]     = &Executor::parameter;
+    operationMap[":C"]     = &Executor::call;
+    operationMap[":jmp"]   = &Executor::jmp;
     operationMap["if"]     = &Executor::iff;
     operationMap["["]      = &Executor::arrayIndex;
     operationMap["?"]      = &Executor::ternary;
@@ -476,9 +476,9 @@ void Executor::executeInstruction(OperationNode* op, string recover) throw (Runt
         bool dontDescend = op->operation.word == "::" || op->operation.word == "->";
 
         //Get right node unless its a function call, then go left
-        if (op->right != NULL && !dontDescend && op->operation.word != "C" && !recoverRight) {
+        if (op->right != NULL && !dontDescend && op->operation.word != ":C" && !recoverRight) {
             this->executeInstruction(op->right, recover);
-        } else if (op->left != NULL && op->operation.word == "C" && !recoverRight) {
+        } else if (op->left != NULL && op->operation.word == ":C" && !recoverRight) {
             this->executeInstruction(op->left, recover);
         }
 
@@ -494,7 +494,7 @@ void Executor::executeInstruction(OperationNode* op, string recover) throw (Runt
         }
 
         //Execute left if needed
-        if (op->left != NULL && this->executeLeft && !dontDescend && op->operation.word != "C" && (recoverRight || !recoverLeft)) {
+        if (op->left != NULL && this->executeLeft && !dontDescend && op->operation.word != ":C" && (recoverRight || !recoverLeft)) {
             if (op->operation.word == "?") {
                 if (this->ternaryLeft) {
                     this->executeInstruction(op->left->left, recover);
@@ -1976,7 +1976,7 @@ void Executor::loadMethodParameters() {
     OperationNode* node = this->currentNode->left;
 
     int i; //How many parameters do we need have?
-    //See how many "P" nodes are left of the call
+    //See how many ":P" nodes are left of the call
     for(i = 0; node; i++, node = node->left);
 
     //Are there enough parameters?

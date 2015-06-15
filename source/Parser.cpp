@@ -795,7 +795,7 @@ void Parser::endScope(bool setFirst) {
                 (
                     setFirst ||
                     this->controlStack.top()->operation.type == 's'
-                ) && !(upcomingElse && this->controlStack.top()->operation.word == "jmp")
+                ) && !(upcomingElse && this->controlStack.top()->operation.word == ":jmp")
             )
     {
         setFirst = false;
@@ -1211,7 +1211,7 @@ OperationNode* Parser::createJump(unsigned long pos, bool includePos) {
     OperationNode* op = new OperationNode();
     op->operation = Token();
     op->operation.type = 's';
-    op->operation.word = "jmp";
+    op->operation.word = ":jmp";
 
     //Is there a specific value specified?
     if (includePos) {

@@ -25,6 +25,7 @@
 #include "OperationNode.h"
 #include "Instruction.h"
 #include <iostream>
+#include "Executor.h"
 
 
 
@@ -32,6 +33,7 @@
 class ExpressionTreeFlattener {
     private:
         static std::map<std::string, InstructionCode> machineCodeMap;
+        static std::map<InstructionCode, void (Executor::*)(void)> functionMap;
         std::map<std::string, long> variableNames;
         long varCount;
 
@@ -40,6 +42,7 @@ class ExpressionTreeFlattener {
         virtual ~ExpressionTreeFlattener();
         void flattenTree(OperationNode* root, std::vector<Instruction> &instructionVector, unsigned long lastCount);
         static InstructionCode getMachineCode(std::string s);
+        void setOperationFunction(InstructionCode i, void (Executor::*ptr)(void));
         void addOperand(OperationNode* node, Instruction &inst, bool sideA, bool hash);
         void flattenMethod(Method &method);
         void flattenClass(ClassDefinition &cls);

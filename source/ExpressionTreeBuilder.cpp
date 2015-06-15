@@ -553,9 +553,9 @@ void ExpressionTreeBuilder::addOperation(bool isUnary) {
  *     Marks an operand as a parameter
  *
  *     foo(bar)
- *     P
- *       \
- *         bar
+ *     :P
+ *        \
+ *          bar
  *
  * Inputs:
  *     None
@@ -570,7 +570,7 @@ void inline ExpressionTreeBuilder::makeParameter() {
     //Create operation token
     temp->operation = Token();
     temp->operation.type = 'o';
-    temp->operation.word = "P";
+    temp->operation.word = ":P";
 
     //Add parameter value to right
     //Right side is important for execution order!
@@ -595,11 +595,11 @@ void inline ExpressionTreeBuilder::makeParameter() {
  *     The first parameter in the list will be the lowest on the tree
  *
  *     Example: foo(a, b, c)
- *             P
- *           /   \
- *         P      c
- *       /   \
- *     P       b
+ *             :P
+ *           /    \
+ *         :P      c
+ *       /    \
+ *     :P       b
  *       \
  *         a
  *
@@ -639,14 +639,14 @@ void inline ExpressionTreeBuilder::chainParameter() {
  *     Constructor call      Method call
  *     foo(bar)              foo->bar(a)
  *
- *         C                      C
- *       /   \                 /     \
- *     P       foo           P         ->
+ *         :C                     :C
+ *       /     \                /     \
+ *     :P        foo         :P        ->
  *       \                     \      /  \
  *        bar                   a   foo   bar
  *
  * Inputs:
- *     int line : The line number of the function call, used to create a "C" node and
+ *     int line : The line number of the function call, used to create a ":C" node and
  *         seen if there is a runtime error on that function call.
  *
  * Outputs:
@@ -660,13 +660,13 @@ void inline ExpressionTreeBuilder::addFunctionCall(int line) {
     //Add the operation to the call node
     temp->operation = Token();
     temp->operation.type = 'o';
-    temp->operation.word = "C";
+    temp->operation.word = ":C";
     temp->operation.line = line;
     temp->operation.isTerminating = true;
 
     //If there are parameters, add them to the left
     //It is important they be on the left!
-    if (this->operands.top()->operation.word == "P") {
+    if (this->operands.top()->operation.word == ":P") {
         temp->left = this->operands.top();
         this->operands.pop();
     }

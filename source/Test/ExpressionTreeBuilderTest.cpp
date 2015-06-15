@@ -100,19 +100,19 @@ void Test::testExTreeBldr() {
             )
             , TestIO( //Function call
                     "g(x)",
-                    "x P g C"
+                    "x :P g :C"
             )
             , TestIO( //Nested function call
                     "foo(a, bar(b, c, d))",
-                    "a P b P c P d P bar C P foo C"
+                    "a :P b :P c :P d :P bar :C :P foo :C"
             )
             , TestIO( //Empty function call
                     "foo()",
-                    "foo C"
+                    "foo :C"
             )
             , TestIO( //Empty function call
                     "v = foo(!a)",
-                    "a ! P foo C v ="
+                    "a ! :P foo :C v ="
             )
             , TestIO( //Missing operand
                     "1 +",
@@ -160,11 +160,11 @@ void Test::testExTreeBldr() {
             )
             , TestIO( //Object method call
                     "a->b()",
-                    "b a -> C"
+                    "b a -> :C"
             )
             , TestIO( //Static method call
                     "a::b()",
-                    "b a :: C"
+                    "b a :: :C"
             )
             , TestIO( //Member variable assignment
                     "a->b = c",
