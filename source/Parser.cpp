@@ -104,6 +104,7 @@ map< string, ClassDefinition* >* Parser::parseTokens(queue<Token> &intoks) {
     string className;
     this->controlStack = stack<OperationNode*>(); //Control word stack
     upcomingElse = false; //Check if an ELSE is follow an IF
+    bool expectingCatch = false;
 
     //Only show one invalid property message
     bool invalidProperty = false;
@@ -213,6 +214,27 @@ map< string, ClassDefinition* >* Parser::parseTokens(queue<Token> &intoks) {
                 this->addToken(t, false);
             } else if (lowercaseWord == "for") {
                 this->beginFor(t, lowercaseWord);
+            } else if (lowercaseWord == "try") {
+                //Make sure try is scoped
+                if (this->toks.front().word != "{") {
+                    this->errors.push(PostfixError("Expecting '{' after 'try'", t));
+                }
+                //Add try to stack
+                t.word = lowercaseWord;
+                this->addToken(t, true);
+            } else if (lowercaseWord == "catch") {
+                //Make sure a catch is expected
+                if (!expectingCatch) {
+                    this->errors.push(PostfixError("Unexpected 'catch'", t));
+                }
+                //Make sure catch is scoped
+                if (this->toks.front().word != "{") {
+                    this->errors.push(PostfixError("Expecting '{' after 'catch'", t));
+                }
+                //Add catch to stack
+                t.word = lowercaseWord;
+                this->addToken(t, true);
+                expectingCatch = false;
             }
         }
 
@@ -236,6 +258,15 @@ map< string, ClassDefinition* >* Parser::parseTokens(queue<Token> &intoks) {
             } else if (!controlStack.empty() && controlStack.top()->operation.word == "do") {
                 this->endScope(true);
             } else if (!controlStack.empty() && controlStack.top()->operation.word == "for") {
+                this->endScope(true);
+            } else if (!controlStack.empty() && controlStack.top()->operation.word == "try") {
+                this->endScope(true);
+                if (toks.front().word != "catch") {
+                    this->errors.push(PostfixError("Expected 'catch' after 'try'", toks.front()));
+                } else {
+                    expectingCatch = true;
+                }
+            } else if (!controlStack.empty() && controlStack.top()->operation.word == "catch") {
                 this->endScope(true);
             }
         }
@@ -777,6 +808,12 @@ void Parser::endScope(bool setFirst) {
         } else if (this->controlStack.top()->operation.word == "for") {
             this->endFor();
             continue;
+        } else if (this->controlStack.top()->operation.word == "try") {
+            this->endTry();
+            continue;
+        }  else if (this->controlStack.top()->operation.word == "catch") {
+            this->endCatch();
+            continue;
         }
         controlStack.top()->operation.type = 'o';
         controlStack.top()->right = new OperationNode();
@@ -1105,6 +1142,58 @@ void Parser::endFor() {
 
 
 /****************************************************************************************
+ * Parser::endTry
+ *
+ * Description:
+ *     Ends a Try statement.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
+ ****************************************************************************************/
+void Parser::endTry() {
+    char num[30];
+
+    OperationNode* op = this->controlStack.top();
+
+    sprintf(num, "%lu", currentMethod->getInstructionSize());
+    op->left = new OperationNode();
+    op->left->operation.type = 'n';
+    op->left->operation.word = num;
+
+    this->controlStack.pop();
+}
+
+
+/****************************************************************************************
+ * Parser::endCatch
+ *
+ * Description:
+ *     Ends a Catch statement.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
+ ****************************************************************************************/
+void Parser::endCatch() {
+    char num[30];
+
+    OperationNode* op = this->controlStack.top();
+
+    sprintf(num, "%lu", currentMethod->getInstructionSize());
+    op->left = new OperationNode();
+    op->left->operation.type = 'n';
+    op->left->operation.word = num;
+
+    this->controlStack.pop();
+}
+
+
+/****************************************************************************************
  * Parser::createJump
  *
  * Description:
@@ -1155,13 +1244,13 @@ void Parser::initKeywords() {
     keywords[ "do"      ] = 1;
     keywords[ "while"   ] = 1;
     keywords[ "for"     ] = 1;
+    keywords[ "try"     ] = 1;
+    keywords[ "catch"   ] = 1;
 
     //Unimplemented keywords
     //keywords[ "foreach" ] = 1;
     //keywords[ "switch"  ] = 1;
     //keywords[ "case"    ] = 1;
-    //keywords[ "try"     ] = 1;
-    //keywords[ "catch"   ] = 1;
     //keywords[ "finally" ] = 1;
 
     //Classes

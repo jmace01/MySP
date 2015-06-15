@@ -68,6 +68,8 @@ enum InstructionCode {
     , JUMP_TRUE             //
     , JUMP_NOT_TRUE         //
     , ARRAY_INDEX           // [
+    , TRY                   // try
+    , CATCH                 // catch
 };
 
 

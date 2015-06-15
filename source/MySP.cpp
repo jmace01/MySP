@@ -48,8 +48,9 @@ int main(int argc, char ** argv) {
     //string sin = "1 && 1";
     //string sin = "a = b ? 1 : 1";
     //string sin = "a::b->c->d + a::b";
-    string sin = "main { if (true) { if (false) { print 'YES'; } else { return; } } else { print 'NO!'; } }";
+    //string sin = "main { if (true) { if (false) { print 'YES'; } else { return; } } else { print 'NO!'; } }";
     //string sin = "main {  a = &b->c; }";
+    string sin = "main { try { a = 1; } catch { print 2; } }";
 
     Tokenizer t;
     ExpressionTreeBuilder eb;

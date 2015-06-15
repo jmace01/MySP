@@ -88,6 +88,8 @@ void ExpressionTreeFlattener::initialize() {
     ExpressionTreeFlattener::machineCodeMap["if"]       = JUMP_NOT_TRUE;
     ExpressionTreeFlattener::machineCodeMap["["]        = ARRAY_INDEX;
     ExpressionTreeFlattener::machineCodeMap["?"]        = JUMP_TRUE;
+    ExpressionTreeFlattener::machineCodeMap["try"]      = TRY;
+    ExpressionTreeFlattener::machineCodeMap["catch"]    = CATCH;
 }
 
 

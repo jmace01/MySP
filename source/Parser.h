@@ -64,6 +64,8 @@ class Parser {
         void endDoWhile();
         void beginFor(Token &t, std::string &lowercaseWord);
         void endFor();
+        void endTry();
+        void endCatch();
         OperationNode* createJump(unsigned long pos, bool includePos);
 };
 
