@@ -96,6 +96,20 @@ void ExpressionTreeFlattener::initialize() {
 /****************************************************************************************
  *
  ****************************************************************************************/
+string ExpressionTreeFlattener::lookupCode(int in) {
+    map<string, InstructionCode>::iterator it;
+    for (it = ExpressionTreeFlattener::machineCodeMap.begin(); it != ExpressionTreeFlattener::machineCodeMap.end(); it++) {
+        if (it->second == in) {
+            return it->first;
+        }
+    }
+    return "<ERROR>";
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
 InstructionCode ExpressionTreeFlattener::getMachineCode(string s) {
     return ExpressionTreeFlattener::machineCodeMap[s];
 }

@@ -43,6 +43,7 @@ class ExpressionTreeFlattener {
         void addOperand(OperationNode* node, Instruction &inst, bool sideA, bool hash);
         void flattenMethod(Method &method);
         void flattenClass(ClassDefinition &cls);
+        static std::string lookupCode(int in);
 
     private:
         static void initialize();

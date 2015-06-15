@@ -80,18 +80,18 @@ int main(int argc, char ** argv) {
         vector<Instruction>::iterator it;
         vector<Instruction> instructions = (*clss)["~"]->getMethod(s)->getInstructionCodeVector();
         cout << sin << endl;
-        cout << "+-----+------------+-------------+-------------+------+------+" << endl;
-        cout << "|  #  | INST CODE  | OP A        | OP B        | TYPE | TYPE |" << endl;
-        cout << "+-----+------------+-------------+-------------+------+------+" << endl;
+        cout << "+-----+---------------+-------------+-------------+------+------+" << endl;
+        cout << "|  #  | INST CODE     | OP A        | OP B        | TYPE | TYPE |" << endl;
+        cout << "+-----+---------------+-------------+-------------+------+------+" << endl;
         for (it = instructions.begin(); it != instructions.end(); it++) {
             cout << "| "
                  << setw(4)
                  << left
                  << i++
                  << "| "
-                 << setw(11)
+                 << setw(3)
                  << left
-                 << it->instruction << "|";
+                 << it->instruction << '[' << left << setw(10) << ExpressionTreeFlattener::lookupCode(it->instruction) + "]" << "|";
             if (it->aType == 'n' || it->aType == 'h') cout << ((it->aType == 'h') ? " #" : " ") << setw(11 + (it->aType != 'h')) << left << it->operandAd;
             else cout << ' ' << setw(12) << left << (it->aType == 'r' ? "<REG>" : it->operandAs);
             cout << "|";
@@ -101,9 +101,9 @@ int main(int argc, char ** argv) {
                  << " " << it->bType << "    |" << endl;
         }
         //cout << "| " << setw(4) << left << i << "|" << " 0          | -           | -           | -    | -    |" << endl;
-        cout << "+-----+------------+-------------+-------------+------+------+" << endl;
-        cout << "|  #  | INST CODE  | OP A        | OP B        | TYPE | TYPE |" << endl;
-        cout << "+-----+------------+-------------+-------------+------+------+" << endl;
+        cout << "+-----+---------------+-------------+-------------+------+------+" << endl;
+        cout << "|  #  | INST CODE     | OP A        | OP B        | TYPE | TYPE |" << endl;
+        cout << "+-----+---------------+-------------+-------------+------+------+" << endl;
     } catch (PostfixError &e) {
         cout << e.msg << endl;
     }
