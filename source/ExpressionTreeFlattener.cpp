@@ -49,6 +49,7 @@ void ExpressionTreeFlattener::initialize() {
     ExpressionTreeFlattener::machineCodeMap["return"]   = RETURN;
     ExpressionTreeFlattener::machineCodeMap["break"]    = BREAK;
     ExpressionTreeFlattener::machineCodeMap["continue"] = CONTINUE;
+    ExpressionTreeFlattener::machineCodeMap["throw"]    = THROW;
     ExpressionTreeFlattener::machineCodeMap["="]        = ASSIGNMENT;
     ExpressionTreeFlattener::machineCodeMap["+="]       = ADD_ASSIGN;
     ExpressionTreeFlattener::machineCodeMap["-="]       = SUBTRACT_ASSIGN;

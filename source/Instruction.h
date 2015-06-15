@@ -70,6 +70,7 @@ enum InstructionCode {
     , ARRAY_INDEX           // [
     , TRY                   // try
     , CATCH                 // catch
+    , THROW                 // throw
 };
 
 
@@ -106,9 +107,10 @@ struct Instruction {
 
     bool isTerminating() {
         return (
-                instruction == AND ||
-                instruction == OR  ||
-                instruction == PRINT
+                instruction == AND   ||
+                instruction == OR    ||
+                instruction == PRINT ||
+                instruction == THROW
         );
     }
 

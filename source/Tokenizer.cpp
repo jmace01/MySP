@@ -211,7 +211,7 @@ Token Tokenizer::getNext(bool &wasOp) {
         type = 'w';
         while ((isalnum(this->infix[i]) || this->infix[i] == '_') &&  i <  this->infix.size())
             word += this->infix[i++];
-        if (ExpressionTreeBuilder::isControlWord(word) && (word == "print" || word == "echo" || word == "return")) {
+        if (ExpressionTreeBuilder::isControlWord(word) && (word == "print" || word == "throw" || word == "echo" || word == "return")) {
             type = 'o';
         }
     }
@@ -472,7 +472,7 @@ Token Tokenizer::getNextToken(bool &wasOp, char &currentChar) {
             word += currentChar;
             input->get(currentChar);
         }
-        if (ExpressionTreeBuilder::isControlWord(word) && (word == "print" || word == "echo" || word == "return")) {
+        if (ExpressionTreeBuilder::isControlWord(word) && (word == "print" || word == "throw" || word == "echo" || word == "return")) {
             type = 'o';
         }
     }
