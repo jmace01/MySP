@@ -50,7 +50,7 @@ int main(int argc, char ** argv) {
     //string sin = "a::b->c->d + a::b";
     //string sin = "main { if (true) { if (false) { print 'YES'; } else { return; } } else { print 'NO!'; } }";
     //string sin = "main {  a = &b->c; }";
-    string sin = "main { try { throw 7; } catch { print 2; } }";
+    string sin = "main { try { throw 7; } catch { print 2; } finally { print 3; } }";
 
     Tokenizer t;
     ExpressionTreeBuilder eb;

@@ -127,6 +127,22 @@ void Test::testParser() {
                 "1 throw"
         ),
         TestIO(
+                "main { try { print 1; } catch { print 2; } finally { print 3; } }",
+                "4 2 try | 1 print | 4 4 catch | 2 print | 6 finally | 3 print"
+        ),
+        TestIO(
+                "main { finally { print 3; } }",
+                "Unexpected 'finally'"
+        ),
+        TestIO(
+                "main { try { print 1; } finally { print 3; } }",
+                "Expected 'catch' after 'try' | Unexpected 'finally'"
+        ),
+        TestIO(
+                "main { catch { print 2; } finally { print 3; } }",
+                "Unexpected 'catch'"
+        ),
+        TestIO(
                 "",
                 ""
         )

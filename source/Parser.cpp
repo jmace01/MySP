@@ -105,6 +105,7 @@ map< string, ClassDefinition* >* Parser::parseTokens(queue<Token> &intoks) {
     this->controlStack = stack<OperationNode*>(); //Control word stack
     upcomingElse = false; //Check if an ELSE is follow an IF
     bool expectingCatch = false;
+    bool expectingFinally = false;
 
     //Only show one invalid property message
     bool invalidProperty = false;
@@ -235,6 +236,19 @@ map< string, ClassDefinition* >* Parser::parseTokens(queue<Token> &intoks) {
                 t.word = lowercaseWord;
                 this->addToken(t, true);
                 expectingCatch = false;
+            } else if (lowercaseWord == "finally") {
+                //Make sure a catch is expected
+                if (!expectingFinally) {
+                    this->errors.push(PostfixError("Unexpected 'finally'", t));
+                }
+                //Make sure catch is scoped
+                if (this->toks.front().word != "{") {
+                    this->errors.push(PostfixError("Expecting '{' after 'finally'", t));
+                }
+                //Add catch to stack
+                t.word = lowercaseWord;
+                this->addToken(t, true);
+                expectingFinally = false;
             }
         }
 
@@ -267,6 +281,9 @@ map< string, ClassDefinition* >* Parser::parseTokens(queue<Token> &intoks) {
                     expectingCatch = true;
                 }
             } else if (!controlStack.empty() && controlStack.top()->operation.word == "catch") {
+                this->endScope(true);
+                expectingFinally = (toks.front().word == "finally");
+            } else if (!controlStack.empty() && controlStack.top()->operation.word == "finally") {
                 this->endScope(true);
             }
         }
@@ -814,6 +831,9 @@ void Parser::endScope(bool setFirst) {
         }  else if (this->controlStack.top()->operation.word == "catch") {
             this->endCatch();
             continue;
+        } else if (this->controlStack.top()->operation.word == "finally") {
+            this->endFinally();
+            continue;
         }
         controlStack.top()->operation.type = 'o';
         controlStack.top()->right = new OperationNode();
@@ -1159,11 +1179,13 @@ void Parser::endTry() {
     OperationNode* op = this->controlStack.top();
 
     sprintf(num, "%lu", currentMethod->getInstructionSize());
-    op->left = new OperationNode();
-    op->left->operation.type = 'n';
-    op->left->operation.word = num;
+    op->right = new OperationNode();
+    op->right->operation.type = 'n';
+    op->right->operation.word = num;
 
-    this->controlStack.pop();
+    if (this->toks.front().word != "catch") {
+        this->controlStack.pop();
+    }
 }
 
 
@@ -1185,9 +1207,55 @@ void Parser::endCatch() {
     OperationNode* op = this->controlStack.top();
 
     sprintf(num, "%lu", currentMethod->getInstructionSize());
-    op->left = new OperationNode();
-    op->left->operation.type = 'n';
-    op->left->operation.word = num;
+    op->right = new OperationNode();
+    op->right->operation.type = 'n';
+    op->right->operation.word = num;
+
+    if (this->toks.front().word == "finally" && this->controlStack.size() > 1) {
+        //Add finally location to catch
+        op = new OperationNode();
+        op->operation.type = 'n';
+        op->operation.word = num;
+        this->controlStack.top()->left = op;
+        this->controlStack.pop();
+        //Add finally location to try
+        if (this->controlStack.top()->operation.word == "try") {
+            op = new OperationNode();
+            op->operation.type = 'n';
+            op->operation.word = num;
+            this->controlStack.top()->left = op;
+            this->controlStack.pop();
+        }
+    } else {
+        this->controlStack.pop();
+        if (this->controlStack.size() > 0 && this->controlStack.top()->operation.word == "try") {
+            this->controlStack.pop();
+        }
+    }
+}
+
+
+/****************************************************************************************
+ * Parser::endFinally
+ *
+ * Description:
+ *     Ends a Finally statement.
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
+ ****************************************************************************************/
+void Parser::endFinally() {
+    char num[30];
+
+    OperationNode* op = this->controlStack.top();
+
+    sprintf(num, "%lu", currentMethod->getInstructionSize());
+    op->right = new OperationNode();
+    op->right->operation.type = 'n';
+    op->right->operation.word = num;
 
     this->controlStack.pop();
 }
@@ -1246,12 +1314,12 @@ void Parser::initKeywords() {
     keywords[ "for"     ] = 1;
     keywords[ "try"     ] = 1;
     keywords[ "catch"   ] = 1;
+    keywords[ "finally" ] = 1;
 
     //Unimplemented keywords
     //keywords[ "foreach" ] = 1;
     //keywords[ "switch"  ] = 1;
     //keywords[ "case"    ] = 1;
-    //keywords[ "finally" ] = 1;
 
     //Classes
     keywords[ "class"   ] = 1;
