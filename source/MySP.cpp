@@ -23,6 +23,7 @@
 #include "Tokenizer.h"
 #include <sstream>
 #include <fstream>
+#include "Options.h"
 
 
 // For testing //
@@ -38,6 +39,9 @@ using namespace std;
 
 
 int main(int argc, char ** argv) {
+
+    Options options;
+    options.parseOptions(argc, argv);
 
     //////////////////////////////////
     //////////////////////////////////
@@ -112,6 +116,9 @@ int main(int argc, char ** argv) {
     Test();
     cout << endl << "RAN IN : ";
     cout << ((float)(clock() - timered) / CLOCKS_PER_SEC) << endl;
+
+    //Executor test code goes here
+
     return 0;
     //////////////////////////////////
     //////////////////////////////////
@@ -122,13 +129,13 @@ int main(int argc, char ** argv) {
     //Get the file to run
     istream* s;
     //Was a file given?
-    if (argc < 2) {
+    if (options.getFilename() == "") {
         cout << "You must specify a filename" << endl;
         return 1;
     }
     //Can the file be run?
     else {
-        s = new ifstream(argv[1]);
+        s = new ifstream(options.getFilename());
         if (!s->good()) {
             cout << "The file cannot be run!" << endl;
             return 1;
@@ -143,9 +150,9 @@ int main(int argc, char ** argv) {
     //----------------------------------------------
 
     //Do we want to display the time it took to process?
-    bool timed = (argc > 2);
+    bool timed = (options.getTimeExecution());
     //Do we want to execute unit tests?
-    bool test  = (argc > 3);
+    bool test  = (options.getRunUnitTests());
 
     //Start time
     clock_t timer = clock();
@@ -180,6 +187,7 @@ int main(int argc, char ** argv) {
     //Unit test
 	if(test) {
 	    Test();
+	    cout << "FINISHED" << endl;
 	}
 
 	//Ensure all data was output to the console
