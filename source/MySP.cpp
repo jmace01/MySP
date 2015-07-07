@@ -117,7 +117,12 @@ int main(int argc, char ** argv) {
     cout << endl << "RAN IN : ";
     cout << ((float)(clock() - timered) / CLOCKS_PER_SEC) << endl;
 
-    //Executor test code goes here
+    //////////////////////////////////
+    //////////////////////////////////
+    //////////////////////////////////
+
+    //Loop through and flatten each class
+    //Executor code
 
     return 0;
     //////////////////////////////////
