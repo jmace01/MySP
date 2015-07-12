@@ -23,12 +23,12 @@ class Test {
         Test() {
             Test::testExTreeBldr();
             Test::testParser();
-            Test::testExecutor();
+            //Test::testExecutor();
         }
 
         static void testExTreeBldr();
         static void testParser();
-        static void testExecutor();
+        //static void testExecutor();
 };
 
 #endif

@@ -48,13 +48,10 @@ int main(int argc, char ** argv) {
     //////////////////////////////////
     queue<Token> tks = queue<Token>();
 
-    //string sin = "a() && b()";
-    //string sin = "1 && 1";
-    //string sin = "a = b ? 1 : 1";
-    //string sin = "a::b->c->d + a::b";
     //string sin = "main { if (true) { if (false) { print 'YES'; } else { return; } } else { print 'NO!'; } }";
     //string sin = "main {  a = &b->c; }";
-    string sin = "main { try { throw 7; } catch { print 2; } finally { print 3; } }";
+    string sin = "main { try { throw a; } catch { print this->a; } finally { print 3; } }";
+    //string sin = "main { print this->a; }";
 
     Tokenizer t;
     ExpressionTreeBuilder eb;
@@ -71,7 +68,7 @@ int main(int argc, char ** argv) {
         //root = eb.getExpressionTree(tks);
         //ef.flattenTree(root, instructions, 0);
         string s = "main";
-        ef.flattenClass(*(*clss)["~"]);
+        ef.flattenClassMap(clss);
 
         //Get any parse errors
         postE = par.getErrors();
@@ -108,6 +105,17 @@ int main(int argc, char ** argv) {
         cout << "+-----+---------------+-------------+-------------+------+------+" << endl;
         cout << "|  #  | INST CODE     | OP A        | OP B        | TYPE | TYPE |" << endl;
         cout << "+-----+---------------+-------------+-------------+------+------+" << endl;
+
+
+        //////////////////////////////////
+        //////////////////////////////////
+        //////////////////////////////////
+
+        //Executor code
+        Executor exe;
+        exe.run(clss);
+
+
     } catch (PostfixError &e) {
         cout << e.msg << endl;
     }
@@ -117,12 +125,7 @@ int main(int argc, char ** argv) {
     cout << endl << "RAN IN : ";
     cout << ((float)(clock() - timered) / CLOCKS_PER_SEC) << endl;
 
-    //////////////////////////////////
-    //////////////////////////////////
-    //////////////////////////////////
-
-    //Loop through and flatten each class
-    //Executor code
+    cout.flush();
 
     return 0;
     //////////////////////////////////

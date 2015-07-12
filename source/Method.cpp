@@ -70,7 +70,15 @@ bool Method::getIsStatic() {
 /****************************************************************************************
  *
  ****************************************************************************************/
-unsigned long Method::getInstructionSize() {
+unsigned long Method::getInstructionCodeSize() {
+    return this->instructionCodes.size();
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+unsigned long Method::getInstructionTreeSize() {
     return this->instructions.size();
 }
 

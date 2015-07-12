@@ -190,7 +190,7 @@ void Test::testParser() {
                 for (it = (*ops).begin(); it != (*ops).end(); it++) {
                     methods = it->second->getMethods();
                     for (it2 = methods.begin(); it2 != methods.end(); it2++) {
-                        for (int ii = 0; ii < it2->second->getInstructionSize(); ii++) {
+                        for (int ii = 0; ii < it2->second->getInstructionTreeSize(); ii++) {
                             if (!errorState) {
                                 if (ii != 0) output += " | ";
                                 output += it2->second->getInstruction(ii)->getPostfix();

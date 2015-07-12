@@ -109,7 +109,7 @@ struct Instruction {
         return (
                 instruction == AND   ||
                 instruction == OR    ||
-                instruction == PRINT ||
+                //instruction == PRINT ||
                 instruction == THROW
         );
     }

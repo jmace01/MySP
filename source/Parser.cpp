@@ -190,7 +190,7 @@ map< string, ClassDefinition* >* Parser::parseTokens(queue<Token> &intoks) {
                 this->addToken(t, false);
             } else if (lowercaseWord == "while") {
                 //Save current position
-                pos = currentMethod->getInstructionSize() + 1;
+                pos = currentMethod->getInstructionTreeSize() + 1;
                 op = this->createJump(pos, true);
                 this->controlStack.push(op);
                 //Add condition to control stack
@@ -207,7 +207,7 @@ map< string, ClassDefinition* >* Parser::parseTokens(queue<Token> &intoks) {
                     this->errors.push(PostfixError("Expecting '{' after 'do'", t));
                 }
                 //Save current position
-                pos = currentMethod->getInstructionSize();
+                pos = currentMethod->getInstructionTreeSize();
                 op = this->createJump(pos, true);
                 this->controlStack.push(op);
                 //Save the do
@@ -839,7 +839,7 @@ void Parser::endScope(bool setFirst) {
         controlStack.top()->right = new OperationNode();
         controlStack.top()->right->operation = Token();
         controlStack.top()->right->operation.type = 'n';
-        sprintf(num, "%lu", currentMethod->getInstructionSize() + upcomingElse);
+        sprintf(num, "%lu", currentMethod->getInstructionTreeSize() + upcomingElse);
         controlStack.top()->right->operation.word = num;
         controlStack.pop();
     }
@@ -902,7 +902,7 @@ inline void Parser::endWhile() {
     jmp->right = new OperationNode();
     jmp->right->operation = Token();
     jmp->right->operation.type = 'n';
-    sprintf(num, "%lu", currentMethod->getInstructionSize());
+    sprintf(num, "%lu", currentMethod->getInstructionTreeSize());
     jmp->right->operation.word = num;
 
     //Push on condition
@@ -920,7 +920,7 @@ inline void Parser::endWhile() {
     currentMethod->addInstruction(jmp);
 
     //Update while jump
-    sprintf(num, "%lu", currentMethod->getInstructionSize());
+    sprintf(num, "%lu", currentMethod->getInstructionTreeSize());
     whl->operation.word = "if";
     whl->operation.type = 'o';
     whl->right = new OperationNode();
@@ -993,7 +993,7 @@ void Parser::endDoWhile() {
     }
 
     //Add the if
-    sprintf(num, "%lu", currentMethod->getInstructionSize() + 2);
+    sprintf(num, "%lu", currentMethod->getInstructionTreeSize() + 2);
     op = new OperationNode();
     op->operation = Token();
     op->operation.word = "if";
@@ -1050,7 +1050,7 @@ void Parser::beginFor(Token &t, string &lowercaseWord) {
             this->addStatement(true, t);
         }
         //Save current position
-        pos = currentMethod->getInstructionSize() + 1;
+        pos = currentMethod->getInstructionTreeSize() + 1;
         op = this->createJump(pos, true);
         this->controlStack.push(op);
         //Get condition
@@ -1119,7 +1119,7 @@ void Parser::endFor() {
     jmp->operation.type = 'o';
     this->controlStack.pop();
     bool iterNotNull = this->controlStack.top() != NULL;
-    sprintf(num, "%lu", currentMethod->getInstructionSize() + iterNotNull);
+    sprintf(num, "%lu", currentMethod->getInstructionTreeSize() + iterNotNull);
     jmp->right = new OperationNode();
     jmp->right->operation = Token();
     jmp->right->operation.type = 'n';
@@ -1144,7 +1144,7 @@ void Parser::endFor() {
     currentMethod->addInstruction(cond);
 
     //Add the if
-    sprintf(num, "%lu", currentMethod->getInstructionSize() + 2);
+    sprintf(num, "%lu", currentMethod->getInstructionTreeSize() + 2);
     fr->operation.word = "if";
     fr->operation.type = 'o';
     fr->right = new OperationNode();
@@ -1178,7 +1178,7 @@ void Parser::endTry() {
 
     OperationNode* op = this->controlStack.top();
 
-    sprintf(num, "%lu", currentMethod->getInstructionSize());
+    sprintf(num, "%lu", currentMethod->getInstructionTreeSize());
     op->right = new OperationNode();
     op->right->operation.type = 'n';
     op->right->operation.word = num;
@@ -1206,7 +1206,7 @@ void Parser::endCatch() {
 
     OperationNode* op = this->controlStack.top();
 
-    sprintf(num, "%lu", currentMethod->getInstructionSize());
+    sprintf(num, "%lu", currentMethod->getInstructionTreeSize());
     op->right = new OperationNode();
     op->right->operation.type = 'n';
     op->right->operation.word = num;
@@ -1252,7 +1252,7 @@ void Parser::endFinally() {
 
     OperationNode* op = this->controlStack.top();
 
-    sprintf(num, "%lu", currentMethod->getInstructionSize());
+    sprintf(num, "%lu", currentMethod->getInstructionTreeSize());
     op->right = new OperationNode();
     op->right->operation.type = 'n';
     op->right->operation.word = num;

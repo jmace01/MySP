@@ -100,16 +100,16 @@ void ExpressionTreeFlattener::initialize() {
     //Code to method
     ExpressionTreeFlattener::functionMap[PRINT]                 = &Executor::print;
     ExpressionTreeFlattener::functionMap[RETURN]                = &Executor::ret;
-    ExpressionTreeFlattener::functionMap[BREAK]                 = NULL;
-    ExpressionTreeFlattener::functionMap[CONTINUE]              = NULL;
-    ExpressionTreeFlattener::functionMap[THROW]                 = NULL;
+    ExpressionTreeFlattener::functionMap[BREAK]                 = &Executor::brk;
+    ExpressionTreeFlattener::functionMap[CONTINUE]              = &Executor::cont;
+    ExpressionTreeFlattener::functionMap[THROW]                 = &Executor::thrw;
     ExpressionTreeFlattener::functionMap[ASSIGNMENT]            = &Executor::assignment;
-    ExpressionTreeFlattener::functionMap[ADD_ASSIGN]            = NULL;
-    ExpressionTreeFlattener::functionMap[SUBTRACT_ASSIGN]       = NULL;
-    ExpressionTreeFlattener::functionMap[MULTIPLY_ASSIGN]       = NULL;
-    ExpressionTreeFlattener::functionMap[DIVIDE_ASSIGN]         = NULL;
-    ExpressionTreeFlattener::functionMap[MODULUS_ASSIGN]        = NULL;
-    ExpressionTreeFlattener::functionMap[POWER_ASSIGN]          = NULL;
+    ExpressionTreeFlattener::functionMap[ADD_ASSIGN]            = &Executor::addAssign;
+    ExpressionTreeFlattener::functionMap[SUBTRACT_ASSIGN]       = &Executor::subAssign;
+    ExpressionTreeFlattener::functionMap[MULTIPLY_ASSIGN]       = &Executor::multAssign;
+    ExpressionTreeFlattener::functionMap[DIVIDE_ASSIGN]         = &Executor::divAssign;
+    ExpressionTreeFlattener::functionMap[MODULUS_ASSIGN]        = &Executor::modAssign;
+    ExpressionTreeFlattener::functionMap[POWER_ASSIGN]          = &Executor::powAssign;
     ExpressionTreeFlattener::functionMap[VARIABLE_EQUALS]       = &Executor::variableEquals;
     ExpressionTreeFlattener::functionMap[TYPE_EQUALS]           = &Executor::typeEquals;
     ExpressionTreeFlattener::functionMap[EQUALS]                = &Executor::equals;
@@ -132,18 +132,18 @@ void ExpressionTreeFlattener::initialize() {
     ExpressionTreeFlattener::functionMap[INCREMENT]             = &Executor::inc;
     ExpressionTreeFlattener::functionMap[DECREMENT]             = &Executor::dec;
     ExpressionTreeFlattener::functionMap[NEGATE]                = &Executor::negate;
-    ExpressionTreeFlattener::functionMap[REFERENCE]             = NULL;
-    ExpressionTreeFlattener::functionMap[DELETION]              = NULL;
+    ExpressionTreeFlattener::functionMap[REFERENCE]             = &Executor::reference;
+    ExpressionTreeFlattener::functionMap[DELETION]              = &Executor::deletion;
     ExpressionTreeFlattener::functionMap[DYNAMIC_PROPERTY]      = &Executor::dynamicVar;
     ExpressionTreeFlattener::functionMap[STATIC_PROPERTY]       = &Executor::staticVar;
     ExpressionTreeFlattener::functionMap[FUNCTION_PARAMETER]    = &Executor::parameter;
     ExpressionTreeFlattener::functionMap[FUNCTION_CALL]         = &Executor::call;
     ExpressionTreeFlattener::functionMap[JUMP]                  = &Executor::jmp;
-    ExpressionTreeFlattener::functionMap[JUMP_NOT_TRUE]         = NULL;
-    ExpressionTreeFlattener::functionMap[ARRAY_INDEX]           = NULL;
-    ExpressionTreeFlattener::functionMap[JUMP_TRUE]             = NULL;
-    ExpressionTreeFlattener::functionMap[TRY]                   = NULL;
-    ExpressionTreeFlattener::functionMap[CATCH]                 = NULL;
+    ExpressionTreeFlattener::functionMap[JUMP_NOT_TRUE]         = &Executor::jmpNotTrue;
+    ExpressionTreeFlattener::functionMap[ARRAY_INDEX]           = &Executor::arrayIndex;
+    ExpressionTreeFlattener::functionMap[JUMP_TRUE]             = &Executor::jmpTrue;
+    ExpressionTreeFlattener::functionMap[TRY]                   = &Executor::tryBlock;
+    ExpressionTreeFlattener::functionMap[CATCH]                 = &Executor::catchBlock;
 }
 
 
@@ -172,21 +172,30 @@ InstructionCode ExpressionTreeFlattener::getMachineCode(string s) {
 /****************************************************************************************
  *
  ****************************************************************************************/
-void ExpressionTreeFlattener::setOperationFunction(InstructionCode i, void (Executor::*ptr)(void)) {
+void ExpressionTreeFlattener::setOperationFunction(InstructionCode i, void (Executor::*&ptr)(void)) {
     ptr = ExpressionTreeFlattener::functionMap[i];
 }
 
 
 /****************************************************************************************
- * NOT BEING USED - hopefully will be at some point to make variables faster to reference
+ * Changes variable name into a long
  ****************************************************************************************/
-int ExpressionTreeFlattener::hashVariable(string s) {
+long ExpressionTreeFlattener::hashVariable(string s) {
     if (variableNames.find(s) == variableNames.end()) {
         variableNames[s] = varCount;
+        variableLookup[varCount] = s;
         return varCount++;
     } else {
         return variableNames[s];
     }
+}
+
+
+/****************************************************************************************
+ * Changes variable name into a long
+ ****************************************************************************************/
+map<long, string> ExpressionTreeFlattener::getVariableMap() {
+    return this->variableLookup;
 }
 
 
@@ -308,7 +317,7 @@ void ExpressionTreeFlattener::flattenTree(OperationNode* root, vector<Instructio
     //What side of the tree do we go down first?
     OperationNode* firstSide = (inst.isTerminating() || root->operation.word == "?") ? root->right : root->left;
     //What side of the tree do we go down second?
-    OperationNode* secondSide = (inst.isTerminating() || root->operation.word == "?") ? root->left : root->right;;
+    OperationNode* secondSide = (inst.isTerminating() || root->operation.word == "?") ? root->left : root->right;
 
     //Deal with ternary branch
     if (root->operation.word == ":") {
@@ -422,7 +431,7 @@ void ExpressionTreeFlattener::flattenMethod(Method &method) {
     stack<unsigned long> jumps = stack<unsigned long>();
 
     //Begin flattening trees
-    for (unsigned long i = 0; i < method.getInstructionSize(); i++) {
+    for (unsigned long i = 0; i < method.getInstructionTreeSize(); i++) {
         //Save root node position in new vector
         treeMap[i] = instructionVector.size() - 1;
         //Get root node
@@ -474,5 +483,17 @@ void ExpressionTreeFlattener::flattenClass(ClassDefinition &cls) {
 
     for (it = methods.begin(); it != methods.end(); it++) {
         this->flattenMethod(*(it->second));
+    }
+}
+
+
+/****************************************************************************************
+ *
+ ****************************************************************************************/
+void ExpressionTreeFlattener::flattenClassMap(map<string, ClassDefinition* >* &classMap) {
+    map<string, ClassDefinition* >::iterator it;
+
+    for (it = classMap->begin(); it != classMap->end(); it++) {
+        this->flattenClass(*(it->second));
     }
 }

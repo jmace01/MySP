@@ -23,7 +23,8 @@ class Method {
         ~Method();
         Visibility getVisibility();
         bool getIsStatic();
-        unsigned long getInstructionSize();
+        unsigned long getInstructionCodeSize();
+        unsigned long getInstructionTreeSize();
         void addInstruction(OperationNode* op);
         OperationNode* getInstruction(unsigned long iNum);
         void addParameter(std::string &name);

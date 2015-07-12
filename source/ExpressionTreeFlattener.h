@@ -35,6 +35,7 @@ class ExpressionTreeFlattener {
         static std::map<std::string, InstructionCode> machineCodeMap;
         static std::map<InstructionCode, void (Executor::*)(void)> functionMap;
         std::map<std::string, long> variableNames;
+        std::map<long, std::string> variableLookup;
         long varCount;
 
     public:
@@ -42,15 +43,17 @@ class ExpressionTreeFlattener {
         virtual ~ExpressionTreeFlattener();
         void flattenTree(OperationNode* root, std::vector<Instruction> &instructionVector, unsigned long lastCount);
         static InstructionCode getMachineCode(std::string s);
-        void setOperationFunction(InstructionCode i, void (Executor::*ptr)(void));
+        void setOperationFunction(InstructionCode i, void (Executor::*&ptr)(void));
         void addOperand(OperationNode* node, Instruction &inst, bool sideA, bool hash);
         void flattenMethod(Method &method);
         void flattenClass(ClassDefinition &cls);
+        void flattenClassMap(std::map<std::string, ClassDefinition* >* &classMap);
         static std::string lookupCode(int in);
+        std::map<long, std::string> getVariableMap();
 
     private:
         static void initialize();
-        int hashVariable(std::string s);
+        long hashVariable(std::string s);
 };
 
 #endif
