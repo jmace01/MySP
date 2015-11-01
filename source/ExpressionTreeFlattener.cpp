@@ -96,7 +96,7 @@ void ExpressionTreeFlattener::initialize() {
     ExpressionTreeFlattener::machineCodeMap["?"]        = JUMP_TRUE;
     ExpressionTreeFlattener::machineCodeMap["try"]      = TRY;
     ExpressionTreeFlattener::machineCodeMap["catch"]    = CATCH;
-    ExpressionTreeFlattener::machineCodeMap["exc"]    = EXCEPTION;
+    ExpressionTreeFlattener::machineCodeMap["exception"]    = EXCEPTION;
 
     //Code to method
     ExpressionTreeFlattener::functionMap[PRINT]                 = &Executor::print;
@@ -267,7 +267,7 @@ void ExpressionTreeFlattener::addOperand(OperationNode* node, Instruction &inst,
  *     1    1                1    1
  *
  *     a = #0, b = #1
- *     OR #1, #0               AND #1, #0
+ *     OR #1, #0             AND #1, #0
  *
  * --------------------------------------------------------------------------------------
  *

@@ -112,7 +112,7 @@ void Test::testParser() {
         ),
         TestIO(
                 "main { try { print 1; } catch (Exception e) { print 2; } }",
-                "6 2 try | 1 print | Exception 6 catch | e 6 exc | 2 print"
+                "6 2 try | 1 print | Exception 6 catch | e 6 exception | 2 print"
         ),
         TestIO(
                 "main { try { print 1; } catch { print 2; } }",
@@ -132,7 +132,7 @@ void Test::testParser() {
         ),
         TestIO(
                 "main { try { print 1; } catch (Exception e) { print 2; } finally { print 3; } }",
-                "6 2 try | 1 print | Exception 6 catch | e 6 exc | 2 print | 8 finally | 3 print"
+                "6 2 try | 1 print | Exception 6 catch | e 6 exception | 2 print | 8 finally | 3 print"
         ),
         TestIO(
                 "main { finally { print 3; } }",
@@ -148,7 +148,7 @@ void Test::testParser() {
         ),
         TestIO(
                 "main { try { throw 1; } catch (Exception1 e1) { print e1; } catch (Exception2 e2) { print e2; } finally { print 'done'; } }",
-                "9 2 try | 1 throw | Exception1 6 catch | e1 9 exc | e1 print | Exception2 9 catch | e2 9 exc | e2 print | 11 finally | 'done' print"
+                "9 2 try | 1 throw | Exception1 6 catch | e1 9 exception | e1 print | Exception2 9 catch | e2 9 exception | e2 print | 11 finally | 'done' print"
         ),
         TestIO( //missing semicolon in try
                 "main { try { throw 1 } catch (Exception e) { print e; } }",
@@ -156,7 +156,7 @@ void Test::testParser() {
         ),
         TestIO(
                 "main { try {} catch (Exception e) {} }",
-                "4 1 try | Exception 4 catch | e 4 exc"
+                "4 1 try | Exception 4 catch | e 4 exception"
         ),
         TestIO(
                 "main { try {} catch (1 + 1) {} }",

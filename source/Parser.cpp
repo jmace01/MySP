@@ -1292,7 +1292,7 @@ void Parser::endCatch() {
     op1->left->operation.word = type;
 
     sprintf(num, "%lu", currentMethod->getInstructionTreeSize() + 1);
-    op2->operation.word = "exc";
+    op2->operation.word = "exception";
     op2->right = new OperationNode();
     op2->right->operation.type = 'n';
     op2->right->operation.word = num;
@@ -1301,7 +1301,7 @@ void Parser::endCatch() {
     op2->left->operation.word = var;
 
     if (this->toks.front().word != "catch") {
-        while (!this->controlStack.empty() && this->controlStack.top()->operation.word == "exc") {
+        while (!this->controlStack.empty() && this->controlStack.top()->operation.word == "exception") {
             this->controlStack.top()->right->operation.word = num;
             this->controlStack.pop();
         }
