@@ -96,6 +96,7 @@ void ExpressionTreeFlattener::initialize() {
     ExpressionTreeFlattener::machineCodeMap["?"]        = JUMP_TRUE;
     ExpressionTreeFlattener::machineCodeMap["try"]      = TRY;
     ExpressionTreeFlattener::machineCodeMap["catch"]    = CATCH;
+    ExpressionTreeFlattener::machineCodeMap["exc"]    = EXCEPTION;
 
     //Code to method
     ExpressionTreeFlattener::functionMap[PRINT]                 = &Executor::print;
@@ -144,6 +145,7 @@ void ExpressionTreeFlattener::initialize() {
     ExpressionTreeFlattener::functionMap[JUMP_TRUE]             = &Executor::jmpTrue;
     ExpressionTreeFlattener::functionMap[TRY]                   = &Executor::tryBlock;
     ExpressionTreeFlattener::functionMap[CATCH]                 = &Executor::catchBlock;
+    ExpressionTreeFlattener::functionMap[EXCEPTION]             = &Executor::exception;
 }
 
 
@@ -204,7 +206,7 @@ map<long, string> ExpressionTreeFlattener::getVariableMap() {
  ****************************************************************************************/
 void ExpressionTreeFlattener::addOperand(OperationNode* node, Instruction &inst, bool sideA, bool hash) {
     //Can set
-    //hash = false;
+   hash = false;
     //to stop hashing
 
     if (node->operation.type == 'n') {

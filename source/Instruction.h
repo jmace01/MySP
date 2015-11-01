@@ -70,6 +70,7 @@ enum InstructionCode {
     , ARRAY_INDEX           // [
     , TRY                   // try
     , CATCH                 // catch
+    , EXCEPTION             // excepton, used with catch
     , THROW                 // throw
 };
 

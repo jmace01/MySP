@@ -92,7 +92,7 @@ void Test::testParser() {
         ),
         TestIO(
                 "main { for (A) { B; }",
-                "Expecting ';' in FOR loop condition | Expecting ';' in statement | Unexpected Operator {"
+                "Expecting ';' in FOR loop condition | Unexpected '{' in statement | Unexpected Operator {"
         ),
         TestIO(
                 "main { for (;;) b; }",
@@ -104,15 +104,19 @@ void Test::testParser() {
         ),
         TestIO(
                 "main { for a { b; } }",
-                "Expecting condition in FOR loop | Use of global statements is forbidden"
+                "Expecting condition in FOR loop | Unexpected '{' in statement | Unexpected Operator { | Use of global statements is forbidden"
         ),
         TestIO(
                 "c++",
                 "Use of global statements is forbidden"
         ),
         TestIO(
+                "main { try { print 1; } catch (Exception e) { print 2; } }",
+                "6 2 try | 1 print | Exception 6 catch | e 6 exc | 2 print"
+        ),
+        TestIO(
                 "main { try { print 1; } catch { print 2; } }",
-                "2 try | 1 print | 4 catch | 2 print"
+                "Expected '(' after catch | Expecting '{' after 'catch'"
         ),
         TestIO(
                 "main { try { print 1; } }",
@@ -120,15 +124,15 @@ void Test::testParser() {
         ),
         TestIO(
                 "main { catch { print 2; } }",
-                "Unexpected 'catch'"
+                "Unexpected 'catch' | Expected '(' after catch | Expecting '{' after 'catch'"
         ),
         TestIO(
                 "main { throw 1; }",
                 "1 throw"
         ),
         TestIO(
-                "main { try { print 1; } catch { print 2; } finally { print 3; } }",
-                "4 2 try | 1 print | 4 4 catch | 2 print | 6 finally | 3 print"
+                "main { try { print 1; } catch (Exception e) { print 2; } finally { print 3; } }",
+                "6 2 try | 1 print | Exception 6 catch | e 6 exc | 2 print | 8 finally | 3 print"
         ),
         TestIO(
                 "main { finally { print 3; } }",
@@ -139,8 +143,24 @@ void Test::testParser() {
                 "Expected 'catch' after 'try' | Unexpected 'finally'"
         ),
         TestIO(
-                "main { catch { print 2; } finally { print 3; } }",
+                "main { catch  (Exception e) { print 2; } finally { print 3; } }",
                 "Unexpected 'catch'"
+        ),
+        TestIO(
+                "main { try { throw 1; } catch (Exception1 e1) { print e1; } catch (Exception2 e2) { print e2; } finally { print 'done'; } }",
+                "9 2 try | 1 throw | Exception1 6 catch | e1 9 exc | e1 print | Exception2 9 catch | e2 9 exc | e2 print | 11 finally | 'done' print"
+        ),
+        TestIO( //missing semicolon in try
+                "main { try { throw 1 } catch (Exception e) { print e; } }",
+                "Unexpected '}' in statement"
+        ),
+        TestIO(
+                "main { try {} catch (Exception e) {} }",
+                "4 1 try | Exception 4 catch | e 4 exc"
+        ),
+        TestIO(
+                "main { try {} catch (1 + 1) {} }",
+                "Expected exception class type | Expecting '{' after 'catch' | Expecting ';' in statement | Unexpected '{' in statement | Unexpected '}' in statement"
         ),
         TestIO(
                 "",

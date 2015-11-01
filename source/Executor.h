@@ -25,6 +25,7 @@ class Executor {
         static std::map<std::string, Variable*> constants;
 
     private:
+        Variable* ExceptionState;
         Method* currentMethod;
         long currentInstruction;
         std::stack<Scope> scopeStack;
@@ -82,6 +83,7 @@ class Executor {
         void arrayIndex();
         void tryBlock();
         void catchBlock();
+        void exception();
         void finallyBlock();
 
         static Variable* makeVariableCopy(Variable* var, Visibility vis);

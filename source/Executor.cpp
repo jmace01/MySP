@@ -39,6 +39,7 @@ using namespace std;
  *     None
  ****************************************************************************************/
 Executor::Executor() {
+    this->ExceptionState = NULL;
     this->currentInstruction = 0;
     this->currentMethod = NULL;
 }
@@ -77,23 +78,29 @@ Executor::~Executor() {
  ****************************************************************************************/
 void Executor::run(map<string, ClassDefinition* >* classes) {
     string sMain = "main";
+    this->ExceptionState = NULL;
     this->currentMethod = (*classes)["~"]->getMethod(sMain);
     this->methodInstructions = this->currentMethod->getInstructionCodeVector();
     this->scopeStack = stack<Scope>();
     this->scopeStack.push(Scope());
 
-    void (Executor::*iPtr)(void);
+    void (Executor::*fPtr)(void);
 
     while(!scopeStack.empty()) {
+        //Has an exception been raised?
+        if (this->ExceptionState != NULL) {
+            //Deal with exceptions
+        }
+
         //If the last instruction was called, return from method
-        if (currentInstruction >= this->currentMethod->getInstructionCodeSize()) {
+        else if (currentInstruction >= this->currentMethod->getInstructionCodeSize()) {
             this->ret();
         }
 
         //Call the method
-        iPtr = this->methodInstructions[this->currentInstruction].opFunction;
-        if (iPtr != NULL) {
-            (this->*iPtr)();
+        fPtr = this->methodInstructions[this->currentInstruction].opFunction;
+        if (fPtr != NULL) {
+            (this->*fPtr)();
         }
 
         //Increment instruction
@@ -235,7 +242,8 @@ void Executor::cont() {
  *     None
  ****************************************************************************************/
 void Executor::thrw() {
-    //
+    //Set to a value
+    //this->ExceptionState = NULL;
 }
 
 
@@ -976,6 +984,22 @@ void Executor::catchBlock() {
     //
 }
 
+
+/****************************************************************************************
+ * Executor::exception
+ *
+ * Description:
+ *     //
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
+ ****************************************************************************************/
+void Executor::exception() {
+    //
+}
 
 
 /****************************************************************************************

@@ -103,6 +103,7 @@ map< string, ClassDefinition* >* Parser::parseTokens(queue<Token> &intoks) {
     string lowercaseWord; //For case insensitive keywords
     string className;
     this->controlStack = stack<OperationNode*>(); //Control word stack
+    this->exceptions = stack<string>();
     upcomingElse = false; //Check if an ELSE is follow an IF
     bool expectingCatch = false;
     bool expectingFinally = false;
@@ -228,6 +229,8 @@ map< string, ClassDefinition* >* Parser::parseTokens(queue<Token> &intoks) {
                 if (!expectingCatch) {
                     this->errors.push(PostfixError("Unexpected 'catch'", t));
                 }
+                //Make sure catch has arguments
+                this->catchParams();
                 //Make sure catch is scoped
                 if (this->toks.front().word != "{") {
                     this->errors.push(PostfixError("Expecting '{' after 'catch'", t));
@@ -235,6 +238,11 @@ map< string, ClassDefinition* >* Parser::parseTokens(queue<Token> &intoks) {
                 //Add catch to stack
                 t.word = lowercaseWord;
                 this->addToken(t, true);
+                if (!this->toks.empty() && this->toks.front().word == "{") {
+                    this->errors.push(PostfixError("Unexpected '{'", t));
+                }
+                this->addToken(t, true);
+                this->controlStack.top()->operation.type = 'w';
                 expectingCatch = false;
             } else if (lowercaseWord == "finally") {
                 //Make sure a catch is expected
@@ -283,6 +291,7 @@ map< string, ClassDefinition* >* Parser::parseTokens(queue<Token> &intoks) {
             } else if (!controlStack.empty() && controlStack.top()->operation.word == "catch") {
                 this->endScope(true);
                 expectingFinally = (toks.front().word == "finally");
+                expectingCatch = (toks.front().word == "catch");
             } else if (!controlStack.empty() && controlStack.top()->operation.word == "finally") {
                 this->endScope(true);
             }
@@ -571,7 +580,9 @@ void Parser::getStatement(Token &t, bool isFor) {
 
     while (!toks.empty() && toks.front().word != ";") {
         t = toks.front();
-        if (t.word == "(") {
+        if (t.word == "{" || t.word == "}") {
+            throw PostfixError("Unexpected '" + t.word + "' in statement", t);
+        } else if (t.word == "(") {
             parenth++;
         } else if (t.word == ")") {
             parenth--;
@@ -1190,6 +1201,53 @@ void Parser::endTry() {
 
 
 /****************************************************************************************
+ * Parser::catchParams
+ *
+ * Description:
+ *     Gets the arguments for a catch statement
+ *     catch (Exception e)
+ *           ^^^^^^^^^^^^^
+ *
+ * Inputs:
+ *     None
+ *
+ * Outputs:
+ *     None
+ ****************************************************************************************/
+void Parser::catchParams() {
+    Token t = this->toks.front();
+    this->toks.pop();
+    if (t.word != "(") {
+        errors.push(PostfixError("Expected '(' after catch",t));
+        return;
+    }
+
+    Token type = this->toks.front();
+    this->toks.pop();
+    if (type.type != 'w') {
+        errors.push(PostfixError("Expected exception class type", t));
+        return;
+    }
+    this->exceptions.push(type.word);
+
+    Token var = this->toks.front();
+    this->toks.pop();
+    if (var.type != 'w') {
+        errors.push(PostfixError("Expected variable after exception type",t));
+        return;
+    }
+    this->exceptions.push(var.word);
+
+    t = this->toks.front();
+    this->toks.pop();
+    if (t.word != ")") {
+        errors.push(PostfixError("Expected ')' after catch variable ",t));
+        return;
+    }
+}
+
+
+/****************************************************************************************
  * Parser::endCatch
  *
  * Description:
@@ -1204,33 +1262,59 @@ void Parser::endTry() {
 void Parser::endCatch() {
     char num[30];
 
-    OperationNode* op = this->controlStack.top();
+    if (this->exceptions.size() < 2 || this->controlStack.size() < 2) {
+        while(!this->controlStack.empty() &&
+                (
+                    this->controlStack.top()->operation.word == "catch" ||
+                    this->controlStack.top()->operation.word == "try"
+                )
+        ) {
+            this->controlStack.pop();
+        }
+        return;
+    }
 
-    sprintf(num, "%lu", currentMethod->getInstructionTreeSize());
-    op->right = new OperationNode();
-    op->right->operation.type = 'n';
-    op->right->operation.word = num;
+    OperationNode* op2 = this->controlStack.top();
+    this->controlStack.pop();
+    OperationNode* op1 = this->controlStack.top();
+    this->controlStack.pop();
+    string var = this->exceptions.top();
+    this->exceptions.pop();
+    string type = this->exceptions.top();
+    this->exceptions.pop();
 
-    if (this->toks.front().word == "finally" && this->controlStack.size() > 1) {
-        //Add finally location to catch
-        op = new OperationNode();
-        op->operation.type = 'n';
-        op->operation.word = num;
-        this->controlStack.top()->left = op;
-        this->controlStack.pop();
-        //Add finally location to try
-        if (this->controlStack.top()->operation.word == "try") {
-            op = new OperationNode();
+    sprintf(num, "%lu", currentMethod->getInstructionTreeSize() + 1);
+    op1->right = new OperationNode();
+    op1->right->operation.type = 'n';
+    op1->right->operation.word = num;
+    op1->left = new OperationNode();
+    op1->left->operation.type = 'w';
+    op1->left->operation.word = type;
+
+    sprintf(num, "%lu", currentMethod->getInstructionTreeSize() + 1);
+    op2->operation.word = "exc";
+    op2->right = new OperationNode();
+    op2->right->operation.type = 'n';
+    op2->right->operation.word = num;
+    op2->left = new OperationNode();
+    op2->left->operation.type = 'w';
+    op2->left->operation.word = var;
+
+    if (this->toks.front().word != "catch") {
+        while (!this->controlStack.empty() && this->controlStack.top()->operation.word == "exc") {
+            this->controlStack.top()->right->operation.word = num;
+            this->controlStack.pop();
+        }
+        if (!this->controlStack.empty() && this->controlStack.top()->operation.word == "try") {
+            //Add finally location to try
+            OperationNode* op = new OperationNode();
             op->operation.type = 'n';
             op->operation.word = num;
             this->controlStack.top()->left = op;
             this->controlStack.pop();
         }
     } else {
-        this->controlStack.pop();
-        if (this->controlStack.size() > 0 && this->controlStack.top()->operation.word == "try") {
-            this->controlStack.pop();
-        }
+        this->controlStack.push(op2);
     }
 }
 
@@ -1252,7 +1336,7 @@ void Parser::endFinally() {
 
     OperationNode* op = this->controlStack.top();
 
-    sprintf(num, "%lu", currentMethod->getInstructionTreeSize());
+    sprintf(num, "%lu", currentMethod->getInstructionTreeSize() + 1);
     op->right = new OperationNode();
     op->right->operation.type = 'n';
     op->right->operation.word = num;

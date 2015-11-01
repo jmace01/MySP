@@ -29,6 +29,7 @@ class Parser {
         ExpressionTreeBuilder expTreeBuilder;
         std::queue<Token> statementQueue;
         std::stack<OperationNode*> controlStack;
+        std::stack<std::string> exceptions;
         unsigned int lineNumber;
         std::string infix;
         unsigned int infixPos;
@@ -66,6 +67,7 @@ class Parser {
         void endFor();
         void endTry();
         void endFinally();
+        void catchParams();
         void endCatch();
         OperationNode* createJump(unsigned long pos, bool includePos);
 };

@@ -50,7 +50,7 @@ int main(int argc, char ** argv) {
 
     //string sin = "main { if (true) { if (false) { print 'YES'; } else { return; } } else { print 'NO!'; } }";
     //string sin = "main {  a = &b->c; }";
-    string sin = "main { try { throw a; } catch { print this->a; } finally { print 3; } }";
+    string sin = "main { try { throw a; } catch (Exception e) { print this->a; } catch (Exception2 e) { print e; } finally { print 3; } }";
     //string sin = "main { print this->a; }";
 
     Tokenizer t;
